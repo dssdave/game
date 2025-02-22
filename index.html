@@ -19,20 +19,49 @@
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="1024" height="1024"></canvas>
+    <canvas id="gameCanvas"></canvas>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const tileSize = 32; // Each tile is 32x32 pixels
-        const mapSize = 32;  // 32x32 tile grid for a 1024x1024 canvas
 
-        // Define the game map (0: grass, 1: wall, 2: water)
-        const map = Array.from({ length: mapSize }, () => Array(mapSize).fill(0));
-        // Add some walls and water for variety
-        for (let i = 5; i < 10; i++) map[5][i] = 1; // Horizontal wall
-        for (let i = 15; i < 20; i++) map[i][10] = 1; // Vertical wall
-        map[8][8] = 2; // Water feature
-        map[20][20] = 2; // Another water feature
+        // Define maps for town and house
+        const maps = {
+            'town': {
+                grid: [
+                    [0,0,0,0,0,0,0,0,0,0],
+                    [0,1,1,1,0,0,1,1,1,0],
+                    [0,1,0,0,0,0,0,0,1,0],
+                    [0,1,0,0,0,0,0,0,1,0],
+                    [0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0],
+                    [0,1,0,0,0,0,0,0,1,0],
+                    [0,1,0,0,0,0,0,0,1,0],
+                    [0,1,1,1,0,0,1,1,1,0],
+                    [0,0,0,0,0,0,0,0,0,0]
+                ],
+                entrances: [
+                    { x: 4, y: 4, scene: 'house', enterX: 2, enterY: 2 }
+                ]
+            },
+            'house': {
+                grid: [
+                    [1,1,1,1,1],
+                    [1,0,0,0,1],
+                    [1,0,0,0,1],
+                    [1,0,0,0,1],
+                    [1,1,1,1,1]
+                ],
+                exits: [
+                    { x: 2, y: 3, scene: 'town', exitX: 4, exitY: 5 }
+                ]
+            }
+        };
+
+        let currentScene = 'town';
+        const initialGrid = maps[currentScene].grid;
+        canvas.width = initialGrid[0].length * tileSize;
+        canvas.height = initialGrid.length * tileSize;
 
         // Princess properties
         let princess = {
@@ -49,11 +78,11 @@
         document.addEventListener('keyup', (e) => keys[e.key] = false);
 
         // Collision detection
-        function isColliding(x, y) {
+        function isColliding(x, y, grid) {
             const tileX = Math.floor(x / tileSize);
             const tileY = Math.floor(y / tileSize);
-            if (tileX < 0 || tileX >= mapSize || tileY < 0 || tileY >= mapSize) return true;
-            return map[tileY][tileX] === 1; // Wall
+            if (tileX < 0 || tileX >= grid[0].length || tileY < 0 || tileY >= grid.length) return true;
+            return grid[tileY][tileX] === 1; // Wall
         }
 
         // Update princess position
@@ -67,37 +96,71 @@
 
             // Check horizontal movement
             let newX = princess.x + dx;
-            if (!isColliding(newX, princess.y) && !isColliding(newX + princess.width, princess.y)) {
+            if (!isColliding(newX, princess.y, maps[currentScene].grid) && !isColliding(newX + princess.width, princess.y, maps[currentScene].grid)) {
                 princess.x = newX;
             }
 
             // Check vertical movement
             let newY = princess.y + dy;
-            if (!isColliding(princess.x, newY) && !isColliding(princess.x, newY + princess.height)) {
+            if (!isColliding(princess.x, newY, maps[currentScene].grid) && !isColliding(princess.x, newY + princess.height, maps[currentScene].grid)) {
                 princess.y = newY;
             }
 
             // Keep princess within bounds
             princess.x = Math.max(0, Math.min(princess.x, canvas.width - princess.width));
             princess.y = Math.max(0, Math.min(princess.y, canvas.height - princess.height));
+
+            // Check for scene switch
+            const tileX = Math.floor(princess.x / tileSize);
+            const tileY = Math.floor(princess.y / tileSize);
+            if (currentScene === 'town') {
+                const entrance = maps['town'].entrances.find(e => e.x === tileX && e.y === tileY);
+                if (entrance) {
+                    switchScene(entrance.scene, entrance.enterX, entrance.enterY);
+                }
+            } else if (currentScene === 'house') {
+                const exit = maps['house'].exits.find(e => e.x === tileX && e.y === tileY);
+                if (exit) {
+                    switchScene(exit.scene, exit.exitX, exit.exitY);
+                }
+            }
+        }
+
+        // Switch scene
+        function switchScene(newScene, newX, newY) {
+            currentScene = newScene;
+            const grid = maps[newScene].grid;
+            canvas.width = grid[0].length * tileSize;
+            canvas.height = grid.length * tileSize;
+            princess.x = newX * tileSize;
+            princess.y = newY * tileSize;
         }
 
         // Draw the map
         function drawMap() {
-            for (let row = 0; row < mapSize; row++) {
-                for (let col = 0; col < mapSize; col++) {
-                    const tile = map[row][col];
+            const grid = maps[currentScene].grid;
+            let entrances = currentScene === 'town' ? maps['town'].entrances : [];
+            let exits = currentScene === 'house' ? maps['house'].exits : [];
+            for (let row = 0; row < grid.length; row++) {
+                for (let col = 0; col < grid[0].length; col++) {
+                    const tile = grid[row][col];
                     let color;
-                    switch (tile) {
-                        case 0: // Grass
-                            color = `hsl(120, 50%, ${50 + Math.random() * 10}%)`; // Varied green
-                            break;
-                        case 1: // Wall
-                            color = '#888'; // Gray wall
-                            break;
-                        case 2: // Water
+                    if (currentScene === 'town') {
+                        if (entrances.some(e => e.x === col && e.y === row)) {
                             color = 'blue';
-                            break;
+                        } else if (tile === 0) {
+                            color = `hsl(120, 50%, ${40 + Math.random() * 20}%)`;
+                        } else {
+                            color = 'gray';
+                        }
+                    } else if (currentScene === 'house') {
+                        if (exits.some(e => e.x === col && e.y === row)) {
+                            color = 'red';
+                        } else if (tile === 0) {
+                            color = 'brown';
+                        } else {
+                            color = 'gray';
+                        }
                     }
                     ctx.fillStyle = color;
                     ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
@@ -105,7 +168,7 @@
             }
         }
 
-        // Draw the princess (placeholder for detailed sprite)
+        // Draw the princess
         function drawPrincess() {
             // Body (gown)
             ctx.fillStyle = '#ff69b4'; // Pink gown
