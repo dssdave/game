@@ -22,38 +22,25 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        
-        // Game variables
         const tileSize = 32;
         let score = 0;
-        
-        // Princess position and movement
-        let princess = {
-            x: 320,
-            y: 240,
-            speed: 4
-        };
-        
-        // Collectible items
+
+        let princess = { x: 320, y: 240, speed: 4 };
         const items = [
             {x: 100, y: 100, type: 'flower', points: 10, collected: false},
             {x: 500, y: 150, type: 'coin', points: 20, collected: false},
             {x: 200, y: 400, type: 'gem', points: 30, collected: false}
         ];
-        
-        // Obstacles (castle, house, trees)
         const obstacles = [
             {x: 400, y: 200, width: 128, height: 128}, // Castle
             {x: 150, y: 300, width: 96, height: 64},   // House
             {x: 300, y: 100, width: 32, height: 32}    // Tree
         ];
-        
-        // Controls
+
         const keys = {};
         document.addEventListener('keydown', (e) => keys[e.key] = true);
         document.addEventListener('keyup', (e) => keys[e.key] = false);
-        
-        // Simple collision detection
+
         function checkCollision(newX, newY) {
             for (let obstacle of obstacles) {
                 if (newX < obstacle.x + obstacle.width &&
@@ -65,8 +52,7 @@
             }
             return false;
         }
-        
-        // Check item collection
+
         function checkItemCollection() {
             for (let item of items) {
                 if (!item.collected &&
@@ -79,10 +65,77 @@
                 }
             }
         }
-        
-        // Game loop
+
+        // Drawing functions
+        function drawPrincess(x, y) {
+            // Dress
+            ctx.fillStyle = '#ff69b4';
+            ctx.fillRect(x + 8, y + 12, 16, 20);
+            // Face
+            ctx.fillStyle = '#ffdab9';
+            ctx.fillRect(x + 12, y + 4, 8, 8);
+            // Hair
+            ctx.fillStyle = '#8b4513';
+            ctx.fillRect(x + 10, y, 12, 8);
+            // Crown
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(x + 12, y - 4, 8, 4);
+            ctx.fillRect(x + 10, y - 6, 12, 2);
+        }
+
+        function drawFlower(x, y) {
+            ctx.fillStyle = '#ff69b4';
+            ctx.fillRect(x + 12, y + 4, 8, 8);  // Flower head
+            ctx.fillStyle = '#ffff00';
+            ctx.fillRect(x + 14, y + 6, 4, 4);  // Center
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(x + 15, y + 12, 2, 12); // Stem
+        }
+
+        function drawCoin(x, y) {
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(x + 10, y + 4, 12, 12);
+            ctx.fillStyle = '#ffa500';
+            ctx.fillRect(x + 12, y + 6, 8, 8);
+        }
+
+        function drawGem(x, y) {
+            ctx.fillStyle = '#00ffff';
+            ctx.fillRect(x + 12, y + 2, 8, 12);
+            ctx.fillRect(x + 10, y + 4, 12, 8);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(x + 14, y + 6, 4, 2);
+        }
+
+        function drawCastle(x, y) {
+            ctx.fillStyle = '#808080';
+            ctx.fillRect(x, y, 128, 128);        // Main building
+            ctx.fillStyle = '#696969';
+            ctx.fillRect(x + 20, y - 20, 20, 20); // Tower 1
+            ctx.fillRect(x + 88, y - 20, 20, 20); // Tower 2
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(x + 22, y - 24, 16, 4);  // Flag 1
+            ctx.fillRect(x + 90, y - 24, 16, 4);  // Flag 2
+        }
+
+        function drawHouse(x, y) {
+            ctx.fillStyle = '#8b4513';
+            ctx.fillRect(x, y, 96, 64);          // Main house
+            ctx.fillStyle = '#a0522d';
+            ctx.fillRect(x + 10, y - 20, 76, 20); // Roof
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(x + 40, y + 30, 16, 34); // Door
+        }
+
+        function drawTree(x, y) {
+            ctx.fillStyle = '#8b4513';
+            ctx.fillRect(x + 12, y + 16, 8, 16);  // Trunk
+            ctx.fillStyle = '#006400';
+            ctx.fillRect(x, y, 32, 16);          // Foliage
+            ctx.fillRect(x + 8, y - 8, 16, 16);
+        }
+
         function gameLoop() {
-            // Handle movement
             let newX = princess.x;
             let newY = princess.y;
             
@@ -91,7 +144,6 @@
             if (keys['ArrowLeft']) newX -= princess.speed;
             if (keys['ArrowRight']) newX += princess.speed;
             
-            // Keep within bounds and check collisions
             newX = Math.max(0, Math.min(canvas.width - tileSize, newX));
             newY = Math.max(0, Math.min(canvas.height - tileSize, newY));
             
@@ -102,33 +154,26 @@
             
             checkItemCollection();
             
-            // Draw everything
+            // Draw background
             ctx.fillStyle = '#7cfc00';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             // Draw obstacles
-            ctx.fillStyle = '#808080';
-            obstacles[0] = ctx.fillRect(400, 200, 128, 128); // Castle
-            ctx.fillStyle = '#8b4513';
-            obstacles[1] = ctx.fillRect(150, 300, 96, 64);   // House
-            ctx.fillStyle = '#006400';
-            obstacles[2] = ctx.fillRect(300, 100, 32, 32);   // Tree
+            drawCastle(400, 200);
+            drawHouse(150, 300);
+            drawTree(300, 100);
             
             // Draw items
             for (let item of items) {
                 if (!item.collected) {
-                    if (item.type === 'flower') ctx.fillStyle = '#ff69b4';
-                    else if (item.type === 'coin') ctx.fillStyle = '#ffd700';
-                    else ctx.fillStyle = '#00ffff';
-                    ctx.fillRect(item.x, item.y, tileSize/2, tileSize/2);
+                    if (item.type === 'flower') drawFlower(item.x, item.y);
+                    else if (item.type === 'coin') drawCoin(item.x, item.y);
+                    else drawGem(item.x, item.y);
                 }
             }
             
-            // Draw princess (simple pink square with crown)
-            ctx.fillStyle = '#ff1493';
-            ctx.fillRect(princess.x, princess.y, tileSize, tileSize);
-            ctx.fillStyle = '#ffd700';
-            ctx.fillRect(princess.x + 8, princess.y - 8, 16, 8);
+            // Draw princess
+            drawPrincess(princess.x, princess.y);
             
             // Draw score
             ctx.fillStyle = 'black';
@@ -137,8 +182,7 @@
             
             requestAnimationFrame(gameLoop);
         }
-        
-        // Start game
+
         gameLoop();
     </script>
 </body>
