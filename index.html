@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Princess D</title>
+    <title>Princess D - Maximum Adventure</title>
     <style>
         body {
             display: flex;
@@ -12,6 +12,7 @@
             height: 100vh;
             margin: 0;
             background-color: #87ceeb;
+            overflow: hidden;
         }
         canvas {
             border: 1px solid black;
@@ -20,68 +21,59 @@
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="1024" height="768"></canvas>
+    <canvas id="gameCanvas" width="1920" height="1080"></canvas>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         let score = 0;
+        let jumps = 0;
+        let lives = 3;
         let gameState = 'title';
+        let level = 1;
+        const maxLevels = 3;
 
         // Princess properties
         let princess = {
-            x: 512,
-            y: 384,
-            width: 40,
-            height: 40,
-            speed: 5
+            x: 100,
+            y: 900,
+            width: 50,
+            height: 50,
+            speed: 6,
+            velY: 0,
+            jumping: false,
+            grounded: false,
+            invincible: false,
+            speedBoost: false,
+            crown: null // For crown toss attack
         };
 
-        // Obstacles
-        const obstacles = [
-            // Castle
-            {x: 400, y: 50, width: 200, height: 150, type: 'castle'},
-            // Houses
-            {x: 100, y: 400, width: 150, height: 100, type: 'house'},
-            {x: 700, y: 300, width: 150, height: 100, type: 'house'},
-            // Trees
-            {x: 200, y: 150, size: 40, type: 'tree'},
-            {x: 600, y: 200, size: 40, type: 'tree'},
-            {x: 300, y: 600, size: 40, type: 'tree'},
-            {x: 800, y: 500, size: 40, type: 'tree'},
-            // Rocks
-            {x: 50, y: 250, size: 35, type: 'rock'},
-            {x: 900, y: 150, size: 35, type: 'rock'},
-            {x: 500, y: 700, size: 35, type: 'rock'},
-            // Fences
-            {x: 0, y: 650, width: 1024, height: 50, type: 'fence'},
-            {x: 250, y: 300, width: 150, height: 30, type: 'fence'}
+        // Physics
+        const gravity = 0.9;
+        const jumpPower = -18;
+
+        // Platforms (level-specific)
+        let platforms = [
+            {x: 0, y: 1000, width: 1920, height: 80, type: 'ground'},
+            {x: 300, y: 800, width: 250, height: 20, type: 'static'},
+            {x: 700, y: 600, width: 200, height: 20, type: 'moving', dx: 2, minX: 700, maxX: 900},
+            {x: 1200, y: 400, width: 300, height: 20, type: 'static'}
         ];
 
-        // Collectibles
-        const initialCollectibles = [
-            // Coins (10 points)
-            {x: 100, y: 100, size: 20, type: 'coin', points: 10, width: 20, height: 20},
-            {x: 500, y: 150, size: 20, type: 'coin', points: 10, width: 20, height: 20},
-            {x: 700, y: 600, size: 20, type: 'coin', points: 10, width: 20, height: 20},
-            {x: 300, y: 250, size: 20, type: 'coin', points: 10, width: 20, height: 20},
-            {x: 850, y: 400, size: 20, type: 'coin', points: 10, width: 20, height: 20},
-            // Gems (20 points)
-            {x: 200, y: 500, size: 20, type: 'gem', points: 20, width: 20, height: 20},
-            {x: 600, y: 400, size: 20, type: 'gem', points: 20, width: 20, height: 20},
-            {x: 400, y: 700, size: 20, type: 'gem', points: 20, width: 20, height: 20},
-            {x: 900, y: 50, size: 20, type: 'gem', points: 20, width: 20, height: 20},
-            // Flowers (5 points)
-            {x: 150, y: 300, size: 20, type: 'flower', points: 5, width: 20, height: 20},
-            {x: 450, y: 200, size: 20, type: 'flower', points: 5, width: 20, height: 20},
-            {x: 750, y: 250, size: 20, type: 'flower', points: 5, width: 20, height: 20},
-            {x: 50, y: 600, size: 20, type: 'flower', points: 5, width: 20, height: 20},
-            {x: 950, y: 700, size: 20, type: 'flower', points: 5, width: 20, height: 20},
-            // Stars (50 points)
-            {x: 350, y: 400, size: 20, type: 'star', points: 50, width: 20, height: 20},
-            {x: 650, y: 100, size: 20, type: 'star', points: 50, width: 20, height: 20},
-            {x: 800, y: 650, size: 20, type: 'star', points: 50, width: 20, height: 20}
+        // Enemies
+        let enemies = [
+            {x: 400, y: 950, width: 40, height: 40, speed: 3, direction: 1, type: 'bat'},
+            {x: 800, y: 950, width: 50, height: 30, speed: 4, direction: -1, type: 'roller'}
         ];
-        let collectibles = [...initialCollectibles];
+
+        // Collectibles/Power-Ups
+        let collectibles = [
+            {x: 350, y: 750, size: 30, type: 'coin', points: 10},
+            {x: 750, y: 550, size: 30, type: 'tiara', effect: 'invincible'},
+            {x: 1300, y: 350, size: 30, type: 'slippers', effect: 'speed'}
+        ];
+
+        // Weather effect (simulated)
+        let weather = {active: false, type: 'rain', slowFactor: 0.7};
 
         // Input handling
         const keys = {};
@@ -89,296 +81,275 @@
         document.addEventListener('keyup', (e) => keys[e.key] = false);
 
         // Collision detection
-        function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) {
-            return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
+        function rectIntersect(r1, r2) {
+            return !(r1.x + r1.width < r2.x || r1.x > r2.x + r2.width ||
+                     r1.y + r1.height < r2.y || r1.y > r2.y + r2.height);
         }
 
-        // Check for collision with obstacles
-        function checkCollision(newX, newY) {
-            for (let obs of obstacles) {
-                let obsWidth = obs.width || obs.size;
-                let obsHeight = obs.height || obs.size;
-                if (rectIntersect(newX, newY, princess.width, princess.height, obs.x, obs.y, obsWidth, obsHeight)) {
-                    return true;
+        // Platform collision
+        function checkPlatformCollision() {
+            princess.grounded = false;
+            for (let plat of platforms) {
+                if (rectIntersect(princess, plat) && princess.velY >= 0) {
+                    princess.y = plat.y - princess.height;
+                    princess.velY = 0;
+                    princess.grounded = true;
+                    princess.jumping = false;
+                }
+                // Move with moving platforms
+                if (plat.type === 'moving' && princess.grounded && plat === platforms.find(p => rectIntersect(princess, p))) {
+                    princess.x += plat.dx;
                 }
             }
-            return false;
         }
 
-        // Check for collectible pickup
+        // Collectible pickup
         function checkCollectibles() {
             for (let i = collectibles.length - 1; i >= 0; i--) {
                 let col = collectibles[i];
-                if (rectIntersect(princess.x, princess.y, princess.width, princess.height, col.x, col.y, col.width, col.height)) {
-                    score += col.points;
+                if (rectIntersect(princess, {x: col.x, y: col.y, width: col.size, height: col.size})) {
+                    if (col.type === 'coin') score += col.points;
+                    else if (col.type === 'tiara') {
+                        princess.invincible = true;
+                        setTimeout(() => princess.invincible = false, 5000);
+                    } else if (col.type === 'slippers') {
+                        princess.speedBoost = true;
+                        setTimeout(() => princess.speedBoost = false, 7000);
+                    }
                     collectibles.splice(i, 1);
                 }
             }
         }
 
-        // Reset game
-        function reset() {
-            score = 0;
-            collectibles = [...initialCollectibles];
-            princess.x = 512;
-            princess.y = 384;
-            gameState = 'playing';
+        // Enemy collision
+        function checkEnemyCollision() {
+            for (let enemy of enemies) {
+                if (rectIntersect(princess, enemy) && !princess.invincible) {
+                    lives--;
+                    princess.x = 100;
+                    princess.y = 900;
+                    if (lives <= 0) gameState = 'gameover';
+                }
+            }
+        }
+
+        // Move enemies
+        function moveEnemies() {
+            for (let enemy of enemies) {
+                enemy.x += enemy.speed * enemy.direction;
+                if (enemy.x < 0 || enemy.x > canvas.width - enemy.width) enemy.direction *= -1;
+            }
+        }
+
+        // Move platforms
+        function movePlatforms() {
+            for (let plat of platforms) {
+                if (plat.type === 'moving') {
+                    plat.x += plat.dx;
+                    if (plat.x < plat.minX || plat.x > plat.maxX) plat.dx *= -1;
+                }
+            }
+        }
+
+        // Crown toss
+        function tossCrown() {
+            if (!princess.crown && keys['c']) {
+                princess.crown = {x: princess.x + princess.width, y: princess.y, width: 20, height: 20, speed: 10};
+            }
+            if (princess.crown) {
+                princess.crown.x += princess.crown.speed;
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    if (rectIntersect(princess.crown, enemies[i])) {
+                        enemies.splice(i, 1);
+                        princess.crown = null;
+                        score += 20;
+                        break;
+                    }
+                }
+                if (princess.crown && princess.crown.x > canvas.width) princess.crown = null;
+            }
+        }
+
+        // Update princess
+        function updatePrincess() {
+            let currentSpeed = princess.speedBoost ? princess.speed * 1.5 : princess.speed;
+            if (weather.active) currentSpeed *= weather.slowFactor;
+
+            if (keys['ArrowLeft']) princess.x -= currentSpeed;
+            if (keys['ArrowRight']) princess.x += currentSpeed;
+            if (keys[' '] && princess.grounded) {
+                princess.velY = jumpPower;
+                princess.jumping = true;
+                princess.grounded = false;
+                jumps++;
+            }
+
+            princess.velY += gravity;
+            princess.y += princess.velY;
+
+            princess.x = Math.max(0, Math.min(canvas.width - princess.width, princess.x));
+            checkPlatformCollision();
+            tossCrown();
+
+            if (princess.y > canvas.height) {
+                lives--;
+                princess.x = 100;
+                princess.y = 900;
+                if (lives <= 0) gameState = 'gameover';
+            }
         }
 
         // Drawing functions
-        function drawPrincess(x, y, w, h) {
-            // Dress
-            ctx.fillStyle = '#ff69b4';
-            ctx.fillRect(x + w / 4, y + h / 2, w / 2, h / 2);
-            // Face
-            ctx.fillStyle = '#ffdab9';
-            ctx.beginPath();
-            ctx.arc(x + w / 2, y + h / 4, w / 4, 0, Math.PI * 2);
-            ctx.fill();
-            // Hair
-            ctx.fillStyle = '#8b4513';
-            ctx.fillRect(x + w / 4, y, w / 2, h / 4);
+        function drawPrincess() {
+            ctx.fillStyle = princess.invincible ? '#ffd700' : '#ff69b4';
+            ctx.fillRect(princess.x, princess.y, princess.width, princess.height);
             // Crown
             ctx.fillStyle = '#ffd700';
-            ctx.beginPath();
-            ctx.moveTo(x + w / 4, y);
-            ctx.lineTo(x + w / 2, y - h / 8);
-            ctx.lineTo(x + 3 * w / 4, y);
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        function drawCastle(x, y, w, h) {
-            ctx.fillStyle = '#808080';
-            ctx.fillRect(x, y, w, h);
-            // Towers
-            ctx.fillRect(x - 10, y - 20, 20, 20);
-            ctx.fillRect(x + w - 10, y - 20, 20, 20);
-            // Details
-            ctx.fillStyle = '#696969';
-            ctx.fillRect(x + w / 4, y + h - 20, w / 2, 10); // Door
-        }
-
-        function drawHouse(x, y, w, h) {
-            ctx.fillStyle = '#8b4513';
-            ctx.fillRect(x, y, w, h);
-            // Roof
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + w / 2, y - h / 2);
-            ctx.lineTo(x + w, y);
-            ctx.closePath();
-            ctx.fillStyle = '#a0522d';
-            ctx.fill();
-            // Details
-            ctx.fillStyle = '#f5f5f5';
-            ctx.fillRect(x + w / 4, y + h / 4, w / 4, h / 4); // Window
-        }
-
-        function drawTree(x, y, size) {
-            // Trunk
-            ctx.fillStyle = '#8b4513';
-            ctx.fillRect(x + size / 3, y + size / 2, size / 3, size / 2);
-            // Leaves
-            ctx.fillStyle = '#228b22';
-            ctx.beginPath();
-            ctx.arc(x + size / 2, y + size / 4, size / 2, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        function drawRock(x, y, size) {
-            ctx.fillStyle = '#696969';
-            ctx.beginPath();
-            ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        function drawFence(x, y, w, h) {
-            ctx.fillStyle = '#a0522d';
-            ctx.fillRect(x, y, w, h);
-            // Posts
-            for (let i = 0; i < w; i += 50) {
-                ctx.fillStyle = '#8b4513';
-                ctx.fillRect(x + i, y, 10, h);
+            ctx.fillRect(princess.x + 15, princess.y - 10, 20, 10);
+            if (princess.crown) {
+                ctx.fillRect(princess.crown.x, princess.crown.y, princess.crown.width, princess.crown.height);
             }
         }
 
-        function drawCoin(x, y, size) {
-            ctx.fillStyle = '#ffd700';
-            ctx.beginPath();
-            ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#ffa500';
-            ctx.beginPath();
-            ctx.arc(x + size / 2, y + size / 2, size / 3, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        function drawGem(x, y, size) {
-            ctx.fillStyle = '#00ffff';
-            ctx.beginPath();
-            ctx.moveTo(x + size / 2, y);
-            ctx.lineTo(x + size, y + size / 2);
-            ctx.lineTo(x + size / 2, y + size);
-            ctx.lineTo(x, y + size / 2);
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        function drawFlower(x, y, size) {
-            // Stem
-            ctx.fillStyle = '#228b22';
-            ctx.fillRect(x + size / 2 - 2, y + size / 2, 4, size / 2);
-            // Petals
-            ctx.fillStyle = '#ff69b4';
-            ctx.beginPath();
-            ctx.arc(x + size / 2, y + size / 4, size / 4, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        function drawStar(x, y, size) {
-            ctx.fillStyle = '#ffd700';
-            ctx.beginPath();
-            for (let i = 0; i < 5; i++) {
-                const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2;
-                const innerAngle = angle + Math.PI / 5;
-                const r = size / 2;
-                const innerR = r / 2;
-                const px = x + size / 2 + Math.cos(angle) * r;
-                const py = y + size / 2 + Math.sin(angle) * r;
-                const innerPx = x + size / 2 + Math.cos(innerAngle) * innerR;
-                const innerPy = y + size / 2 + Math.sin(innerAngle) * innerR;
-                if (i === 0) {
-                    ctx.moveTo(px, py);
-                } else {
-                    ctx.lineTo(px, py);
-                }
-                ctx.lineTo(innerPx, innerPy);
+        function drawPlatforms() {
+            for (let plat of platforms) {
+                ctx.fillStyle = plat.type === 'ground' ? '#8b4513' : '#228b22';
+                ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
             }
-            ctx.closePath();
-            ctx.fill();
         }
 
-        // Update game state
-        function update() {
-            if (gameState === 'title') {
-                if (Object.values(keys).some(k => k)) {
-                    reset();
-                }
-            } else if (gameState === 'playing') {
-                let dx = 0;
-                let dy = 0;
-                if (keys['ArrowLeft']) dx -= princess.speed;
-                if (keys['ArrowRight']) dx += princess.speed;
-                if (keys['ArrowUp']) dy -= princess.speed;
-                if (keys['ArrowDown']) dy += princess.speed;
+        function drawEnemies() {
+            for (let enemy of enemies) {
+                ctx.fillStyle = enemy.type === 'bat' ? '#4b0082' : '#ff4500';
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+            }
+        }
 
-                let newX = princess.x + dx;
-                let newY = princess.y + dy;
-
-                if (!checkCollision(newX, newY)) {
-                    princess.x = newX;
-                    princess.y = newY;
-                }
-
-                // Clamp to screen bounds
-                princess.x = Math.max(0, Math.min(canvas.width - princess.width, princess.x));
-                princess.y = Math.max(0, Math.min(canvas.height - princess.height, princess.y));
-
-                checkCollectibles();
-
-                if (collectibles.length === 0) {
-                    gameState = 'gameover';
-                }
-            } else if (gameState === 'gameover') {
-                if (Object.values(keys).some(k => k)) {
-                    gameState = 'title';
+        function drawCollectibles() {
+            for (let col of collectibles) {
+                if (col.type === 'coin') {
+                    ctx.fillStyle = '#ffd700';
+                    ctx.beginPath();
+                    ctx.arc(col.x + col.size / 2, col.y + col.size / 2, col.size / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (col.type === 'tiara') {
+                    ctx.fillStyle = '#00ffff';
+                    ctx.fillRect(col.x, col.y, col.size, col.size);
+                } else if (col.type === 'slippers') {
+                    ctx.fillStyle = '#ff00ff';
+                    ctx.fillRect(col.x, col.y, col.size, col.size);
                 }
             }
         }
 
-        // Draw game elements
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            if (gameState === 'title') {
-                // Background
-                ctx.fillStyle = '#7cfc00';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                // Decorative elements
-                drawCoin(200, 200, 20);
-                drawGem(800, 200, 20);
-                drawFlower(300, 600, 20);
-                drawStar(700, 600, 20);
-                drawPrincess(canvas.width / 2 - 20, canvas.height / 2 - 100, 40, 40);
-
-                // Title text
-                ctx.fillStyle = 'black';
-                ctx.font = '64px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('Princess D', canvas.width / 2, canvas.height / 2 - 50);
-                ctx.font = '32px Arial';
-                ctx.fillText('Press any key to start', canvas.width / 2, canvas.height / 2 + 50);
-            } else if (gameState === 'playing') {
-                // Draw background
-                ctx.fillStyle = '#7cfc00';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                // Draw decorations (non-collidable)
-                ctx.fillStyle = '#4682b4';
-                ctx.beginPath();
-                ctx.arc(850, 300, 50, 0, Math.PI * 2); // Pond
-                ctx.fill();
-                ctx.fillStyle = '#sienna';
-                ctx.fillRect(0, 500, 1024, 50); // Path
-
-                // Draw obstacles
-                for (let obs of obstacles) {
-                    if (obs.type === 'castle') drawCastle(obs.x, obs.y, obs.width, obs.height);
-                    else if (obs.type === 'house') drawHouse(obs.x, obs.y, obs.width, obs.height);
-                    else if (obs.type === 'tree') drawTree(obs.x, obs.y, obs.size);
-                    else if (obs.type === 'rock') drawRock(obs.x, obs.y, obs.size);
-                    else if (obs.type === 'fence') drawFence(obs.x, obs.y, obs.width, obs.height);
+        function drawWeather() {
+            if (weather.active && weather.type === 'rain') {
+                ctx.fillStyle = 'rgba(0, 0, 255, 0.3)';
+                for (let i = 0; i < 100; i++) {
+                    let x = Math.random() * canvas.width;
+                    let y = Math.random() * canvas.height;
+                    ctx.fillRect(x, y, 2, 10);
                 }
-
-                // Draw collectibles
-                for (let col of collectibles) {
-                    if (col.type === 'coin') drawCoin(col.x, col.y, col.size);
-                    else if (col.type === 'gem') drawGem(col.x, col.y, col.size);
-                    else if (col.type === 'flower') drawFlower(col.x, col.y, col.size);
-                    else if (col.type === 'star') drawStar(col.x, col.y, col.size);
-                }
-
-                // Draw princess
-                drawPrincess(princess.x, princess.y, princess.width, princess.height);
-
-                // Draw score
-                ctx.fillStyle = 'black';
-                ctx.font = '24px Arial';
-                ctx.textAlign = 'left';
-                ctx.fillText(`Score: ${score}`, 10, 30);
-            } else if (gameState === 'gameover') {
-                ctx.fillStyle = '#7cfc00';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                ctx.fillStyle = 'black';
-                ctx.font = '64px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('You win!', canvas.width / 2, canvas.height / 2 - 50);
-                ctx.font = '32px Arial';
-                ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
-                ctx.fillText('Press any key to restart', canvas.width / 2, canvas.height / 2 + 50);
             }
+        }
+
+        function drawUI() {
+            ctx.fillStyle = 'black';
+            ctx.font = '32px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Score: ${score}`, 20, 40);
+            ctx.fillText(`Jumps: ${jumps}`, 20, 80);
+            ctx.fillText(`Lives: ${lives}`, 20, 120);
+            ctx.fillText(`Level: ${level}`, 20, 160);
+        }
+
+        // Level progression
+        function loadLevel() {
+            platforms = [
+                {x: 0, y: 1000, width: 1920, height: 80, type: 'ground'},
+                {x: 300 + level * 100, y: 800 - level * 50, width: 250, height: 20, type: 'static'},
+                {x: 700 + level * 100, y: 600 - level * 50, width: 200, height: 20, type: 'moving', dx: 2 + level, minX: 700 + level * 100, maxX: 900 + level * 100},
+                {x: 1200 + level * 100, y: 400 - level * 50, width: 300, height: 20, type: 'static'}
+            ];
+            enemies = [
+                {x: 400 + level * 150, y: 950, width: 40, height: 40, speed: 3 + level, direction: 1, type: 'bat'},
+                {x: 800 + level * 150, y: 950, width: 50, height: 30, speed: 4 + level, direction: -1, type: 'roller'}
+            ];
+            collectibles = [
+                {x: 350 + level * 150, y: 750 - level * 50, size: 30, type: 'coin', points: 10},
+                {x: 750 + level * 150, y: 550 - level * 50, size: 30, type: 'tiara', effect: 'invincible'},
+                {x: 1300 + level * 150, y: 350 - level * 50, size: 30, type: 'slippers', effect: 'speed'}
+            ];
+            weather.active = level > 1; // Rain starts at level 2
         }
 
         // Game loop
         function gameLoop() {
-            update();
-            draw();
+            if (gameState === 'playing') {
+                updatePrincess();
+                moveEnemies();
+                movePlatforms();
+                checkCollectibles();
+                checkEnemyCollision();
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawWeather();
+                drawPlatforms();
+                drawCollectibles();
+                drawEnemies();
+                drawPrincess();
+                drawUI();
+
+                if (collectibles.length === 0) {
+                    level++;
+                    if (level > maxLevels) {
+                        gameState = 'gameover';
+                    } else {
+                        loadLevel();
+                        princess.x = 100;
+                        princess.y = 900;
+                    }
+                }
+            } else if (gameState === 'title') {
+                ctx.fillStyle = 'black';
+                ctx.font = '80px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Princess D: Royal Quest', canvas.width / 2, canvas.height / 2 - 100);
+                ctx.font = '40px Arial';
+                ctx.fillText('Press any key to start', canvas.width / 2, canvas.height / 2 + 50);
+                ctx.fillText('Controls: ← → to move, Space to jump, C to toss crown', canvas.width / 2, canvas.height / 2 + 100);
+                if (Object.values(keys).some(k => k)) gameState = 'playing';
+            } else if (gameState === 'gameover') {
+                ctx.fillStyle = 'black';
+                ctx.font = '80px Arial';
+                ctx.textAlign = 'center';
+                if (level > maxLevels) {
+                    ctx.fillText('Victory!', canvas.width / 2, canvas.height / 2 - 100);
+                    // Victory dance (simple animation)
+                    ctx.fillStyle = '#ff69b4';
+                    let danceX = canvas.width / 2 - 25 + Math.sin(Date.now() / 100) * 20;
+                    ctx.fillRect(danceX, canvas.height / 2 + 50, 50, 50);
+                } else {
+                    ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2 - 100);
+                }
+                ctx.font = '40px Arial';
+                ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2);
+                ctx.fillText(`Jumps: ${jumps}`, canvas.width / 2, canvas.height / 2 + 50);
+                ctx.fillText('Press any key to restart', canvas.width / 2, canvas.height / 2 + 100);
+                if (Object.values(keys).some(k => k)) {
+                    score = 0;
+                    jumps = 0;
+                    lives = 3;
+                    level = 1;
+                    princess = {x: 100, y: 900, width: 50, height: 50, speed: 6, velY: 0, jumping: false, grounded: false, invincible: false, speedBoost: false, crown: null};
+                    loadLevel();
+                    gameState = 'title';
+                }
+            }
             requestAnimationFrame(gameLoop);
         }
 
+        loadLevel();
         gameLoop();
     </script>
 </body>
