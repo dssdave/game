@@ -1,12 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Princess D</title>
     <style>
-        canvas {
-            border: 1px solid black;
-            image-rendering: pixelated;
-        }
         body {
             display: flex;
             justify-content: center;
@@ -15,171 +13,369 @@
             margin: 0;
             background-color: #87ceeb;
         }
+        canvas {
+            border: 1px solid black;
+            background-color: #7cfc00;
+        }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="640" height="480"></canvas>
+    <canvas id="gameCanvas" width="1024" height="768"></canvas>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const tileSize = 32;
         let score = 0;
+        let gameState = 'title';
 
-        let princess = { x: 320, y: 240, speed: 4 };
-        const items = [
-            {x: 100, y: 100, type: 'flower', points: 10, collected: false},
-            {x: 500, y: 150, type: 'coin', points: 20, collected: false},
-            {x: 200, y: 400, type: 'gem', points: 30, collected: false}
-        ];
+        // Princess properties
+        let princess = {
+            x: 512,
+            y: 384,
+            width: 40,
+            height: 40,
+            speed: 5
+        };
+
+        // Obstacles
         const obstacles = [
-            {x: 400, y: 200, width: 128, height: 128}, // Castle
-            {x: 150, y: 300, width: 96, height: 64},   // House
-            {x: 300, y: 100, width: 32, height: 32}    // Tree
+            // Castle
+            {x: 400, y: 50, width: 200, height: 150, type: 'castle'},
+            // Houses
+            {x: 100, y: 400, width: 150, height: 100, type: 'house'},
+            {x: 700, y: 300, width: 150, height: 100, type: 'house'},
+            // Trees
+            {x: 200, y: 150, size: 40, type: 'tree'},
+            {x: 600, y: 200, size: 40, type: 'tree'},
+            {x: 300, y: 600, size: 40, type: 'tree'},
+            {x: 800, y: 500, size: 40, type: 'tree'},
+            // Rocks
+            {x: 50, y: 250, size: 35, type: 'rock'},
+            {x: 900, y: 150, size: 35, type: 'rock'},
+            {x: 500, y: 700, size: 35, type: 'rock'},
+            // Fences
+            {x: 0, y: 650, width: 1024, height: 50, type: 'fence'},
+            {x: 250, y: 300, width: 150, height: 30, type: 'fence'}
         ];
 
+        // Collectibles
+        const initialCollectibles = [
+            // Coins (10 points)
+            {x: 100, y: 100, size: 20, type: 'coin', points: 10, width: 20, height: 20},
+            {x: 500, y: 150, size: 20, type: 'coin', points: 10, width: 20, height: 20},
+            {x: 700, y: 600, size: 20, type: 'coin', points: 10, width: 20, height: 20},
+            {x: 300, y: 250, size: 20, type: 'coin', points: 10, width: 20, height: 20},
+            {x: 850, y: 400, size: 20, type: 'coin', points: 10, width: 20, height: 20},
+            // Gems (20 points)
+            {x: 200, y: 500, size: 20, type: 'gem', points: 20, width: 20, height: 20},
+            {x: 600, y: 400, size: 20, type: 'gem', points: 20, width: 20, height: 20},
+            {x: 400, y: 700, size: 20, type: 'gem', points: 20, width: 20, height: 20},
+            {x: 900, y: 50, size: 20, type: 'gem', points: 20, width: 20, height: 20},
+            // Flowers (5 points)
+            {x: 150, y: 300, size: 20, type: 'flower', points: 5, width: 20, height: 20},
+            {x: 450, y: 200, size: 20, type: 'flower', points: 5, width: 20, height: 20},
+            {x: 750, y: 250, size: 20, type: 'flower', points: 5, width: 20, height: 20},
+            {x: 50, y: 600, size: 20, type: 'flower', points: 5, width: 20, height: 20},
+            {x: 950, y: 700, size: 20, type: 'flower', points: 5, width: 20, height: 20},
+            // Stars (50 points)
+            {x: 350, y: 400, size: 20, type: 'star', points: 50, width: 20, height: 20},
+            {x: 650, y: 100, size: 20, type: 'star', points: 50, width: 20, height: 20},
+            {x: 800, y: 650, size: 20, type: 'star', points: 50, width: 20, height: 20}
+        ];
+        let collectibles = [...initialCollectibles];
+
+        // Input handling
         const keys = {};
         document.addEventListener('keydown', (e) => keys[e.key] = true);
         document.addEventListener('keyup', (e) => keys[e.key] = false);
 
+        // Collision detection
+        function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) {
+            return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
+        }
+
+        // Check for collision with obstacles
         function checkCollision(newX, newY) {
-            for (let obstacle of obstacles) {
-                if (newX < obstacle.x + obstacle.width &&
-                    newX + tileSize > obstacle.x &&
-                    newY < obstacle.y + obstacle.height &&
-                    newY + tileSize > obstacle.y) {
+            for (let obs of obstacles) {
+                let obsWidth = obs.width || obs.size;
+                let obsHeight = obs.height || obs.size;
+                if (rectIntersect(newX, newY, princess.width, princess.height, obs.x, obs.y, obsWidth, obsHeight)) {
                     return true;
                 }
             }
             return false;
         }
 
-        function checkItemCollection() {
-            for (let item of items) {
-                if (!item.collected &&
-                    princess.x < item.x + tileSize &&
-                    princess.x + tileSize > item.x &&
-                    princess.y < item.y + tileSize &&
-                    princess.y + tileSize > item.y) {
-                    item.collected = true;
-                    score += item.points;
+        // Check for collectible pickup
+        function checkCollectibles() {
+            for (let i = collectibles.length - 1; i >= 0; i--) {
+                let col = collectibles[i];
+                if (rectIntersect(princess.x, princess.y, princess.width, princess.height, col.x, col.y, col.width, col.height)) {
+                    score += col.points;
+                    collectibles.splice(i, 1);
                 }
             }
+        }
+
+        // Reset game
+        function reset() {
+            score = 0;
+            collectibles = [...initialCollectibles];
+            princess.x = 512;
+            princess.y = 384;
+            gameState = 'playing';
         }
 
         // Drawing functions
-        function drawPrincess(x, y) {
+        function drawPrincess(x, y, w, h) {
             // Dress
             ctx.fillStyle = '#ff69b4';
-            ctx.fillRect(x + 8, y + 12, 16, 20);
+            ctx.fillRect(x + w / 4, y + h / 2, w / 2, h / 2);
             // Face
             ctx.fillStyle = '#ffdab9';
-            ctx.fillRect(x + 12, y + 4, 8, 8);
+            ctx.beginPath();
+            ctx.arc(x + w / 2, y + h / 4, w / 4, 0, Math.PI * 2);
+            ctx.fill();
             // Hair
             ctx.fillStyle = '#8b4513';
-            ctx.fillRect(x + 10, y, 12, 8);
+            ctx.fillRect(x + w / 4, y, w / 2, h / 4);
             // Crown
             ctx.fillStyle = '#ffd700';
-            ctx.fillRect(x + 12, y - 4, 8, 4);
-            ctx.fillRect(x + 10, y - 6, 12, 2);
+            ctx.beginPath();
+            ctx.moveTo(x + w / 4, y);
+            ctx.lineTo(x + w / 2, y - h / 8);
+            ctx.lineTo(x + 3 * w / 4, y);
+            ctx.closePath();
+            ctx.fill();
         }
 
-        function drawFlower(x, y) {
-            ctx.fillStyle = '#ff69b4';
-            ctx.fillRect(x + 12, y + 4, 8, 8);  // Flower head
-            ctx.fillStyle = '#ffff00';
-            ctx.fillRect(x + 14, y + 6, 4, 4);  // Center
-            ctx.fillStyle = '#00ff00';
-            ctx.fillRect(x + 15, y + 12, 2, 12); // Stem
-        }
-
-        function drawCoin(x, y) {
-            ctx.fillStyle = '#ffd700';
-            ctx.fillRect(x + 10, y + 4, 12, 12);
-            ctx.fillStyle = '#ffa500';
-            ctx.fillRect(x + 12, y + 6, 8, 8);
-        }
-
-        function drawGem(x, y) {
-            ctx.fillStyle = '#00ffff';
-            ctx.fillRect(x + 12, y + 2, 8, 12);
-            ctx.fillRect(x + 10, y + 4, 12, 8);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(x + 14, y + 6, 4, 2);
-        }
-
-        function drawCastle(x, y) {
+        function drawCastle(x, y, w, h) {
             ctx.fillStyle = '#808080';
-            ctx.fillRect(x, y, 128, 128);        // Main building
+            ctx.fillRect(x, y, w, h);
+            // Towers
+            ctx.fillRect(x - 10, y - 20, 20, 20);
+            ctx.fillRect(x + w - 10, y - 20, 20, 20);
+            // Details
             ctx.fillStyle = '#696969';
-            ctx.fillRect(x + 20, y - 20, 20, 20); // Tower 1
-            ctx.fillRect(x + 88, y - 20, 20, 20); // Tower 2
-            ctx.fillStyle = '#ff0000';
-            ctx.fillRect(x + 22, y - 24, 16, 4);  // Flag 1
-            ctx.fillRect(x + 90, y - 24, 16, 4);  // Flag 2
+            ctx.fillRect(x + w / 4, y + h - 20, w / 2, 10); // Door
         }
 
-        function drawHouse(x, y) {
+        function drawHouse(x, y, w, h) {
             ctx.fillStyle = '#8b4513';
-            ctx.fillRect(x, y, 96, 64);          // Main house
+            ctx.fillRect(x, y, w, h);
+            // Roof
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + w / 2, y - h / 2);
+            ctx.lineTo(x + w, y);
+            ctx.closePath();
             ctx.fillStyle = '#a0522d';
-            ctx.fillRect(x + 10, y - 20, 76, 20); // Roof
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(x + 40, y + 30, 16, 34); // Door
+            ctx.fill();
+            // Details
+            ctx.fillStyle = '#f5f5f5';
+            ctx.fillRect(x + w / 4, y + h / 4, w / 4, h / 4); // Window
         }
 
-        function drawTree(x, y) {
+        function drawTree(x, y, size) {
+            // Trunk
             ctx.fillStyle = '#8b4513';
-            ctx.fillRect(x + 12, y + 16, 8, 16);  // Trunk
-            ctx.fillStyle = '#006400';
-            ctx.fillRect(x, y, 32, 16);          // Foliage
-            ctx.fillRect(x + 8, y - 8, 16, 16);
+            ctx.fillRect(x + size / 3, y + size / 2, size / 3, size / 2);
+            // Leaves
+            ctx.fillStyle = '#228b22';
+            ctx.beginPath();
+            ctx.arc(x + size / 2, y + size / 4, size / 2, 0, Math.PI * 2);
+            ctx.fill();
         }
 
-        function gameLoop() {
-            let newX = princess.x;
-            let newY = princess.y;
-            
-            if (keys['ArrowUp']) newY -= princess.speed;
-            if (keys['ArrowDown']) newY += princess.speed;
-            if (keys['ArrowLeft']) newX -= princess.speed;
-            if (keys['ArrowRight']) newX += princess.speed;
-            
-            newX = Math.max(0, Math.min(canvas.width - tileSize, newX));
-            newY = Math.max(0, Math.min(canvas.height - tileSize, newY));
-            
-            if (!checkCollision(newX, newY)) {
-                princess.x = newX;
-                princess.y = newY;
+        function drawRock(x, y, size) {
+            ctx.fillStyle = '#696969';
+            ctx.beginPath();
+            ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawFence(x, y, w, h) {
+            ctx.fillStyle = '#a0522d';
+            ctx.fillRect(x, y, w, h);
+            // Posts
+            for (let i = 0; i < w; i += 50) {
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(x + i, y, 10, h);
             }
-            
-            checkItemCollection();
-            
-            // Draw background
-            ctx.fillStyle = '#7cfc00';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw obstacles
-            drawCastle(400, 200);
-            drawHouse(150, 300);
-            drawTree(300, 100);
-            
-            // Draw items
-            for (let item of items) {
-                if (!item.collected) {
-                    if (item.type === 'flower') drawFlower(item.x, item.y);
-                    else if (item.type === 'coin') drawCoin(item.x, item.y);
-                    else drawGem(item.x, item.y);
+        }
+
+        function drawCoin(x, y, size) {
+            ctx.fillStyle = '#ffd700';
+            ctx.beginPath();
+            ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffa500';
+            ctx.beginPath();
+            ctx.arc(x + size / 2, y + size / 2, size / 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawGem(x, y, size) {
+            ctx.fillStyle = '#00ffff';
+            ctx.beginPath();
+            ctx.moveTo(x + size / 2, y);
+            ctx.lineTo(x + size, y + size / 2);
+            ctx.lineTo(x + size / 2, y + size);
+            ctx.lineTo(x, y + size / 2);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawFlower(x, y, size) {
+            // Stem
+            ctx.fillStyle = '#228b22';
+            ctx.fillRect(x + size / 2 - 2, y + size / 2, 4, size / 2);
+            // Petals
+            ctx.fillStyle = '#ff69b4';
+            ctx.beginPath();
+            ctx.arc(x + size / 2, y + size / 4, size / 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawStar(x, y, size) {
+            ctx.fillStyle = '#ffd700';
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+                const innerAngle = angle + Math.PI / 5;
+                const r = size / 2;
+                const innerR = r / 2;
+                const px = x + size / 2 + Math.cos(angle) * r;
+                const py = y + size / 2 + Math.sin(angle) * r;
+                const innerPx = x + size / 2 + Math.cos(innerAngle) * innerR;
+                const innerPy = y + size / 2 + Math.sin(innerAngle) * innerR;
+                if (i === 0) {
+                    ctx.moveTo(px, py);
+                } else {
+                    ctx.lineTo(px, py);
+                }
+                ctx.lineTo(innerPx, innerPy);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Update game state
+        function update() {
+            if (gameState === 'title') {
+                if (Object.values(keys).some(k => k)) {
+                    reset();
+                }
+            } else if (gameState === 'playing') {
+                let dx = 0;
+                let dy = 0;
+                if (keys['ArrowLeft']) dx -= princess.speed;
+                if (keys['ArrowRight']) dx += princess.speed;
+                if (keys['ArrowUp']) dy -= princess.speed;
+                if (keys['ArrowDown']) dy += princess.speed;
+
+                let newX = princess.x + dx;
+                let newY = princess.y + dy;
+
+                if (!checkCollision(newX, newY)) {
+                    princess.x = newX;
+                    princess.y = newY;
+                }
+
+                // Clamp to screen bounds
+                princess.x = Math.max(0, Math.min(canvas.width - princess.width, princess.x));
+                princess.y = Math.max(0, Math.min(canvas.height - princess.height, princess.y));
+
+                checkCollectibles();
+
+                if (collectibles.length === 0) {
+                    gameState = 'gameover';
+                }
+            } else if (gameState === 'gameover') {
+                if (Object.values(keys).some(k => k)) {
+                    gameState = 'title';
                 }
             }
-            
-            // Draw princess
-            drawPrincess(princess.x, princess.y);
-            
-            // Draw score
-            ctx.fillStyle = 'black';
-            ctx.font = '20px Arial';
-            ctx.fillText(`Score: ${score}`, 10, 30);
-            
+        }
+
+        // Draw game elements
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (gameState === 'title') {
+                // Background
+                ctx.fillStyle = '#7cfc00';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Decorative elements
+                drawCoin(200, 200, 20);
+                drawGem(800, 200, 20);
+                drawFlower(300, 600, 20);
+                drawStar(700, 600, 20);
+                drawPrincess(canvas.width / 2 - 20, canvas.height / 2 - 100, 40, 40);
+
+                // Title text
+                ctx.fillStyle = 'black';
+                ctx.font = '64px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Princess D', canvas.width / 2, canvas.height / 2 - 50);
+                ctx.font = '32px Arial';
+                ctx.fillText('Press any key to start', canvas.width / 2, canvas.height / 2 + 50);
+            } else if (gameState === 'playing') {
+                // Draw background
+                ctx.fillStyle = '#7cfc00';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Draw decorations (non-collidable)
+                ctx.fillStyle = '#4682b4';
+                ctx.beginPath();
+                ctx.arc(850, 300, 50, 0, Math.PI * 2); // Pond
+                ctx.fill();
+                ctx.fillStyle = '#sienna';
+                ctx.fillRect(0, 500, 1024, 50); // Path
+
+                // Draw obstacles
+                for (let obs of obstacles) {
+                    if (obs.type === 'castle') drawCastle(obs.x, obs.y, obs.width, obs.height);
+                    else if (obs.type === 'house') drawHouse(obs.x, obs.y, obs.width, obs.height);
+                    else if (obs.type === 'tree') drawTree(obs.x, obs.y, obs.size);
+                    else if (obs.type === 'rock') drawRock(obs.x, obs.y, obs.size);
+                    else if (obs.type === 'fence') drawFence(obs.x, obs.y, obs.width, obs.height);
+                }
+
+                // Draw collectibles
+                for (let col of collectibles) {
+                    if (col.type === 'coin') drawCoin(col.x, col.y, col.size);
+                    else if (col.type === 'gem') drawGem(col.x, col.y, col.size);
+                    else if (col.type === 'flower') drawFlower(col.x, col.y, col.size);
+                    else if (col.type === 'star') drawStar(col.x, col.y, col.size);
+                }
+
+                // Draw princess
+                drawPrincess(princess.x, princess.y, princess.width, princess.height);
+
+                // Draw score
+                ctx.fillStyle = 'black';
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(`Score: ${score}`, 10, 30);
+            } else if (gameState === 'gameover') {
+                ctx.fillStyle = '#7cfc00';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = 'black';
+                ctx.font = '64px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('You win!', canvas.width / 2, canvas.height / 2 - 50);
+                ctx.font = '32px Arial';
+                ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
+                ctx.fillText('Press any key to restart', canvas.width / 2, canvas.height / 2 + 50);
+            }
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
             requestAnimationFrame(gameLoop);
         }
 
