@@ -1,42 +1,145 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Click the Box Game</title>
+    <title>Princess D</title>
     <style>
-        body { text-align: center; font-family: Arial, sans-serif; }
-        #gameBox {
-            width: 50px; height: 50px;
-            background-color: red;
-            position: absolute;
-            top: 50px; left: 50px;
-            cursor: pointer;
+        canvas {
+            border: 1px solid black;
+            image-rendering: pixelated;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #87ceeb;
         }
     </style>
 </head>
 <body>
-    <h1>Click the Box!</h1>
-    <p>Score: <span id="score">0</span></p>
-    <div id="gameBox"></div>
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
     <script>
-        let score = 0;
-        const box = document.getElementById("gameBox");
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
         
-        function moveBox() {
-            const x = Math.random() * (window.innerWidth - 50);
-            const y = Math.random() * (window.innerHeight - 50);
-            box.style.left = `${x}px`;
-            box.style.top = `${y}px`;
+        // Game variables
+        const tileSize = 32;
+        let score = 0;
+        
+        // Princess position and movement
+        let princess = {
+            x: 320,
+            y: 240,
+            speed: 4
+        };
+        
+        // Collectible items
+        const items = [
+            {x: 100, y: 100, type: 'flower', points: 10, collected: false},
+            {x: 500, y: 150, type: 'coin', points: 20, collected: false},
+            {x: 200, y: 400, type: 'gem', points: 30, collected: false}
+        ];
+        
+        // Obstacles (castle, house, trees)
+        const obstacles = [
+            {x: 400, y: 200, width: 128, height: 128}, // Castle
+            {x: 150, y: 300, width: 96, height: 64},   // House
+            {x: 300, y: 100, width: 32, height: 32}    // Tree
+        ];
+        
+        // Controls
+        const keys = {};
+        document.addEventListener('keydown', (e) => keys[e.key] = true);
+        document.addEventListener('keyup', (e) => keys[e.key] = false);
+        
+        // Simple collision detection
+        function checkCollision(newX, newY) {
+            for (let obstacle of obstacles) {
+                if (newX < obstacle.x + obstacle.width &&
+                    newX + tileSize > obstacle.x &&
+                    newY < obstacle.y + obstacle.height &&
+                    newY + tileSize > obstacle.y) {
+                    return true;
+                }
+            }
+            return false;
         }
         
-        box.addEventListener("click", () => {
-            score++;
-            document.getElementById("score").textContent = score;
-            moveBox();
-        });
+        // Check item collection
+        function checkItemCollection() {
+            for (let item of items) {
+                if (!item.collected &&
+                    princess.x < item.x + tileSize &&
+                    princess.x + tileSize > item.x &&
+                    princess.y < item.y + tileSize &&
+                    princess.y + tileSize > item.y) {
+                    item.collected = true;
+                    score += item.points;
+                }
+            }
+        }
         
-        moveBox();
+        // Game loop
+        function gameLoop() {
+            // Handle movement
+            let newX = princess.x;
+            let newY = princess.y;
+            
+            if (keys['ArrowUp']) newY -= princess.speed;
+            if (keys['ArrowDown']) newY += princess.speed;
+            if (keys['ArrowLeft']) newX -= princess.speed;
+            if (keys['ArrowRight']) newX += princess.speed;
+            
+            // Keep within bounds and check collisions
+            newX = Math.max(0, Math.min(canvas.width - tileSize, newX));
+            newY = Math.max(0, Math.min(canvas.height - tileSize, newY));
+            
+            if (!checkCollision(newX, newY)) {
+                princess.x = newX;
+                princess.y = newY;
+            }
+            
+            checkItemCollection();
+            
+            // Draw everything
+            ctx.fillStyle = '#7cfc00';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw obstacles
+            ctx.fillStyle = '#808080';
+            obstacles[0] = ctx.fillRect(400, 200, 128, 128); // Castle
+            ctx.fillStyle = '#8b4513';
+            obstacles[1] = ctx.fillRect(150, 300, 96, 64);   // House
+            ctx.fillStyle = '#006400';
+            obstacles[2] = ctx.fillRect(300, 100, 32, 32);   // Tree
+            
+            // Draw items
+            for (let item of items) {
+                if (!item.collected) {
+                    if (item.type === 'flower') ctx.fillStyle = '#ff69b4';
+                    else if (item.type === 'coin') ctx.fillStyle = '#ffd700';
+                    else ctx.fillStyle = '#00ffff';
+                    ctx.fillRect(item.x, item.y, tileSize/2, tileSize/2);
+                }
+            }
+            
+            // Draw princess (simple pink square with crown)
+            ctx.fillStyle = '#ff1493';
+            ctx.fillRect(princess.x, princess.y, tileSize, tileSize);
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(princess.x + 8, princess.y - 8, 16, 8);
+            
+            // Draw score
+            ctx.fillStyle = 'black';
+            ctx.font = '20px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 30);
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Start game
+        gameLoop();
     </script>
 </body>
 </html>
