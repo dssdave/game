@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Town Explorer RPG</title>
+    <title>Princess Adventure - Enhanced Edition</title>
     <style>
         body {
             display: flex;
@@ -11,7 +11,7 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #87ceeb; /* Sky blue background */
+            background-color: #87ceeb; /* Light blue sky */
         }
         canvas {
             border: 1px solid black;
@@ -19,180 +19,115 @@
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
+    <canvas id="gameCanvas" width="1024" height="1024"></canvas>
     <script>
-        // Initialize canvas and context
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const tileSize = 32; // Size of each tile in pixels
-        let gameState = 'town'; // Current area (starts in town)
-        let playerX = tileSize * 2; // Player's initial x position (pixels)
-        let playerY = tileSize * 2; // Player's initial y position (pixels)
-        const playerWidth = tileSize; // Player size matches tile for simplicity
-        const playerHeight = tileSize;
-        const speed = 4; // Movement speed in pixels per frame
+        const tileSize = 32; // Each tile is 32x32 pixels
+        const mapSize = 32;  // 32x32 tile grid for a 1024x1024 canvas
 
-        // Define maps for town and buildings
-        const maps = {
-            'town': {
-                'grid': [
-                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-                    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                    [1,0,1,1,1,0,1,1,1,0,1,0,0,0,1],
-                    [1,0,1,2,1,0,1,2,1,0,1,0,0,0,1],
-                    [1,0,1,1,1,0,1,1,1,0,1,0,0,0,1],
-                    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                    [1,0,1,1,1,0,1,1,1,0,1,0,0,0,1],
-                    [1,0,1,2,1,0,1,2,1,0,1,0,0,0,1],
-                    [1,0,1,1,1,0,1,1,1,0,1,0,0,0,1],
-                    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-                ],
-                'tileSet': {
-                    0: 'green',    // Ground
-                    1: 'gray',     // Walls
-                    2: 'blue'      // Doors
-                }
-            },
-            'shop': {
-                'grid': [
-                    [1,1,1,1,1],
-                    [1,0,0,0,1],
-                    [1,0,3,0,1],
-                    [1,0,0,0,1],
-                    [1,1,1,1,1]
-                ],
-                'tileSet': {
-                    0: 'brown',    // Floor
-                    1: 'gray',     // Walls
-                    3: 'red'       // Exit door
-                }
-            },
-            'house': {
-                'grid': [
-                    [1,1,1,1],
-                    [1,0,0,1],
-                    [1,0,3,1],
-                    [1,1,1,1]
-                ],
-                'tileSet': {
-                    0: 'purple',   // Floor
-                    1: 'gray',     // Walls
-                    3: 'red'       // Exit door
-                }
-            }
+        // Define the game map (0: grass, 1: wall, 2: water)
+        const map = Array.from({ length: mapSize }, () => Array(mapSize).fill(0));
+        // Add some walls and water for variety
+        for (let i = 5; i < 10; i++) map[5][i] = 1; // Horizontal wall
+        for (let i = 15; i < 20; i++) map[i][10] = 1; // Vertical wall
+        map[8][8] = 2; // Water feature
+        map[20][20] = 2; // Another water feature
+
+        // Princess properties
+        let princess = {
+            x: 1 * tileSize,
+            y: 1 * tileSize,
+            width: tileSize,
+            height: tileSize,
+            speed: 4 // Pixels per frame
         };
-
-        // Define door mappings (area transitions)
-        const doors = {
-            'town_3_3': ['shop', 2, 1],    // Town door 1 to shop
-            'shop_2_2': ['town', 3, 3],    // Shop exit to town
-            'town_7_3': ['house', 1, 1],   // Town door 2 to house
-            'house_2_2': ['town', 7, 3],   // House exit to town
-            'town_3_7': ['shop', 2, 1],    // Town door 3 to shop
-            'town_7_7': ['house', 1, 1]    // Town door 4 to house
-        };
-
-        // Set initial map and canvas size
-        let currentMap = maps[gameState];
-        canvas.width = currentMap['grid'][0].length * tileSize;
-        canvas.height = currentMap['grid'].length * tileSize;
 
         // Handle keyboard input
         const keys = {};
         document.addEventListener('keydown', (e) => keys[e.key] = true);
         document.addEventListener('keyup', (e) => keys[e.key] = false);
 
-        // Check for collisions with walls
-        function isColliding(rect) {
-            const grid = currentMap['grid'];
-            for (let row = 0; row < grid.length; row++) {
-                for (let col = 0; col < grid[row].length; col++) {
-                    if (grid[row][col] === 1) { // Wall tile
-                        const tileX = col * tileSize;
-                        const tileY = row * tileSize;
-                        if (rect.x < tileX + tileSize &&
-                            rect.x + rect.width > tileX &&
-                            rect.y < tileY + tileSize &&
-                            rect.y + rect.height > tileY) {
-                            return true;
-                        }
-                    }
-                }
-            }
-            return false;
+        // Collision detection
+        function isColliding(x, y) {
+            const tileX = Math.floor(x / tileSize);
+            const tileY = Math.floor(y / tileSize);
+            if (tileX < 0 || tileX >= mapSize || tileY < 0 || tileY >= mapSize) return true;
+            return map[tileY][tileX] === 1; // Wall
         }
 
-        // Update game state
-        function update() {
+        // Update princess position
+        function updatePrincess() {
             let dx = 0;
             let dy = 0;
-            if (keys['ArrowLeft']) dx -= speed;
-            if (keys['ArrowRight']) dx += speed;
-            if (keys['ArrowUp']) dy -= speed;
-            if (keys['ArrowDown']) dy += speed;
+            if (keys['ArrowLeft']) dx -= princess.speed;
+            if (keys['ArrowRight']) dx += princess.speed;
+            if (keys['ArrowUp']) dy -= princess.speed;
+            if (keys['ArrowDown']) dy += princess.speed;
 
-            // Try horizontal movement
-            let newX = playerX + dx;
-            let horizontalRect = {x: newX, y: playerY, width: playerWidth, height: playerHeight};
-            if (!isColliding(horizontalRect)) {
-                playerX = newX;
+            // Check horizontal movement
+            let newX = princess.x + dx;
+            if (!isColliding(newX, princess.y) && !isColliding(newX + princess.width, princess.y)) {
+                princess.x = newX;
             }
 
-            // Try vertical movement
-            let newY = playerY + dy;
-            let verticalRect = {x: playerX, y: newY, width: playerWidth, height: playerHeight};
-            if (!isColliding(verticalRect)) {
-                playerY = newY;
+            // Check vertical movement
+            let newY = princess.y + dy;
+            if (!isColliding(princess.x, newY) && !isColliding(princess.x, newY + princess.height)) {
+                princess.y = newY;
             }
 
-            // Keep player within map bounds
-            playerX = Math.max(0, Math.min(playerX, canvas.width - playerWidth));
-            playerY = Math.max(0, Math.min(playerY, canvas.height - playerHeight));
-
-            // Handle door interaction
-            if (keys[' ']) {
-                let playerTileX = Math.floor((playerX + playerWidth / 2) / tileSize);
-                let playerTileY = Math.floor((playerY + playerHeight / 2) / tileSize);
-                let doorKey = `${gameState}_${playerTileX}_${playerTileY}`;
-                if (doorKey in doors) {
-                    let [targetArea, targetX, targetY] = doors[doorKey];
-                    gameState = targetArea;
-                    currentMap = maps[gameState];
-                    // Update canvas size for new area
-                    canvas.width = currentMap['grid'][0].length * tileSize;
-                    canvas.height = currentMap['grid'].length * tileSize;
-                    playerX = targetX * tileSize;
-                    playerY = targetY * tileSize;
-                }
-            }
+            // Keep princess within bounds
+            princess.x = Math.max(0, Math.min(princess.x, canvas.width - princess.width));
+            princess.y = Math.max(0, Math.min(princess.y, canvas.height - princess.height));
         }
 
-        // Render the current area
-        function draw() {
-            // Clear the screen for a fresh transition
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw the map
-            const grid = currentMap['grid'];
-            const tileSet = currentMap['tileSet'];
-            for (let row = 0; row < grid.length; row++) {
-                for (let col = 0; col < grid[row].length; col++) {
-                    let tileType = grid[row][col];
-                    ctx.fillStyle = tileSet[tileType];
+        // Draw the map
+        function drawMap() {
+            for (let row = 0; row < mapSize; row++) {
+                for (let col = 0; col < mapSize; col++) {
+                    const tile = map[row][col];
+                    let color;
+                    switch (tile) {
+                        case 0: // Grass
+                            color = `hsl(120, 50%, ${50 + Math.random() * 10}%)`; // Varied green
+                            break;
+                        case 1: // Wall
+                            color = '#888'; // Gray wall
+                            break;
+                        case 2: // Water
+                            color = 'blue';
+                            break;
+                    }
+                    ctx.fillStyle = color;
                     ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
                 }
             }
+        }
 
-            // Draw the player
-            ctx.fillStyle = 'red';
-            ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
+        // Draw the princess (placeholder for detailed sprite)
+        function drawPrincess() {
+            // Body (gown)
+            ctx.fillStyle = '#ff69b4'; // Pink gown
+            ctx.fillRect(princess.x + 8, princess.y + 16, 16, 16);
+            // Head
+            ctx.fillStyle = '#ffdab9'; // Skin tone
+            ctx.beginPath();
+            ctx.arc(princess.x + 16, princess.y + 8, 8, 0, Math.PI * 2);
+            ctx.fill();
+            // Hair
+            ctx.fillStyle = '#8b4513'; // Brown hair
+            ctx.fillRect(princess.x + 8, princess.y, 16, 8);
+            // Crown
+            ctx.fillStyle = '#ffd700'; // Gold crown
+            ctx.fillRect(princess.x + 12, princess.y - 4, 8, 4);
         }
 
         // Main game loop
         function gameLoop() {
-            update();
-            draw();
+            updatePrincess();
+            drawMap();
+            drawPrincess();
             requestAnimationFrame(gameLoop);
         }
 
