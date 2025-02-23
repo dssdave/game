@@ -1,177 +1,263 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Princess RPG</title>
+    <title>Princess RPG Enhanced</title>
     <style>
-        canvas {
-            border: 1px solid black;
-        }
-        #game-container {
+        #gameContainer {
             text-align: center;
             font-family: Arial, sans-serif;
         }
-        #inventory {
+        canvas {
+            border: 1px solid black;
+        }
+        #ui {
             margin-top: 10px;
             font-size: 18px;
         }
     </style>
 </head>
 <body>
-    <div id="game-container">
+    <div id="gameContainer">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
-        <div id="inventory">
-            Flowers: <span id="flowerCount">0</span> | 
-            Coins: <span id="coinCount">0</span>
+        <div id="ui">
+            Flowers: <span id="flowers">0</span> |
+            Coins: <span id="coins">0</span> |
+            Location: <span id="location">Town</span>
         </div>
     </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        
+        const TILE_SIZE = 32;
+        const GRID_WIDTH = 25;
+        const GRID_HEIGHT = 18;
+
         // Game state
-        let gameState = {
-            currentScene: 'town',
-            flowers: 0,
-            coins: 0
-        };
+        class Game {
+            constructor() {
+                this.scene = 'town';
+                this.flowers = 0;
+                this.coins = 0;
+                this.player = {
+                    x: 12 * TILE_SIZE,
+                    y: 9 * TILE_SIZE,
+                    speed: 3,
+                    frame: 0,
+                    direction: 'down'
+                };
+            }
+        }
 
-        // Player properties
-        const player = {
-            x: 400,
-            y: 300,
-            width: 32,
-            height: 32,
-            speed: 4
-        };
+        let game = new Game();
 
-        // Game objects
-        const objects = {
+        // Tile map (0=grass, 1=path, 2=water, 3=building, 4=door, 5=flower, 6=coin)
+        const maps = {
             town: [
-                // Castle
-                {type: 'building', x: 600, y: 100, width: 100, height: 150, interior: 'castle'},
-                // House
-                {type: 'building', x: 100, y: 400, width: 80, height: 60, interior: 'house'},
-                // Flowers
-                {type: 'flower', x: 200, y: 200, width: 20, height: 20},
-                {type: 'flower', x: 300, y: 250, width: 20, height: 20},
-                // Coins
-                {type: 'coin', x: 400, y: 150, width: 20, height: 20},
-                {type: 'coin', x: 500, y: 400, width: 20, height: 20}
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+                [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                [2,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,2],
+                [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,2],
+                [2,0,1,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,2],
+                [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,6,0,2],
+                [2,0,1,0,0,0,0,0,0,0,3,3,3,3,3,0,0,0,0,1,0,0,0,0,2],
+                [2,0,1,0,0,0,0,0,0,0,3,4,3,0,0,0,0,0,0,1,0,0,0,0,2],
+                [2,0,1,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,1,0,0,0,0,2],
+                [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,2],
+                [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,1,0,5,0,0,2],
+                [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,2],
+                [2,0,1,0,0,0,0,0,0,0,0,3,3,0,0,0,0,0,0,1,0,0,0,0,2],
+                [2,0,1,0,0,0,0,0,0,0,0,3,4,0,0,0,0,0,0,1,0,0,0,0,2],
+                [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,2],
+                [2,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,2],
+                [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
             ],
             castle: [
-                {type: 'door', x: 380, y: 500, width: 40, height: 40, destination: 'town'}
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,1,0],
+                [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
             ],
             house: [
-                {type: 'door', x: 380, y: 500, width: 40, height: 40, destination: 'town'}
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,1,0],
+                [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
             ]
         };
 
-        // Simple sprite drawing functions
-        function drawSprite(type, x, y, width, height) {
+        // Input handling
+        const keys = {};
+        document.addEventListener('keydown', (e) => keys[e.key] = true);
+        document.addEventListener('keyup', (e) => keys[e.key] = false);
+
+        // Drawing functions
+        function drawTile(type, x, y) {
             ctx.save();
             switch(type) {
-                case 'player':
-                    ctx.fillStyle = '#ff69b4'; // Pink princess dress
-                    ctx.fillRect(x, y, width, height);
-                    ctx.fillStyle = '#ffd700'; // Golden crown
-                    ctx.fillRect(x + 10, y - 10, 12, 10);
+                case 0: // Grass
+                    ctx.fillStyle = '#90ee90';
+                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     break;
-                case 'building':
+                case 1: // Path
+                    ctx.fillStyle = '#d2b48c';
+                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                    break;
+                case 2: // Water
+                    ctx.fillStyle = '#87ceeb';
+                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                    break;
+                case 3: // Building wall
                     ctx.fillStyle = '#808080';
-                    ctx.fillRect(x, y, width, height);
-                    ctx.fillStyle = '#ff0000'; // Door
-                    ctx.fillRect(x + width/2 - 10, y + height - 20, 20, 20);
+                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     break;
-                case 'flower':
+                case 4: // Door
+                    ctx.fillStyle = '#8b4513';
+                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                    break;
+                case 5: // Flower
                     ctx.fillStyle = '#ff00ff';
                     ctx.beginPath();
-                    ctx.arc(x + width/2, y + height/2, width/2, 0, Math.PI * 2);
+                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/3, 0, Math.PI * 2);
                     ctx.fill();
                     break;
-                case 'coin':
+                case 6: // Coin
                     ctx.fillStyle = '#ffd700';
                     ctx.beginPath();
-                    ctx.arc(x + width/2, y + height/2, width/2, 0, Math.PI * 2);
+                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/3, 0, Math.PI * 2);
                     ctx.fill();
-                    break;
-                case 'door':
-                    ctx.fillStyle = '#8b4513';
-                    ctx.fillRect(x, y, width, height);
                     break;
             }
             ctx.restore();
         }
 
-        // Collision detection
-        function checkCollision(obj1, obj2) {
-            return obj1.x < obj2.x + obj2.width &&
-                   obj1.x + obj1.width > obj2.x &&
-                   obj1.y < obj2.y + obj2.height &&
-                   obj1.y + obj1.height > obj2.y;
+        function drawPlayer(x, y, frame, direction) {
+            ctx.save();
+            // Body
+            ctx.fillStyle = '#ff69b4';
+            ctx.fillRect(x + 8, y + 8, 16, 24);
+            // Crown
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(x + 10, y, 12, 8);
+            // Face
+            ctx.fillStyle = '#ffe4c4';
+            ctx.fillRect(x + 12, y + 10, 8, 6);
+            // Walking animation
+            if (frame > 15) {
+                ctx.fillStyle = '#ff69b4';
+                ctx.fillRect(x + (direction === 'left' ? 4 : 20), y + 24, 8, 8);
+            }
+            ctx.restore();
         }
 
-        // Keyboard controls
-        const keys = {};
-        document.addEventListener('keydown', (e) => keys[e.key] = true);
-        document.addEventListener('keyup', (e) => keys[e.key] = false);
+        // Collision detection
+        function isCollision(x, y) {
+            const gridX = Math.floor(x / TILE_SIZE);
+            const gridY = Math.floor(y / TILE_SIZE);
+            const tile = maps[game.scene][gridY][gridX];
+            return tile === 2 || tile === 3; // Water or building wall
+        }
 
+        // Game logic
         function update() {
-            // Movement
-            if (keys['ArrowUp']) player.y -= player.speed;
-            if (keys['ArrowDown']) player.y += player.speed;
-            if (keys['ArrowLeft']) player.x -= player.speed;
-            if (keys['ArrowRight']) player.x += player.speed;
+            let newX = game.player.x;
+            let newY = game.player.y;
 
-            // Keep player in bounds
-            player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
-            player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+            if (keys['ArrowUp']) {
+                newY -= game.player.speed;
+                game.player.direction = 'up';
+            }
+            if (keys['ArrowDown']) {
+                newY += game.player.speed;
+                game.player.direction = 'down';
+            }
+            if (keys['ArrowLeft']) {
+                newX -= game.player.speed;
+                game.player.direction = 'left';
+            }
+            if (keys['ArrowRight']) {
+                newX += game.player.speed;
+                game.player.direction = 'right';
+            }
 
-            // Check collisions
-            const currentObjects = objects[gameState.currentScene];
-            for (let i = currentObjects.length - 1; i >= 0; i--) {
-                const obj = currentObjects[i];
-                if (checkCollision(player, obj)) {
-                    switch(obj.type) {
-                        case 'flower':
-                            gameState.flowers++;
-                            currentObjects.splice(i, 1);
-                            break;
-                        case 'coin':
-                            gameState.coins++;
-                            currentObjects.splice(i, 1);
-                            break;
-                        case 'building':
-                            gameState.currentScene = obj.interior;
-                            player.x = 400;
-                            player.y = 300;
-                            break;
-                        case 'door':
-                            gameState.currentScene = obj.destination;
-                            player.x = 400;
-                            player.y = 300;
-                            break;
-                    }
+            // Check collisions and interactions
+            if (!isCollision(newX, newY) && !isCollision(newX + TILE_SIZE - 1, newY) &&
+                !isCollision(newX, newY + TILE_SIZE - 1) && !isCollision(newX + TILE_SIZE - 1, newY + TILE_SIZE - 1)) {
+                game.player.x = Math.max(0, Math.min(canvas.width - TILE_SIZE, newX));
+                game.player.y = Math.max(0, Math.min(canvas.height - TILE_SIZE, newY));
+            }
+
+            const gridX = Math.floor(game.player.x / TILE_SIZE);
+            const gridY = Math.floor(game.player.y / TILE_SIZE);
+            const tile = maps[game.scene][gridY][gridX];
+
+            // Handle interactions
+            if (tile === 4) { // Door
+                if (game.scene === 'town') {
+                    game.scene = gridY === 7 ? 'castle' : 'house';
+                } else {
+                    game.scene = 'town';
                 }
+                game.player.x = 12 * TILE_SIZE;
+                game.player.y = 9 * TILE_SIZE;
+            } else if (tile === 5) { // Flower
+                game.flowers++;
+                maps[game.scene][gridY][gridX] = 0;
+            } else if (tile === 6) { // Coin
+                game.coins++;
+                maps[game.scene][gridY][gridX] = 0;
+            }
+
+            // Update animation frame
+            if (Object.values(keys).some(k => k)) {
+                game.player.frame = (game.player.frame + 1) % 30;
             }
         }
 
         function draw() {
-            // Clear canvas
-            ctx.fillStyle = gameState.currentScene === 'town' ? '#90ee90' : '#deb887';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw objects
-            objects[gameState.currentScene].forEach(obj => {
-                drawSprite(obj.type, obj.x, obj.y, obj.width, obj.height);
-            });
+            // Draw map
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    drawTile(maps[game.scene][y][x], x * TILE_SIZE, y * TILE_SIZE);
+                }
+            }
 
             // Draw player
-            drawSprite('player', player.x, player.y, player.width, player.height);
+            drawPlayer(game.player.x, game.player.y, game.player.frame, game.player.direction);
 
-            // Update inventory display
-            document.getElementById('flowerCount').textContent = gameState.flowers;
-            document.getElementById('coinCount').textContent = gameState.coins;
+            // Update UI
+            document.getElementById('flowers').textContent = game.flowers;
+            document.getElementById('coins').textContent = game.coins;
+            document.getElementById('location').textContent = game.scene.charAt(0).toUpperCase() + game.scene.slice(1);
         }
 
         function gameLoop() {
@@ -180,7 +266,6 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Start the game
         gameLoop();
     </script>
 </body>
