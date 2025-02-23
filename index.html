@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Princess RPG - Final Fantasy NES Style</title>
+    <title>Princess RPG - NES Final Fantasy Style</title>
     <style>
         body {
             display: flex;
@@ -11,21 +11,23 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background: linear-gradient(to bottom, #87ceeb, #e0ffff);
+            background: linear-gradient(to bottom, #87ceeb, #e0ffff); /* NES sky */
         }
         canvas {
             border: 1px solid black;
-            background-color: #32cd32;
+            background-color: #32cd32; /* Grass base */
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="640" height="480"></canvas>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = false; // Crisp pixel art
-        const tileSize = 16;
+        const tileSize = 16; // NES standard 16x16 tiles
+        const mapWidth = 50;
+        const mapHeight = 37;
 
         // Game state
         let score = 0;
@@ -36,8 +38,10 @@
         let targetScene = '';
         let questActive = false;
         let questItems = 0;
+        let playerHP = 100;
+        let enemyHP = 20;
 
-        // Colors
+        // Colors (NES palette-like)
         const colors = {
             grass: '#32cd32',
             path: '#cd853f',
@@ -56,41 +60,42 @@
             exitDoor: '#ff4500'
         };
 
-        // Define maps (40x30 for town, 20x15 for interiors)
-        const townMap = Array(30).fill().map(() => Array(40).fill(0)); // Grass base
-        const castleMap = Array(15).fill().map(() => Array(20).fill(6)); // Floor base
-        const houseMap = Array(15).fill().map(() => Array(20).fill(6)); // Floor base
+        // Define maps
+        const townMap = Array(mapHeight).fill().map(() => Array(mapWidth).fill(0)); // Grass base
+        const castleMap = Array(15).fill().map(() => Array(30).fill(5)); // Floor base
+        const houseMap = Array(12).fill().map(() => Array(25).fill(5)); // Floor base
 
         // Town map details
-        for (let r = 10; r < 20; r++) for (let c = 10; c < 30; c++) townMap[r][c] = 1; // Path
-        for (let r = 0; r < 5; r++) for (let c = 0; c < 10; c++) townMap[r][c] = 2; // Water
-        for (let r = 25; r < 30; r++) for (let c = 30; c < 40; c++) townMap[r][c] = 3; // Mountain
-        townMap[9][7] = 4; // Castle door
-        townMap[22][31] = 5; // House door
+        for (let r = 15; r < 25; r++) for (let c = 15; c < 35; c++) townMap[r][c] = 1; // Path
+        for (let r = 5; r < 10; r++) for (let c = 5; c < 15; c++) townMap[r][c] = 2; // Water
+        for (let r = 30; r < 37; r++) for (let c = 35; c < 50; c++) townMap[r][c] = 3; // Mountain
+        townMap[10][10] = 4; // Castle door
+        townMap[20][40] = 4; // House door
 
         // Interior details
-        castleMap[7][10] = 7; // Exit door
-        houseMap[7][10] = 7; // Exit door
-        for (let c = 0; c < 20; c++) { castleMap[0][c] = 8; houseMap[0][c] = 8; } // Walls
+        for (let c = 0; c < 30; c++) castleMap[0][c] = 6; // Castle walls
+        for (let c = 0; c < 25; c++) houseMap[0][c] = 6; // House walls
+        castleMap[7][15] = 7; // Castle exit
+        houseMap[6][12] = 7; // House exit
 
         // Items
         const townItems = [
-            {type: 'flower', row: 8, col: 12, points: 10, collected: false},
-            {type: 'coin', row: 15, col: 18, points: 5, collected: false},
-            {type: 'flower', row: 22, col: 25, points: 10, collected: false},
-            {type: 'coin', row: 28, col: 35, points: 5, collected: false}
+            {type: 'flower', row: 8, col: 18, points: 10, collected: false},
+            {type: 'coin', row: 15, col: 25, points: 5, collected: false},
+            {type: 'flower', row: 22, col: 30, points: 10, collected: false},
+            {type: 'coin', row: 28, col: 45, points: 5, collected: false}
         ];
 
         // NPCs
         const townNPCs = [
-            {row: 12, col: 15, dialogue: 'Welcome to Eldoria!', quest: false},
-            {row: 18, col: 28, dialogue: 'Find 3 flowers for me!', quest: true}
+            {row: 17, col: 20, dialogue: 'Welcome to Eldoria!', quest: false},
+            {row: 23, col: 38, dialogue: 'Find 3 flowers for me!', quest: true}
         ];
 
         // Enemies
         const townEnemies = [
-            {row: 14, col: 20, hp: 10, alive: true},
-            {row: 20, col: 35, hp: 15, alive: true}
+            {row: 18, col: 28, hp: 15, alive: true},
+            {row: 25, col: 45, hp: 15, alive: true}
         ];
 
         // Princess
@@ -120,11 +125,11 @@
         // Transitions
         const transitions = {
             town: [
-                {row: 9, col: 7, targetScene: 'castle', targetRow: 6, targetCol: 10},
-                {row: 22, col: 31, targetScene: 'house', targetRow: 6, targetCol: 10}
+                {row: 10, col: 10, targetScene: 'castle', targetRow: 6, targetCol: 15},
+                {row: 20, col: 40, targetScene: 'house', targetRow: 5, targetCol: 12}
             ],
-            castle: [{row: 7, col: 10, targetScene: 'town', targetRow: 10, targetCol: 7}],
-            house: [{row: 7, col: 10, targetScene: 'town', targetRow: 23, targetCol: 31}]
+            castle: [{row: 7, col: 15, targetScene: 'town', targetRow: 11, targetCol: 10}],
+            house: [{row: 6, col: 12, targetScene: 'town', targetRow: 21, targetCol: 40}]
         };
 
         // Helper functions
@@ -134,7 +139,7 @@
             const row = Math.floor((y + princess.height / 2) / tileSize);
             if (row < 0 || row >= scene.map.length || col < 0 || col >= scene.map[0].length) return false;
             const type = scene.map[row][col];
-            return ![2, 3, 8].includes(type); // Not water, mountain, or wall
+            return ![2, 3, 6].includes(type); // Not water, mountain, or wall
         }
 
         function checkItems() {
@@ -172,14 +177,23 @@
         function checkEnemies() {
             const enemies = scenes[currentScene].enemies;
             for (let enemy of enemies) {
-                if (enemy.alive && princess.tileRow === enemy.row && princess.tileCol === enemy.col && keys['Enter']) {
-                    enemy.hp -= 5;
-                    if (enemy.hp <= 0) {
-                        enemy.alive = false;
-                        score += 20;
-                        alert('Enemy defeated! +20 points');
-                    } else {
-                        alert(`Enemy HP: ${enemy.hp}`);
+                if (enemy.alive && princess.tileRow === enemy.row && princess.tileCol === enemy.col) {
+                    if (keys['Enter']) {
+                        enemy.hp -= 5;
+                        if (enemy.hp <= 0) {
+                            enemy.alive = false;
+                            score += 20;
+                            alert('Enemy defeated! +20 points');
+                        } else {
+                            alert(`Enemy HP: ${enemy.hp}`);
+                        }
+                    } else if (!keys['Enter']) {
+                        playerHP -= 2;
+                        alert(`You took damage! HP: ${playerHP}`);
+                        if (playerHP <= 0) {
+                            alert('Game Over! Press any key to restart.');
+                            resetGame();
+                        }
                     }
                 }
             }
@@ -194,6 +208,18 @@
                     fadeDirection = 1;
                 }
             }
+        }
+
+        function resetGame() {
+            score = 0;
+            playerHP = 100;
+            questActive = false;
+            questItems = 0;
+            townItems.forEach(item => item.collected = false);
+            townEnemies.forEach(enemy => { enemy.hp = 15; enemy.alive = true; });
+            princess.x = 2 * tileSize;
+            princess.y = 2 * tileSize;
+            currentScene = 'town';
         }
 
         function handleFade() {
@@ -211,7 +237,21 @@
             }
         }
 
-        // Drawing functions
+        // Drawing functions for NES-style detail
+        function drawBackground() {
+            // Sky and clouds
+            ctx.fillStyle = colors.white;
+            ctx.fillRect(0, 0, canvas.width, 100);
+            ctx.fillStyle = '#87ceeb';
+            ctx.fillRect(0, 100, canvas.width, canvas.height - 100);
+            ctx.fillStyle = colors.white;
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.arc(50 + i * 150, 50 + Math.random() * 20, 20, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
         function drawMap(map, offsetX, offsetY) {
             for (let r = 0; r < map.length; r++) {
                 for (let c = 0; c < map[r].length; c++) {
@@ -222,47 +262,77 @@
                             ctx.fillStyle = colors.grass;
                             ctx.fillRect(x, y, tileSize, tileSize);
                             ctx.fillStyle = '#228b22';
-                            for (let i = 0; i < 3; i++) ctx.fillRect(x + Math.random() * tileSize, y + Math.random() * tileSize, 1, 1);
+                            for (let i = 0; i < 3; i++) {
+                                ctx.fillRect(x + Math.random() * tileSize, y + Math.random() * tileSize, 1, 1);
+                            }
                             break;
                         case 1: // Path
                             ctx.fillStyle = colors.path;
                             ctx.fillRect(x, y, tileSize, tileSize);
+                            ctx.fillStyle = '#d2691e';
+                            for (let i = 0; i < tileSize; i += 2) {
+                                ctx.fillRect(x + i, y + i / 2, 1, 1);
+                            }
                             break;
                         case 2: // Water
                             ctx.fillStyle = colors.water;
                             ctx.fillRect(x, y, tileSize, tileSize);
                             ctx.fillStyle = colors.white;
-                            for (let i = 0; i < 2; i++) ctx.fillRect(x + Math.random() * tileSize, y + Math.random() * tileSize, 1, 1);
+                            for (let i = 0; i < 2; i++) {
+                                ctx.fillRect(x + Math.random() * tileSize, y + Math.random() * tileSize, 1, 1);
+                            }
                             break;
                         case 3: // Mountain
                             ctx.fillStyle = colors.mountain;
                             ctx.fillRect(x, y, tileSize, tileSize);
                             ctx.fillStyle = '#696969';
-                            for (let i = 0; i < tileSize; i += 2) ctx.fillRect(x + i, y + i / 2, 1, 1);
+                            for (let i = 0; i < tileSize; i += 2) {
+                                ctx.fillRect(x + i, y + i / 2, 1, 1);
+                            }
                             break;
-                        case 4: case 5: // Doors
+                        case 4: // Door
                             ctx.fillStyle = colors.door;
                             ctx.fillRect(x, y, tileSize, tileSize);
+                            ctx.fillStyle = '#00008b';
+                            ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
                             break;
-                        case 6: // Floor
+                        case 5: // Floor
                             ctx.fillStyle = colors.floor;
                             ctx.fillRect(x, y, tileSize, tileSize);
+                            ctx.fillStyle = '#a0522d';
+                            for (let i = 0; i < tileSize; i += 4) {
+                                ctx.fillRect(x + i, y + i / 2, 1, 1);
+                            }
                             break;
-                        case 7: // Exit door
-                            ctx.fillStyle = colors.exitDoor;
-                            ctx.fillRect(x, y, tileSize, tileSize);
-                            break;
-                        case 8: // Wall
+                        case 6: // Wall
                             ctx.fillStyle = colors.wall;
                             ctx.fillRect(x, y, tileSize, tileSize);
                             ctx.fillStyle = '#696969';
                             for (let i = 0; i < tileSize; i += 4) {
-                                ctx.fillRect(x, y + i, tileSize, 1);
+                                ctx.fillRect(x, y + i, 1, 1);
                                 ctx.fillRect(x + i, y, 1, tileSize);
                             }
                             break;
+                        case 7: // Exit door
+                            ctx.fillStyle = colors.exitDoor;
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            ctx.fillStyle = '#ff6347';
+                            ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+                            break;
                     }
                 }
+            }
+            if (currentScene === 'town') {
+                // Castle
+                ctx.fillStyle = '#696969';
+                ctx.fillRect(10 * tileSize, 5 * tileSize, tileSize * 5, tileSize * 3);
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(10 * tileSize + 2, 5 * tileSize - tileSize / 2, tileSize * 5 - 4, tileSize / 2);
+                // House
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(40 * tileSize, 15 * tileSize, tileSize * 3, tileSize * 2);
+                ctx.fillStyle = '#cd853f';
+                ctx.fillRect(40 * tileSize + 2, 15 * tileSize - tileSize / 2, tileSize * 3 - 4, tileSize / 2);
             }
         }
 
@@ -277,7 +347,7 @@
                         ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 4, 0, Math.PI * 2);
                         ctx.fill();
                         ctx.fillStyle = '#006400';
-                        ctx.fillRect(x + tileSize / 2 - 1, y + tileSize / 2, 2, tileSize / 2);
+                        ctx.fillRect(x + tileSize / 2 - 1, y + tileSize / 2, 2, tileSize / 2 - 4);
                     } else {
                         ctx.fillStyle = '#ffa500';
                         ctx.beginPath();
@@ -302,6 +372,8 @@
                 ctx.beginPath();
                 ctx.arc(x + 8, y + 4, 3, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.fillStyle = colors.black;
+                ctx.fillRect(x + 7, y + 2, 2, 2); // Eyes
             }
         }
 
@@ -311,20 +383,18 @@
                     const x = enemy.col * tileSize + offsetX;
                     const y = enemy.row * tileSize + offsetY;
                     ctx.fillStyle = colors.enemy;
-                    ctx.fillRect(x + 2, y + 2, 12, 12);
+                    ctx.fillRect(x + 4, y + 4, 8, 8);
                     ctx.fillStyle = colors.black;
-                    ctx.fillRect(x + 4, y + 4, 2, 2);
-                    ctx.fillRect(x + 10, y + 4, 2, 2);
+                    ctx.fillRect(x + 6, y + 6, 2, 2); // Eye
+                    ctx.fillRect(x + 8, y + 12, 4, 2); // Feet
                 }
             }
         }
 
         function drawPrincess(x, y) {
-            if (keys['ArrowLeft'] || keys['ArrowRight'] || keys['ArrowUp'] || keys['ArrowDown']) {
-                princess.animationCounter++;
-                if (princess.animationCounter % 10 === 0) princess.frame = (princess.frame + 1) % 2;
-            } else {
-                princess.frame = 0;
+            princess.animationCounter++;
+            if (princess.animationCounter % 10 === 0) {
+                princess.frame = (princess.frame + 1) % 2;
             }
             ctx.fillStyle = colors.pink;
             ctx.fillRect(x + 4, y + 6, 8, 8); // Dress
@@ -346,13 +416,29 @@
             } else if (princess.direction === 'up') {
                 ctx.fillRect(x + 6, y + 14, 2, 2);
                 ctx.fillRect(x + 8, y + 14, 2, 2);
-            } else if (princess.direction === 'left' || princess.direction === 'right') {
+            } else if (princess.direction === 'left') {
                 if (princess.frame === 0) {
-                    ctx.fillRect(x + 4, y + 14, 4, 2);
+                    ctx.fillRect(x + 4, y + 14, 2, 4);
                 } else {
-                    ctx.fillRect(x + 8, y + 14, 4, 2);
+                    ctx.fillRect(x + 10, y + 14, 2, 4);
+                }
+            } else if (princess.direction === 'right') {
+                if (princess.frame === 0) {
+                    ctx.fillRect(x + 10, y + 14, 2, 4);
+                } else {
+                    ctx.fillRect(x + 4, y + 14, 2, 4);
                 }
             }
+        }
+
+        function drawHUD() {
+            ctx.fillStyle = '#00008b';
+            ctx.fillRect(0, 0, 120, 40);
+            ctx.fillStyle = colors.white;
+            ctx.font = '12px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 20);
+            ctx.fillText(`HP: ${playerHP}`, 10, 35);
+            if (questActive) ctx.fillText(`Flowers: ${questItems}/3`, 60, 20);
         }
 
         // Game loop
@@ -380,21 +466,14 @@
             }
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
             drawMap(scene.map, scene.offsetX, scene.offsetY);
             drawItems(scene.items, scene.offsetX, scene.offsetY);
             drawNPCs(scene.npcs, scene.offsetX, scene.offsetY);
             drawEnemies(scene.enemies, scene.offsetX, scene.offsetY);
             drawPrincess(princess.x + scene.offsetX, princess.y + scene.offsetY);
+            drawHUD();
             handleFade();
-
-            ctx.fillStyle = colors.white;
-            ctx.font = '16px Arial';
-            ctx.fillText(`Score: ${score}`, 10, 20);
-            if (questActive) ctx.fillText(`Flowers: ${questItems}/3`, 10, 40);
-            if (isFading) {
-                ctx.fillStyle = `rgba(0,0,0,${fadeAlpha})`;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
 
             requestAnimationFrame(gameLoop);
         }
