@@ -133,8 +133,8 @@
         princess: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSJub25lIi8+PHJlY3QgeD0iMTAiIHk9IjQiIHdpZHRoPSIxMiIgaGVpZ2h0PSI0IiBmaWxsPSIjOEI0NTEzIi8+PHJlY3QgeD0iMTIiIHk9IjgiIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9IiNGRURBQjkiLz48PHJlY3QgeD0iOCIgeT0iMTYiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxMiIgZmlsbD0iI0ZGNjlCNCIvPjxyZWN0IHg9IjE0IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjRkZENEdDIi8+PC9zdmc+',
         // A coin (16×16)
         coin: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PGNpcmNsZSBjeD0iOCIgcHk9IjgiIHI9IjciIGZpbGw9InllbGxvdyIgc3Ryb2tlPSJvcmFuZ2UiIHN0cm9rZS13aWR0aD0iMSIvPjwvc3ZnPg==',
-        // A flower (16×16) with a yellow center and pink petals
-        flower: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PGNpcmNsZSBjeD0iOCIgcHk9IjgiIHI9IjIiIGZpbGw9InllbGxvdyIvPjxjaXJjbGUgY3g9IjgiIGN5PSIyIiByPSIyIiBmaWxsPSJwaW5rIi8+PGNpcmNsZSBjeD0iMiIgY3k9IjgiIHI9IjIiIGZpbGw9InBpbmsiLz48PGNpcmNsZSBjeD0iOCIgY3k9IjE0IiByPSIyIiBmaWxsPSJwaW5rIi8+PGNpcmNsZSBjeD0iMTQiIGN5PSI4IiByPSIyIiBmaWxsPSJwaW5rIi8+PC9zdmc+',
+        // A flower (16×16) – using a hex color for pink (#ff69b4)
+        flower: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PGNpcmNsZSBjeD0iOCIgcHk9IjgiIHI9IjIiIGZpbGw9InllbGxvdyIvPjxjaXJjbGUgY3g9IjgiIGN5PSIyIiByPSIyIiBmaWxsPSIjZmY2OWI0Ii8+PGNpcmNsZSBjeD0iMiIgY3k9IjgiIHI9IjIiIGZpbGw9IiNmZjY5YjQiLz48PGNpcmNsZSBjeD0iOCIgcHk9IjE0IiByPSIyIiBmaWxsPSIjZmY2OWI0Ii8+PGNpcmNsZSBjeD0iMTQiIGN5PSI4IiByPSIyIiBmaWxsPSIjZmY2OWI0Ii8+PC9zdmc+',
         // A castle building (80×80)
         castle: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCI+PHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjYWFhIi8+PHJlY3QgeD0iNSIgeT0iMCIgd2lkdGg9IjE1IiBoZWlnaHQ9IjQwIiBmaWxsPSIjODg4Ii8+PHJlY3QgeD0iNjAiIHk9IjAiIHdpZHRoPSIxNSIgaGVpZ2h0PSI0MCIgZmlsbD0iIzg4OCIvPjxyZWN0IHg9IjM1IiB5PSI1MCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjMwIiBmaWxsPSIjMDAwIi8+PC9zdmc+',
         // A house building (80×80)
@@ -160,7 +160,7 @@
     // --- Drawing functions ---
     function drawTown() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      // Draw the background
+      // Draw the town background
       ctx.drawImage(images.townBg, 0, 0, canvas.width, canvas.height);
       // Draw buildings
       ctx.drawImage(images.castle, castleEntrance.x, castleEntrance.y, castleEntrance.width, castleEntrance.height);
