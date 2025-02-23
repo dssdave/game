@@ -2,204 +2,536 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Super Nintendo–Style RPG</title>
+  <title>SNES-Style RPG (Tile-Based)</title>
   <style>
-    body { margin: 0; background: #333; }
+    body {
+      margin: 0;
+      background: #333;
+    }
     canvas {
       display: block;
       margin: 20px auto;
       background: #000;
-      image-rendering: pixelated;
+      image-rendering: pixelated; /* helps give a retro look */
     }
   </style>
 </head>
 <body>
-  <canvas id="gameCanvas" width="640" height="480"></canvas>
-  <script>
-    // Wait for the page to load before starting the game
-    window.onload = function() {
-      // Get canvas & context
-      const canvas = document.getElementById("gameCanvas");
-      const ctx = canvas.getContext("2d");
+<canvas id="gameCanvas" width="640" height="480"></canvas>
 
-      // --- Game state and player ---
-      let gameState = "town"; // "town", "castle", or "house"
-      let previousScene = "town";  // track which building we entered from
+<script>
+/**
+ * SNES-Style RPG Example
+ * ----------------------
+ * A tile-based mini-engine with embedded pixel-art PNGs.
+ * 
+ * - Arrow keys to move the princess.
+ * - Collect coins (gold circles) and flowers (pink) to increase counters.
+ * - Approach the building door tile to enter the interior scene.
+ * - Inside, walk to the exit door tile to return to the town.
+ *
+ * Feel free to swap out the base64-encoded images with your own for better art.
+ */
 
-      const player = {
-        x: 300, y: 200,
-        width: 32, height: 32,
-        speed: 2
-      };
+// --- Canvas & Context ---
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 
-      let coinsCount = 0, flowersCount = 0;
+// --- Constants ---
+const TILE_SIZE = 32;          // each tile is 32x32
+const MAP_WIDTH = 20;         // 20 tiles wide (640px)
+const MAP_HEIGHT = 15;        // 15 tiles tall (480px)
 
-      // Items in town (coins and flowers)
-      let townItems = [
-        { x: 100, y: 100, width: 16, height: 16, type: "coin", collected: false },
-        { x: 200, y: 150, width: 16, height: 16, type: "flower", collected: false },
-        { x: 400, y: 300, width: 16, height: 16, type: "coin", collected: false },
-        { x: 350, y: 220, width: 16, height: 16, type: "flower", collected: false },
-        { x: 500, y: 100, width: 16, height: 16, type: "coin", collected: false }
-      ];
+// Possible game states
+const STATE_TOWN = "town";
+const STATE_INTERIOR = "interior";
 
-      // Building entrances in town
-      const castleEntrance = { x: 50, y: 50, width: 80, height: 80 };
-      const houseEntrance  = { x: 500, y: 350, width: 80, height: 80 };
+let gameState = STATE_TOWN;
 
-      // Exit door in interior scenes
-      const exitDoor = { x: 280, y: 400, width: 80, height: 60 };
+// Track coins and flowers collected
+let coinsCount = 0;
+let flowersCount = 0;
 
-      // --- Input handling ---
-      const keys = {};
-      window.addEventListener("keydown", e => { keys[e.key] = true; });
-      window.addEventListener("keyup", e => { keys[e.key] = false; });
+// Player (princess) object
+const player = {
+  x: 8 * TILE_SIZE,   // tile-based coords (start near center)
+  y: 7 * TILE_SIZE,
+  width: 32,
+  height: 32,
+  speed: 2
+};
 
-      // --- Collision detection ---
-      function isColliding(a, b) {
-        return a.x < b.x + b.width &&
-               a.x + a.width > b.x &&
-               a.y < b.y + b.height &&
-               a.y + a.height > b.y;
+// Key input
+const keys = {};
+
+// --- Listen for keyboard events ---
+window.addEventListener("keydown", e => {
+  keys[e.key] = true;
+});
+window.addEventListener("keyup", e => {
+  keys[e.key] = false;
+});
+
+// ---------------------------------------------------------------------------
+//  IMAGE ASSETS (Base64 PNGs)
+//  These are placeholders.  Swap them with your own for better art!
+// ---------------------------------------------------------------------------
+const imageURLs = {
+
+  // Princess sprite (32x32). Basic shading, slightly more “16-bit” style.
+  princess: 
+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABXElEQVRYCe2XO24CQQyFR+qIJkpKSWI0iFCiiAiJCJdEQKRkwAi8kIHaUpbZjOyEt/k+2zFhkbnc3z8voT8GMWp9IVJfoANoBx4pAacIOXwoJjtMABXwOkCiAGXwBd/w4dho9ghAmrc9Kk60Nd25ARhVNgctGwtmMeCRxkAc7EBwEu7Al4YBu9ZZ3XdRVk8HfK8Dt+GP5kDljWIC1bD33iG7ZcS1I/BPEH6Xb2ZdvZ1m0+X+2voXxCtPD1SLz7D+nyz1gkpggzgS66M0P1AdSkJJfEsdfX9fZ+UTYI+aI4z/gZRhPpX/4FkshE5M2kDwz2mZ5Ul0K9Cb1OBqShqJeNaHqlap6tLNUOhoSgUZCklWMTenU3/AYda5a9tGo6vAAAAAElFTkSuQmCC",
+
+  // 16x16 coin
+  coin: 
+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABTUlEQVQ4Ea2Tzy4CURTHf3cdTgUq4rAih1wC7yFBAor1CrCIEkFUGuAj1CFLKAgqAZ4K6IUgU8QEKyAN1UJ3u0Nn3p2N2S3T0z77nN+ad72XzCBVDT2qAONehnVLuAGnEayJ6THrAAJxCmz7dgy8GG2hCHv6Hib2i4CrBCaSY3IG4rRkdfh4RxxZh9/wS6FGqN/Bcyiz2yVNZFev13p3SSw2QuKy49otb9AfN+iyvEaXk+HG5IG+GASWnNEM/vHyEZ22k8Zy5Xty/gCggLtf7f7/5ZX/AZ9wpncaRL9fsH/vmsv4dK1ZhMWb+U74BFDnQ7mMXfIRHPQBngT9Ksm7RcllLzGAJ2B9knGLW09AQAAAABJRU5ErkJggg==",
+
+  // 16x16 flower
+  flower:
+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAQAAAC1+jfqAAAA2ElEQVQoz2NggIB8U7/+XyU1io5CAuJlVv+/XxbCi7/N8eNf34n/7z8Z+glK7r9GG3/1cR88QXcRyiQKgCUd2lADY3v7C6f///y+M2nX/fGj7/+hmkMNm4Z9uLXIG14/lZCCdY/AkSH4viRfFRo3ePB/T/fv+X/7yv///+G6f7LCwhiIGlZah7qG4EISbYbyfyA2nAmknU4GBs82iOQkIlhGP///y8Ar6ORyL61n4+AAAAAElFTkSuQmCC",
+
+  // 32x32 tile: grass
+  tileGrass:
+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAQAAADZc7J/AAAAvElEQVQ4Ea2UMQ7CQAxFz2gWq3ACM5iY7GB0r7ZMbOLs0AVvoR7+b4D+w91/QDtowHNAHE3MB2WFv5JEU06+Sd8fhuC0JtNBNYKM2KpEldNQ9qqFeZAs4w4Mtc+MNdMsCFuJXDJ6KkACrCwoWsW5wH2HkPoKsxZ9+mAG+Kc/+NgwB//N6rIfVElIk9SQuCI6Ds6T9wnQKud9gwoW8IO8Bc1+xuG8fFu7+3ng0we6K65jYynwAAAABJRU5ErkJggg==",
+
+  // 32x32 tile: path/dirt
+  tilePath:
+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAQAAADZc7J/AAAAtElEQVQ4Ea2UQQqCQAyG/8UdTu0AGenlp2Mi9aehXU6nW4+5qC/kfqWnwAxNccnC31YQZ2VCEdPfny4e8aOQxcNqZHeQuD92rVjUgdLCsn7jhpkeFS0yA79+6ACuEXehDXVXBU6hHb2m+D9NNaNrt4ANUCg/nqI2gZ5nD7PzCSoEU0vXcgZ0aSoSV6dc4quNC1mUkx6s8o1QZ2msRkAAAAASUVORK5CYII=",
+
+  // 32x32 tile: castle wall
+  tileCastleWall:
+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAQAAADZc7J/AAAArUlEQVQ4EZWUMQ6CQBBFz6oE6INocpO5Z4KM7q7cS4+D9EdLBBRMboYvYpe9El9z4CeCI/lnAXbCWS/6vofsH1Nq6KfsYhSgns6yOWlSXYJGlsUEduNXxgnIaxzyZ24jX1BLhFr1tQIny3YOrJTxAoTo39H98G0FSV2aVbn8kyC3TnXd8BTRQZ7lkeCL8T1Cglg8HfDH7Xn2Ubj7/wQ2eTDy42y8uA6jNN2ZLUAAAAAElFTkSuQmCC",
+
+  // 32x32 tile: house roof
+  tileHouseRoof:
+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAQAAADZc7J/AAAAqElEQVQ4EYWUPQ6CQBCFv4Zp2FJtd7sEN7BnRy5sPKaiBpLKd0EDQCBIbmlfl0Z6+ucP/ZybGykz3x8wNg94A1MN9sRkLSqZ7AtZ1RVep5Gkb3gKf3F0ME6F8+ASW8r4Sk+gAMcX8O4rY9k6BE9En/H3DNUkqHnyoISkWYqtk32xx5/Bt7i6oZ6Q3bLRW9lF3l05dCLGDSf2Q7nwAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyNS0wMi0yMlQxNjoyODo1OSswMDowMPISJZ4AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjUtMDItMjJUMTY6Mjg6NTkrMDA6MDC+LSPLAAAAAElFTkSuQmCC",
+
+  // 32x32 tile: door (for building entrance)
+  tileDoor:
+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAQAAADZc7J/AAAAmklEQVQ4EYWUQQrAIAxG3/gLb9kpaN2v4eAsldmXh0gnIQ5Cwp8Gc9omdwv0RzwZZgy1l3S09EnxTrM64BTDJ8BRz0i4q8G3a0SM8KT9mMBeHsvWRrgjTM+pISVu5dM/k2Qy7tYAYf4zvud8o1cw/PvOGQH0lE4AC6IZ2Q36ObJIFAIYND/wC+oVnHeCDrAwAAAABJRU5ErkJggg==",
+
+  // 32x32 tile: interior floor
+  tileFloor:
+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAQAAADZc7J/AAAAu0lEQVQ4Ea3UsQ2CMBRF0YXwaRyBpL2cXq7LHLsC2a7DYbJDdnobCINdXEmkO8/gAUu4HgfZBH4zUBYTxX4EODhnk4JP3e9n51Mke3W8n/IxdIEtIfIXSTvTnPVDa/Ch9yx6T/rDBh9nc10cknrgzjThTeSMuUclzvCk6leZXc+Znk5CRFUTIYSN2IGKn6jCbSV3gXy7ZmPbvL80b39FuWY7AHyz7fnn3Y8wAAAABJRU5ErkJggg==",
+
+  // 32x32 tile: interior wall
+  tileInteriorWall:
+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAQAAADZc7J/AAAAq0lEQVQ4EYWUMQ6CQBBFz6oE6INocpN7BzZzSlgqKJY0DW4ECIJB5KfZa/VCtH/g6HeBe9sl7E6eh0LaqQ0peQT9n4EXAc00heMKmSNRDwqg9tUFJhI3EW7O0y37I7z7SBx61d0C9aYPf3S7AqjCdW1en8TEX7a0kQbOv+vD+fIzPUenSm58vf5y5kECOK69F0Xb0plAAAAAElFTkSuQmCC",
+
+  // 32x32 tile: interior exit door
+  tileExitDoor:
+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAQAAADZc7J/AAAAqklEQVQ4EYWUPQ6CQBBE/1pMTmxItLZGuA0yEIcRRiSI0gaJLSRPSQ1p9vArT3QGTyA2Dys2nyIhx05BNPnzvIr3pl4MDwgw7LwMT4gZ0gB2Z8tI9FEsuTZR+LodKN0kWcvKMT8DcT7wrnK21cs6/gFFP2SWZdsQ6a+4w7n+evpP+9H6/nf4AS/94Qwk7vI0BkETTbf1n0Znu1X5eZQPxrgE9woLEOJdgAAAABJRU5ErkJggg=="
+};
+
+// For convenience, put them in a single object that we can reference by name/index
+// We'll create a tileSet array for the TOWN and for the INTERIOR, referencing these images.
+const tilesTown = {
+  0: "tileGrass",
+  1: "tilePath",
+  2: "tileCastleWall",
+  3: "tileHouseRoof",
+  4: "tileDoor"
+};
+
+const tilesInterior = {
+  0: "tileFloor",
+  1: "tileInteriorWall",
+  2: "tileExitDoor"
+};
+
+// Items (separate sprites) referencing coin/flower
+const itemSprites = {
+  coin: "coin",
+  flower: "flower"
+};
+
+// ---------------------------------------------------------------------------
+//  MAP DATA
+//  We'll define two maps: TOWN (20x15) and INTERIOR (20x15).
+//  Each cell is an integer referencing one of the tile images above.
+// ---------------------------------------------------------------------------
+
+// TOWN MAP LAYOUT
+// 0=grass, 1=path, 2=castle wall, 3=house roof, 4=door
+// This is just an example. You can edit to your liking.
+const mapTown = [
+  [2,2,2,2,2,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0],
+  [2,0,0,1,1,1,0,0,0,0, 0,0,0,0,0,0,0,0,0,0],
+  [2,0,0,0,0,1,0,0,0,0, 0,0,0,0,0,0,0,0,0,0],
+  [2,0,0,0,0,1,1,1,1,1, 1,1,0,0,0,0,0,0,0,0],
+  [2,4,0,0,0,0,0,0,0,0, 0,1,0,0,0,0,0,0,0,0],
+  [2,2,2,2,2,1,1,1,0,0, 0,1,0,0,0,3,3,3,3,3],
+  [0,0,0,0,1,1,0,1,0,0, 0,1,0,0,0,3,3,3,3,3],
+  [0,0,0,0,1,1,0,1,1,1, 1,1,0,0,0,3,4,3,3,3],
+  [0,0,0,0,1,1,0,0,0,0, 0,1,0,0,0,3,3,3,3,3],
+  [0,0,0,0,1,1,1,1,1,1, 1,1,0,0,0,3,3,3,3,3],
+  [0,0,0,0,1,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,1,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,1,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,1,1,1,1,1,1, 1,1,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0]
+];
+
+// Which tiles are "blocked" for movement in the TOWN map?
+// We'll define a simple function that treats tileCastleWall=2, houseRoof=3 as blocked, etc.
+// Also the door tile might be walkable if we want to step on it to trigger entering. We'll handle that logic in code below.
+
+// INTERIOR MAP LAYOUT
+// 0=floor, 1=wall, 2=exit door
+const mapInterior = [
+  [1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1],
+  [1,2,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1]
+];
+
+// Which tiles are blocked in the INTERIOR?
+// We'll say tileInteriorWall=1 is blocked, exit door=2 is walkable (but triggers exit).
+
+// ---------------------------------------------------------------------------
+//  ITEM PLACEMENT
+//  We'll place coins/flowers at certain tile coords in the TOWN map.
+//  (In a real game, you might also place them in the interior, etc.)
+// ---------------------------------------------------------------------------
+let items = [
+  { type: "coin",   x: 5,  y: 5,  collected: false },
+  { type: "coin",   x: 10, y: 8,  collected: false },
+  { type: "flower", x: 12, y: 4,  collected: false },
+  { type: "coin",   x: 7,  y: 12, collected: false },
+  { type: "flower", x: 3,  y: 8,  collected: false }
+];
+
+// ---------------------------------------------------------------------------
+//  IMAGE LOADING
+// ---------------------------------------------------------------------------
+const images = {};
+function loadAllImages(onComplete) {
+  const names = Object.keys(imageURLs);
+  let loadedCount = 0;
+
+  names.forEach(name => {
+    const img = new Image();
+    img.src = imageURLs[name];
+    img.onload = () => {
+      loadedCount++;
+      if (loadedCount === names.length) {
+        onComplete();
       }
-
-      // --- Scene transition ---
-      function enterInterior(buildingType) {
-        previousScene = buildingType;
-        gameState = buildingType;
-        player.x = canvas.width / 2 - player.width / 2;
-        player.y = 50;
-      }
-
-      // --- Update functions ---
-      function updateTown() {
-        if (keys["ArrowUp"])    player.y -= player.speed;
-        if (keys["ArrowDown"])  player.y += player.speed;
-        if (keys["ArrowLeft"])  player.x -= player.speed;
-        if (keys["ArrowRight"]) player.x += player.speed;
-
-        // Keep player within bounds
-        if (player.x < 0) player.x = 0;
-        if (player.y < 0) player.y = 0;
-        if (player.x + player.width > canvas.width)  player.x = canvas.width - player.width;
-        if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
-
-        // Item collection
-        townItems.forEach(item => {
-          if (!item.collected && isColliding(player, item)) {
-            item.collected = true;
-            if (item.type === "coin") coinsCount++;
-            else if (item.type === "flower") flowersCount++;
-          }
-        });
-
-        // Enter buildings
-        if (isColliding(player, castleEntrance)) enterInterior("castle");
-        if (isColliding(player, houseEntrance))  enterInterior("house");
-      }
-
-      function updateInterior() {
-        if (keys["ArrowUp"])    player.y -= player.speed;
-        if (keys["ArrowDown"])  player.y += player.speed;
-        if (keys["ArrowLeft"])  player.x -= player.speed;
-        if (keys["ArrowRight"]) player.x += player.speed;
-
-        if (player.x < 0) player.x = 0;
-        if (player.y < 0) player.y = 0;
-        if (player.x + player.width > canvas.width)  player.x = canvas.width - player.width;
-        if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
-
-        if (isColliding(player, exitDoor)) {
-          gameState = "town";
-          if (previousScene === "castle") {
-            player.x = castleEntrance.x + castleEntrance.width/2 - player.width/2;
-            player.y = castleEntrance.y + castleEntrance.height + 5;
-          } else if (previousScene === "house") {
-            player.x = houseEntrance.x + houseEntrance.width/2 - player.width/2;
-            player.y = houseEntrance.y - player.height - 5;
-          }
-        }
-      }
-
-      // --- Graphics: Preloaded Images (using inline SVG sprites) ---
-      const images = {};
-      function loadImages(callback) {
-        let loaded = 0;
-        const sources = {
-          princess: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSJub25lIi8+PHJlY3QgeD0iMTAiIHk9IjQiIHdpZHRoPSIxMiIgaGVpZ2h0PSI0IiBmaWxsPSIjOEI0NTEzIi8+PHJlY3QgeD0iMTIiIHk9IjgiIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9IiNGRURBQjkiLz48PHJlY3QgeD0iOCIgeT0iMTYiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxMiIgZmlsbD0iI0ZGNjlCNCIvPjxyZWN0IHg9IjE0IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjRkZENEdDIi8+PC9zdmc+',
-          coin:     'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PGNpcmNsZSBjeD0iOCIgcHk9IjgiIHI9IjciIGZpbGw9InllbGxvdyIgc3Ryb2tlPSJvcmFuZ2UiIHN0cm9rZS13aWR0aD0iMSIvPjwvc3ZnPg==',
-          flower:   'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PGNpcmNsZSBjeD0iOCIgcHk9IjgiIHI9IjIiIGZpbGw9InllbGxvdyIvPjxjaXJjbGUgY3g9IjgiIGN5PSIyIiByPSIyIiBmaWxsPSIjZmY2OWI0Ii8+PGNpcmNsZSBjeD0iMiIgY3k9IjgiIHI9IjIiIGZpbGw9IiNmZjY5YjQiLz48PGNpcmNsZSBjeD0iOCIgcHk9IjE0IiByPSIyIiBmaWxsPSIjZmY2OWI0Ii8+PGNpcmNsZSBjeD0iMTQiIGN5PSI4IiByPSIyIiBmaWxsPSIjZmY2OWI0Ii8+PC9zdmc+',
-          castle:   'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCI+PHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjYWFhIi8+PHJlY3QgeD0iNSIgeT0iMCIgd2lkdGg9IjE1IiBoZWlnaHQ9IjQwIiBmaWxsPSIjODg4Ii8+PHJlY3QgeD0iNjAiIHk9IjAiIHdpZHRoPSIxNSIgaGVpZ2h0PSI0MCIgZmlsbD0iIzg4OCIvPjxyZWN0IHg9IjM1IiB5PSI1MCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjMwIiBmaWxsPSIjMDAwIi8+PC9zdmc+',
-          house:    'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCI+PHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjZmZjYzk5Ii8+PHBvbHlnb24gcG9pbnRzPSIwLDMwIDQwLDAgODAsMzAiIGZpbGw9IiNjYzY2MDAiLz48PHJlY3QgeD0iMzUiIHk9IjUwIiB3aWR0aD0iMTAiIGhlaWdodD0iMzAiIGZpbGw9IiMwMDAiLz48L3N2Zz4=',
-          exitDoor: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI2MCI+PHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjYwIiBmaWxsPSIjNjYzMzAwIi8+PHRleHQgeD0iMjAiIHk9IjM1IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IndoaXRlIj5FeGl0PC90ZXh0Pjwvc3ZnPg==',
-          townBg:   'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NDAiIGhlaWdodD0iNDgwIj48cmVjdCB3aWR0aD0iNjQwIiBoZWlnaHQ9IjQ4MCIgZmlsbD0iIzg4Y2M4OCIvPjxjaXJjbGUgY3g9IjU4MCIgY3k9IjYwIiByPSI0MCIgZmlsbD0ieWVsbG93Ii8+PC9zdmc+',
-          interiorBg: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NDAiIGhlaWdodD0iNDgwIj48cmVjdCB3aWR0aD0iNjQwIiBoZWlnaHQ9IjQ4MCIgZmlsbD0iI2NjY2NjYyIvPjxyZWN0IHg9IjUwIiB5PSIzNTAiIHdpZHRoPSIxMDAiIGhlaWdodD0iODAiIGZpbGw9IiM5OTk5OTkiLz48cmVjdCB4PSI0OTAiIHk9IjM1MCIgd2lkdGg9IjEwMCIgaGVpZ2h0PSI4MCIgZmlsbD0iIzk5OTk5OSIvPjwvc3ZnPg=='
-        };
-        const total = Object.keys(sources).length;
-        for (let key in sources) {
-          images[key] = new Image();
-          images[key].onload = () => {
-            loaded++;
-            if (loaded === total) callback();
-          };
-          images[key].onerror = () => {
-            console.error("Error loading image:", key);
-            loaded++;
-            if (loaded === total) callback();
-          };
-          images[key].src = sources[key];
-        }
-      }
-
-      // --- Drawing functions ---
-      function drawTown() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(images.townBg, 0, 0, canvas.width, canvas.height);
-        ctx.drawImage(images.castle, castleEntrance.x, castleEntrance.y, castleEntrance.width, castleEntrance.height);
-        ctx.drawImage(images.house, houseEntrance.x, houseEntrance.y, houseEntrance.width, houseEntrance.height);
-        townItems.forEach(item => {
-          if (!item.collected) {
-            if (item.type === "coin") ctx.drawImage(images.coin, item.x, item.y, item.width, item.height);
-            else if (item.type === "flower") ctx.drawImage(images.flower, item.x, item.y, item.width, item.height);
-          }
-        });
-        ctx.drawImage(images.princess, player.x, player.y, player.width, player.height);
-        ctx.fillStyle = "black";
-        ctx.font = "16px Arial";
-        ctx.fillText("Coins: " + coinsCount, 10, 20);
-        ctx.fillText("Flowers: " + flowersCount, 10, 40);
-      }
-
-      function drawInterior() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(images.interiorBg, 0, 0, canvas.width, canvas.height);
-        ctx.drawImage(images.exitDoor, exitDoor.x, exitDoor.y, exitDoor.width, exitDoor.height);
-        ctx.drawImage(images.princess, player.x, player.y, player.width, player.height);
-        ctx.fillStyle = "black";
-        ctx.font = "16px Arial";
-        ctx.fillText("Coins: " + coinsCount, 10, 20);
-        ctx.fillText("Flowers: " + flowersCount, 10, 40);
-      }
-
-      function update() {
-        if (gameState === "town") updateTown();
-        else if (gameState === "castle" || gameState === "house") updateInterior();
-      }
-
-      function draw() {
-        if (gameState === "town") drawTown();
-        else if (gameState === "castle" || gameState === "house") drawInterior();
-      }
-
-      function gameLoop() {
-        update();
-        draw();
-        requestAnimationFrame(gameLoop);
-      }
-
-      // Load images then start the game loop
-      loadImages(gameLoop);
     };
-  </script>
+    img.onerror = () => {
+      console.error("Failed to load image:", name);
+      loadedCount++;
+      if (loadedCount === names.length) {
+        onComplete();
+      }
+    };
+    images[name] = img;
+  });
+}
+
+// ---------------------------------------------------------------------------
+//  MAP DRAWING
+// ---------------------------------------------------------------------------
+function drawMapTown() {
+  for (let row = 0; row < MAP_HEIGHT; row++) {
+    for (let col = 0; col < MAP_WIDTH; col++) {
+      const tileIndex = mapTown[row][col];
+      const tileKey = tilesTown[tileIndex];
+      const tileImg = images[tileKey];
+      if (tileImg) {
+        ctx.drawImage(tileImg, col * TILE_SIZE, row * TILE_SIZE);
+      }
+    }
+  }
+}
+
+function drawMapInterior() {
+  for (let row = 0; row < MAP_HEIGHT; row++) {
+    for (let col = 0; col < MAP_WIDTH; col++) {
+      const tileIndex = mapInterior[row][col];
+      const tileKey = tilesInterior[tileIndex];
+      const tileImg = images[tileKey];
+      if (tileImg) {
+        ctx.drawImage(tileImg, col * TILE_SIZE, row * TILE_SIZE);
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+//  COLLISION & BUILDING ENTRANCE
+// ---------------------------------------------------------------------------
+
+function isTileBlocked_town(tileIndex) {
+  // For the TOWN map, treat castle wall=2 and house roof=3 as blocked.
+  // We'll allow stepping on tileDoor=4 so we can enter it.
+  return (tileIndex === 2 || tileIndex === 3);
+}
+
+function isTileBlocked_interior(tileIndex) {
+  // For the INTERIOR map, treat tileInteriorWall=1 as blocked
+  // tileExitDoor=2 is walkable (but triggers exit).
+  return (tileIndex === 1);
+}
+
+// If the player is on a tile with a door, we switch to interior
+function checkDoorTown(col, row) {
+  // If tile is 4 (door) at top-left area, we assume it's the "castle door"
+  if (mapTown[row][col] === 4) {
+    // Enter interior
+    gameState = STATE_INTERIOR;
+    // Position player near top inside
+    player.x = 8 * TILE_SIZE;
+    player.y = 8 * TILE_SIZE;
+  }
+}
+
+function checkExitDoorInterior(col, row) {
+  // If tile is 2 (exit door) at bottom-left corner, we go back to TOWN
+  if (mapInterior[row][col] === 2) {
+    gameState = STATE_TOWN;
+    // Place the player just outside the castle door
+    player.x = 1.5 * TILE_SIZE; // near (1,4) or so
+    player.y = 4 * TILE_SIZE;
+  }
+}
+
+// ---------------------------------------------------------------------------
+//  UPDATE
+// ---------------------------------------------------------------------------
+function update() {
+  if (gameState === STATE_TOWN) {
+    updateTown();
+  } else if (gameState === STATE_INTERIOR) {
+    updateInterior();
+  }
+}
+
+function updateTown() {
+  const oldX = player.x;
+  const oldY = player.y;
+
+  // Basic movement
+  if (keys["ArrowUp"])    player.y -= player.speed;
+  if (keys["ArrowDown"])  player.y += player.speed;
+  if (keys["ArrowLeft"])  player.x -= player.speed;
+  if (keys["ArrowRight"]) player.x += player.speed;
+
+  // Keep in bounds
+  if (player.x < 0) player.x = 0;
+  if (player.y < 0) player.y = 0;
+  if (player.x > (MAP_WIDTH * TILE_SIZE - player.width)) {
+    player.x = MAP_WIDTH * TILE_SIZE - player.width;
+  }
+  if (player.y > (MAP_HEIGHT * TILE_SIZE - player.height)) {
+    player.y = MAP_HEIGHT * TILE_SIZE - player.height;
+  }
+
+  // Check for tile collisions
+  if (isCollidingWithBlockedTileTown()) {
+    // revert
+    player.x = oldX;
+    player.y = oldY;
+  }
+
+  // After we finalize position, check if we are on a door tile
+  const col = Math.floor(player.x / TILE_SIZE);
+  const row = Math.floor(player.y / TILE_SIZE);
+  checkDoorTown(col, row);
+
+  // Check item pickups
+  items.forEach(item => {
+    if (!item.collected) {
+      // approximate bounding box
+      const itemX = item.x * TILE_SIZE + TILE_SIZE/4; 
+      const itemY = item.y * TILE_SIZE + TILE_SIZE/4;
+      const itemSize = TILE_SIZE/2;
+      if (rectsOverlap(player.x, player.y, player.width, player.height, 
+                       itemX, itemY, itemSize, itemSize)) {
+        item.collected = true;
+        if (item.type === "coin") coinsCount++;
+        else if (item.type === "flower") flowersCount++;
+      }
+    }
+  });
+}
+
+function updateInterior() {
+  const oldX = player.x;
+  const oldY = player.y;
+
+  if (keys["ArrowUp"])    player.y -= player.speed;
+  if (keys["ArrowDown"])  player.y += player.speed;
+  if (keys["ArrowLeft"])  player.x -= player.speed;
+  if (keys["ArrowRight"]) player.x += player.speed;
+
+  // Bounds
+  if (player.x < 0) player.x = 0;
+  if (player.y < 0) player.y = 0;
+  if (player.x > (MAP_WIDTH * TILE_SIZE - player.width)) {
+    player.x = MAP_WIDTH * TILE_SIZE - player.width;
+  }
+  if (player.y > (MAP_HEIGHT * TILE_SIZE - player.height)) {
+    player.y = MAP_HEIGHT * TILE_SIZE - player.height;
+  }
+
+  // Collisions
+  if (isCollidingWithBlockedTileInterior()) {
+    player.x = oldX;
+    player.y = oldY;
+  }
+
+  // Check exit door
+  const col = Math.floor(player.x / TILE_SIZE);
+  const row = Math.floor(player.y / TILE_SIZE);
+  checkExitDoorInterior(col, row);
+}
+
+// ---------------------------------------------------------------------------
+//  COLLISION CHECKING
+// ---------------------------------------------------------------------------
+function isCollidingWithBlockedTileTown() {
+  // We'll check the corners of the player's bounding box
+  // and see if any corner is on a blocked tile.
+  const left = player.x;
+  const right = player.x + player.width - 1;
+  const top = player.y;
+  const bottom = player.y + player.height - 1;
+
+  const topLeftCol = Math.floor(left / TILE_SIZE);
+  const topLeftRow = Math.floor(top / TILE_SIZE);
+
+  const topRightCol = Math.floor(right / TILE_SIZE);
+  const topRightRow = Math.floor(top / TILE_SIZE);
+
+  const bottomLeftCol = Math.floor(left / TILE_SIZE);
+  const bottomLeftRow = Math.floor(bottom / TILE_SIZE);
+
+  const bottomRightCol = Math.floor(right / TILE_SIZE);
+  const bottomRightRow = Math.floor(bottom / TILE_SIZE);
+
+  // Check if these tiles are blocked
+  return (checkBlockedTown(topLeftCol, topLeftRow) ||
+          checkBlockedTown(topRightCol, topRightRow) ||
+          checkBlockedTown(bottomLeftCol, bottomLeftRow) ||
+          checkBlockedTown(bottomRightCol, bottomRightRow));
+}
+
+function checkBlockedTown(col, row) {
+  if (col < 0 || col >= MAP_WIDTH || row < 0 || row >= MAP_HEIGHT) {
+    return true; // out of bounds => treat as blocked
+  }
+  const tileIndex = mapTown[row][col];
+  return isTileBlocked_town(tileIndex);
+}
+
+function isCollidingWithBlockedTileInterior() {
+  const left = player.x;
+  const right = player.x + player.width - 1;
+  const top = player.y;
+  const bottom = player.y + player.height - 1;
+
+  const topLeftCol = Math.floor(left / TILE_SIZE);
+  const topLeftRow = Math.floor(top / TILE_SIZE);
+
+  const topRightCol = Math.floor(right / TILE_SIZE);
+  const topRightRow = Math.floor(top / TILE_SIZE);
+
+  const bottomLeftCol = Math.floor(left / TILE_SIZE);
+  const bottomLeftRow = Math.floor(bottom / TILE_SIZE);
+
+  const bottomRightCol = Math.floor(right / TILE_SIZE);
+  const bottomRightRow = Math.floor(bottom / TILE_SIZE);
+
+  return (checkBlockedInterior(topLeftCol, topLeftRow) ||
+          checkBlockedInterior(topRightCol, topRightRow) ||
+          checkBlockedInterior(bottomLeftCol, bottomLeftRow) ||
+          checkBlockedInterior(bottomRightCol, bottomRightRow));
+}
+
+function checkBlockedInterior(col, row) {
+  if (col < 0 || col >= MAP_WIDTH || row < 0 || row >= MAP_HEIGHT) {
+    return true; // out of bounds => treat as blocked
+  }
+  const tileIndex = mapInterior[row][col];
+  return isTileBlocked_interior(tileIndex);
+}
+
+// Simple rectangle overlap check
+function rectsOverlap(x1,y1,w1,h1, x2,y2,w2,h2) {
+  return !(
+    x1 > x2 + w2  ||
+    x1 + w1 < x2  ||
+    y1 > y2 + h2  ||
+    y1 + h1 < y2
+  );
+}
+
+// ---------------------------------------------------------------------------
+//  DRAW
+// ---------------------------------------------------------------------------
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (gameState === STATE_TOWN) {
+    drawMapTown();
+    drawItems();
+  } else if (gameState === STATE_INTERIOR) {
+    drawMapInterior();
+  }
+
+  // Draw the princess
+  ctx.drawImage(images.princess, player.x, player.y, player.width, player.height);
+
+  // UI
+  ctx.fillStyle = "black";
+  ctx.font = "16px Arial";
+  ctx.fillText("Coins: " + coinsCount, 10, 20);
+  ctx.fillText("Flowers: " + flowersCount, 10, 40);
+}
+
+function drawItems() {
+  items.forEach(item => {
+    if (!item.collected) {
+      const spriteKey = itemSprites[item.type];
+      const img = images[spriteKey];
+      if (img) {
+        // center it in the tile
+        const drawX = item.x * TILE_SIZE + (TILE_SIZE - 16)/2;
+        const drawY = item.y * TILE_SIZE + (TILE_SIZE - 16)/2;
+        ctx.drawImage(img, drawX, drawY, 16, 16);
+      }
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+//  GAME LOOP
+// ---------------------------------------------------------------------------
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+// ---------------------------------------------------------------------------
+//  STARTUP
+// ---------------------------------------------------------------------------
+loadAllImages(() => {
+  console.log("All images loaded. Starting game...");
+  gameLoop();
+});
+</script>
 </body>
 </html>
