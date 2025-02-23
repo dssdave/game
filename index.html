@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Princess Adventure - Enhanced Edition</title>
+    <title>Princess RPG - Final Fantasy NES Style</title>
     <style>
         body {
             display: flex;
@@ -11,11 +11,11 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background: linear-gradient(to bottom, #87ceeb, #e0ffff); /* Gradient sky */
+            background: linear-gradient(to bottom, #87ceeb, #e0ffff);
         }
         canvas {
             border: 1px solid black;
-            background-color: #228b22; /* Forest green base */
+            background-color: #32cd32;
         }
     </style>
 </head>
@@ -24,79 +24,79 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const tileSize = 16; // Smaller tiles for detailed graphics
+        ctx.imageSmoothingEnabled = false; // Crisp pixel art
+        const tileSize = 16;
+
+        // Game state
         let score = 0;
         let currentScene = 'town';
         let fadeAlpha = 0;
         let isFading = false;
         let fadeDirection = 1;
         let targetScene = '';
+        let questActive = false;
+        let questItems = 0;
 
-        // Maps for different scenes
-        const townMap = {
-            grid: [
-                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-            ],
-            items: [
-                {x: 4 * tileSize, y: 4 * tileSize, type: 'flower', points: 10, collected: false},
-                {x: 6 * tileSize, y: 8 * tileSize, type: 'coin', points: 5, collected: false},
-                {x: 12 * tileSize, y: 5 * tileSize, type: 'flower', points: 10, collected: false},
-                {x: 14 * tileSize, y: 9 * tileSize, type: 'coin', points: 5, collected: false}
-            ],
-            doors: [
-                {x: 2 * tileSize, y: 2 * tileSize, width: tileSize, height: tileSize, target: 'castle'},
-                {x: 16 * tileSize, y: 2 * tileSize, width: tileSize, height: tileSize, target: 'house'}
-            ]
+        // Colors
+        const colors = {
+            grass: '#32cd32',
+            path: '#cd853f',
+            water: '#4169e1',
+            mountain: '#a9a9a9',
+            door: '#0000ff',
+            floor: '#8b4513',
+            wall: '#808080',
+            pink: '#ff69b4',
+            peach: '#ffdab9',
+            yellow: '#ffd700',
+            black: '#000',
+            white: '#fff',
+            enemy: '#ff0000',
+            npc: '#228b22',
+            exitDoor: '#ff4500'
         };
 
-        const castleMap = {
-            grid: [
-                [1,1,1,1,1,1,1],
-                [1,0,0,0,0,0,1],
-                [1,0,0,0,0,0,1],
-                [1,0,0,2,0,0,1],
-                [1,0,0,0,0,0,1],
-                [1,0,0,0,0,0,1],
-                [1,1,1,1,1,1,1]
-            ],
-            items: [],
-            doors: [
-                {x: 3 * tileSize, y: 3 * tileSize, width: tileSize, height: tileSize, target: 'town'}
-            ]
-        };
+        // Define maps (40x30 for town, 20x15 for interiors)
+        const townMap = Array(30).fill().map(() => Array(40).fill(0)); // Grass base
+        const castleMap = Array(15).fill().map(() => Array(20).fill(6)); // Floor base
+        const houseMap = Array(15).fill().map(() => Array(20).fill(6)); // Floor base
 
-        const houseMap = {
-            grid: [
-                [1,1,1,1,1],
-                [1,0,0,0,1],
-                [1,0,0,0,1],
-                [1,0,2,0,1],
-                [1,1,1,1,1]
-            ],
-            items: [],
-            doors: [
-                {x: 2 * tileSize, y: 3 * tileSize, width: tileSize, height: tileSize, target: 'town'}
-            ]
-        };
+        // Town map details
+        for (let r = 10; r < 20; r++) for (let c = 10; c < 30; c++) townMap[r][c] = 1; // Path
+        for (let r = 0; r < 5; r++) for (let c = 0; c < 10; c++) townMap[r][c] = 2; // Water
+        for (let r = 25; r < 30; r++) for (let c = 30; c < 40; c++) townMap[r][c] = 3; // Mountain
+        townMap[9][7] = 4; // Castle door
+        townMap[22][31] = 5; // House door
 
-        // Princess object with animation
+        // Interior details
+        castleMap[7][10] = 7; // Exit door
+        houseMap[7][10] = 7; // Exit door
+        for (let c = 0; c < 20; c++) { castleMap[0][c] = 8; houseMap[0][c] = 8; } // Walls
+
+        // Items
+        const townItems = [
+            {type: 'flower', row: 8, col: 12, points: 10, collected: false},
+            {type: 'coin', row: 15, col: 18, points: 5, collected: false},
+            {type: 'flower', row: 22, col: 25, points: 10, collected: false},
+            {type: 'coin', row: 28, col: 35, points: 5, collected: false}
+        ];
+
+        // NPCs
+        const townNPCs = [
+            {row: 12, col: 15, dialogue: 'Welcome to Eldoria!', quest: false},
+            {row: 18, col: 28, dialogue: 'Find 3 flowers for me!', quest: true}
+        ];
+
+        // Enemies
+        const townEnemies = [
+            {row: 14, col: 20, hp: 10, alive: true},
+            {row: 20, col: 35, hp: 15, alive: true}
+        ];
+
+        // Princess
         let princess = {
-            x: 5 * tileSize,
-            y: 5 * tileSize,
+            x: 2 * tileSize,
+            y: 2 * tileSize,
             width: tileSize,
             height: tileSize,
             speed: 2,
@@ -105,138 +105,94 @@
             animationCounter: 0
         };
 
-        // Keyboard input handling
+        // Input handling
         const keys = {};
-        document.addEventListener('keydown', (e) => keys[e.key] = true);
-        document.addEventListener('keyup', (e) => keys[e.key] = false);
+        document.addEventListener('keydown', e => keys[e.key] = true);
+        document.addEventListener('keyup', e => keys[e.key] = false);
+
+        // Scene definitions
+        const scenes = {
+            town: { map: townMap, offsetX: 0, offsetY: 0, items: townItems, npcs: townNPCs, enemies: townEnemies },
+            castle: { map: castleMap, offsetX: 160, offsetY: 120, items: [], npcs: [], enemies: [] },
+            house: { map: houseMap, offsetX: 160, offsetY: 120, items: [], npcs: [], enemies: [] }
+        };
+
+        // Transitions
+        const transitions = {
+            town: [
+                {row: 9, col: 7, targetScene: 'castle', targetRow: 6, targetCol: 10},
+                {row: 22, col: 31, targetScene: 'house', targetRow: 6, targetCol: 10}
+            ],
+            castle: [{row: 7, col: 10, targetScene: 'town', targetRow: 10, targetCol: 7}],
+            house: [{row: 7, col: 10, targetScene: 'town', targetRow: 23, targetCol: 31}]
+        };
 
         // Helper functions
-        function getCurrentMap() {
-            return currentScene === 'town' ? townMap : currentScene === 'castle' ? castleMap : houseMap;
+        function isWalkable(x, y) {
+            const scene = scenes[currentScene];
+            const col = Math.floor((x + princess.width / 2) / tileSize);
+            const row = Math.floor((y + princess.height / 2) / tileSize);
+            if (row < 0 || row >= scene.map.length || col < 0 || col >= scene.map[0].length) return false;
+            const type = scene.map[row][col];
+            return ![2, 3, 8].includes(type); // Not water, mountain, or wall
         }
 
-        function checkCollision(x, y) {
-            const map = getCurrentMap().grid;
-            const col = Math.floor(x / tileSize);
-            const row = Math.floor(y / tileSize);
-            return row < 0 || row >= map.length || col < 0 || col >= map[0].length || map[row][col] === 1;
-        }
-
-        function checkItemCollection() {
-            const items = getCurrentMap().items;
+        function checkItems() {
+            const items = scenes[currentScene].items;
             for (let item of items) {
-                if (!item.collected &&
-                    princess.x < item.x + tileSize &&
-                    princess.x + princess.width > item.x &&
-                    princess.y < item.y + tileSize &&
-                    princess.y + princess.height > item.y) {
+                if (!item.collected && princess.tileRow === item.row && princess.tileCol === item.col) {
                     item.collected = true;
                     score += item.points;
+                    if (questActive && item.type === 'flower') {
+                        questItems++;
+                        if (questItems === 3) {
+                            score += 50;
+                            questActive = false;
+                            alert('Quest complete! +50 points!');
+                        }
+                    }
                 }
             }
         }
 
-        function checkDoorInteraction() {
-            const doors = getCurrentMap().doors;
+        function checkNPCs() {
+            const npcs = scenes[currentScene].npcs;
+            for (let npc of npcs) {
+                if (princess.tileRow === npc.row && princess.tileCol === npc.col && keys[' ']) {
+                    alert(npc.dialogue);
+                    if (npc.quest && !questActive) {
+                        questActive = true;
+                        questItems = 0;
+                        alert('Quest: Collect 3 flowers!');
+                    }
+                }
+            }
+        }
+
+        function checkEnemies() {
+            const enemies = scenes[currentScene].enemies;
+            for (let enemy of enemies) {
+                if (enemy.alive && princess.tileRow === enemy.row && princess.tileCol === enemy.col && keys['Enter']) {
+                    enemy.hp -= 5;
+                    if (enemy.hp <= 0) {
+                        enemy.alive = false;
+                        score += 20;
+                        alert('Enemy defeated! +20 points');
+                    } else {
+                        alert(`Enemy HP: ${enemy.hp}`);
+                    }
+                }
+            }
+        }
+
+        function checkDoors() {
+            const doors = transitions[currentScene];
             for (let door of doors) {
-                if (princess.x < door.x + door.width &&
-                    princess.x + princess.width > door.x &&
-                    princess.y < door.y + door.height &&
-                    princess.y + princess.height > door.y) {
-                    targetScene = door.target;
+                if (princess.tileRow === door.row && princess.tileCol === door.col) {
+                    targetScene = door.targetScene;
                     isFading = true;
                     fadeDirection = 1;
-                    return;
                 }
-            }
-        }
-
-        // Enhanced drawing functions
-        function drawMap() {
-            const map = getCurrentMap().grid;
-            for (let row = 0; row < map.length; row++) {
-                for (let col = 0; col < map[row].length; col++) {
-                    if (map[row][col] === 0) {
-                        // Grass with texture
-                        ctx.fillStyle = '#32cd32';
-                        ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
-                        ctx.fillStyle = '#228b22';
-                        ctx.fillRect(col * tileSize + 2, row * tileSize + 2, tileSize - 4, tileSize - 4);
-                    } else if (map[row][col] === 1) {
-                        // Stone wall with detail
-                        ctx.fillStyle = '#808080';
-                        ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
-                        ctx.fillStyle = '#a9a9a9';
-                        ctx.fillRect(col * tileSize + 1, row * tileSize + 1, tileSize - 2, tileSize - 2);
-                    } else if (map[row][col] === 2) {
-                        // Door with wood texture
-                        ctx.fillStyle = '#0000ff';
-                        ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
-                        ctx.fillStyle = '#00008b';
-                        ctx.fillRect(col * tileSize + 2, row * tileSize + 2, tileSize - 4, tileSize - 4);
-                    }
-                }
-            }
-            // Building details in town
-            if (currentScene === 'town') {
-                // Castle
-                ctx.fillStyle = '#696969';
-                ctx.fillRect(1 * tileSize, 1 * tileSize, tileSize * 2, tileSize * 2);
-                ctx.fillStyle = '#ff0000';
-                ctx.fillRect(1 * tileSize + 2, 1 * tileSize - 4, tileSize * 2 - 4, 4);
-                // House
-                ctx.fillStyle = '#8b4513';
-                ctx.fillRect(15 * tileSize, 1 * tileSize, tileSize * 2, tileSize * 2);
-                ctx.fillStyle = '#cd853f';
-                ctx.fillRect(15 * tileSize + 2, 1 * tileSize - 4, tileSize * 2 - 4, 4);
-            }
-        }
-
-        function drawItems() {
-            const items = getCurrentMap().items;
-            for (let item of items) {
-                if (!item.collected) {
-                    if (item.type === 'flower') {
-                        // Detailed flower sprite
-                        ctx.fillStyle = '#ffff00';
-                        ctx.fillRect(item.x + 4, item.y + 4, 8, 8);
-                        ctx.fillStyle = '#ff4500';
-                        ctx.fillRect(item.x + 6, item.y + 6, 4, 4);
-                        ctx.fillStyle = '#006400';
-                        ctx.fillRect(item.x + 7, item.y + 10, 2, 6);
-                    } else {
-                        // Detailed coin sprite
-                        ctx.fillStyle = '#ffa500';
-                        ctx.fillRect(item.x + 4, item.y + 4, 8, 8);
-                        ctx.fillStyle = '#ffd700';
-                        ctx.fillRect(item.x + 5, item.y + 5, 4, 4);
-                    }
-                }
-            }
-        }
-
-        function drawPrincess() {
-            princess.animationCounter++;
-            if (princess.animationCounter % 10 === 0) {
-                princess.frame = (princess.frame + 1) % 2;
-            }
-            // Dress
-            ctx.fillStyle = '#ff69b4';
-            ctx.fillRect(princess.x + 2, princess.y + 4, 12, 10);
-            // Head
-            ctx.fillStyle = '#ffdab9';
-            ctx.fillRect(princess.x + 4, princess.y, 8, 6);
-            // Crown
-            ctx.fillStyle = '#ffd700';
-            ctx.fillRect(princess.x + 6, princess.y - 2, 4, 2);
-            // Legs animation
-            ctx.fillStyle = '#000000';
-            if (princess.frame === 0) {
-                ctx.fillRect(princess.x + 4, princess.y + 14, 2, 2);
-                ctx.fillRect(princess.x + 10, princess.y + 14, 2, 2);
-            } else {
-                ctx.fillRect(princess.x + 6, princess.y + 14, 2, 2);
-                ctx.fillRect(princess.x + 8, princess.y + 14, 2, 2);
             }
         }
 
@@ -245,28 +201,166 @@
                 fadeAlpha += 0.05 * fadeDirection;
                 if (fadeAlpha >= 1 && fadeDirection === 1) {
                     currentScene = targetScene;
-                    if (currentScene === 'town') {
-                        princess.x = targetScene === 'castle' ? 2 * tileSize : 16 * tileSize;
-                        princess.y = 3 * tileSize;
-                    } else if (currentScene === 'castle') {
-                        princess.x = 3 * tileSize;
-                        princess.y = 2 * tileSize;
-                    } else if (currentScene === 'house') {
-                        princess.x = 2 * tileSize;
-                        princess.y = 2 * tileSize;
-                    }
+                    const door = transitions[targetScene].find(d => d.targetScene === currentScene) || transitions[currentScene][0];
+                    princess.x = door.targetCol * tileSize;
+                    princess.y = door.targetRow * tileSize;
                     fadeDirection = -1;
                 } else if (fadeAlpha <= 0 && fadeDirection === -1) {
                     isFading = false;
-                    fadeAlpha = 0;
                 }
-                ctx.fillStyle = `rgba(0, 0, 0, ${fadeAlpha})`;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        // Drawing functions
+        function drawMap(map, offsetX, offsetY) {
+            for (let r = 0; r < map.length; r++) {
+                for (let c = 0; c < map[r].length; c++) {
+                    const x = c * tileSize + offsetX;
+                    const y = r * tileSize + offsetY;
+                    switch (map[r][c]) {
+                        case 0: // Grass
+                            ctx.fillStyle = colors.grass;
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            ctx.fillStyle = '#228b22';
+                            for (let i = 0; i < 3; i++) ctx.fillRect(x + Math.random() * tileSize, y + Math.random() * tileSize, 1, 1);
+                            break;
+                        case 1: // Path
+                            ctx.fillStyle = colors.path;
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            break;
+                        case 2: // Water
+                            ctx.fillStyle = colors.water;
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            ctx.fillStyle = colors.white;
+                            for (let i = 0; i < 2; i++) ctx.fillRect(x + Math.random() * tileSize, y + Math.random() * tileSize, 1, 1);
+                            break;
+                        case 3: // Mountain
+                            ctx.fillStyle = colors.mountain;
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            ctx.fillStyle = '#696969';
+                            for (let i = 0; i < tileSize; i += 2) ctx.fillRect(x + i, y + i / 2, 1, 1);
+                            break;
+                        case 4: case 5: // Doors
+                            ctx.fillStyle = colors.door;
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            break;
+                        case 6: // Floor
+                            ctx.fillStyle = colors.floor;
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            break;
+                        case 7: // Exit door
+                            ctx.fillStyle = colors.exitDoor;
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            break;
+                        case 8: // Wall
+                            ctx.fillStyle = colors.wall;
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            ctx.fillStyle = '#696969';
+                            for (let i = 0; i < tileSize; i += 4) {
+                                ctx.fillRect(x, y + i, tileSize, 1);
+                                ctx.fillRect(x + i, y, 1, tileSize);
+                            }
+                            break;
+                    }
+                }
+            }
+        }
+
+        function drawItems(items, offsetX, offsetY) {
+            for (let item of items) {
+                if (!item.collected) {
+                    const x = item.col * tileSize + offsetX;
+                    const y = item.row * tileSize + offsetY;
+                    if (item.type === 'flower') {
+                        ctx.fillStyle = colors.yellow;
+                        ctx.beginPath();
+                        ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = '#006400';
+                        ctx.fillRect(x + tileSize / 2 - 1, y + tileSize / 2, 2, tileSize / 2);
+                    } else {
+                        ctx.fillStyle = '#ffa500';
+                        ctx.beginPath();
+                        ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = colors.yellow;
+                        ctx.beginPath();
+                        ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 6, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+        }
+
+        function drawNPCs(npcs, offsetX, offsetY) {
+            for (let npc of npcs) {
+                const x = npc.col * tileSize + offsetX;
+                const y = npc.row * tileSize + offsetY;
+                ctx.fillStyle = colors.npc;
+                ctx.fillRect(x + 4, y + 4, 8, 8);
+                ctx.fillStyle = colors.peach;
+                ctx.beginPath();
+                ctx.arc(x + 8, y + 4, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawEnemies(enemies, offsetX, offsetY) {
+            for (let enemy of enemies) {
+                if (enemy.alive) {
+                    const x = enemy.col * tileSize + offsetX;
+                    const y = enemy.row * tileSize + offsetY;
+                    ctx.fillStyle = colors.enemy;
+                    ctx.fillRect(x + 2, y + 2, 12, 12);
+                    ctx.fillStyle = colors.black;
+                    ctx.fillRect(x + 4, y + 4, 2, 2);
+                    ctx.fillRect(x + 10, y + 4, 2, 2);
+                }
+            }
+        }
+
+        function drawPrincess(x, y) {
+            if (keys['ArrowLeft'] || keys['ArrowRight'] || keys['ArrowUp'] || keys['ArrowDown']) {
+                princess.animationCounter++;
+                if (princess.animationCounter % 10 === 0) princess.frame = (princess.frame + 1) % 2;
+            } else {
+                princess.frame = 0;
+            }
+            ctx.fillStyle = colors.pink;
+            ctx.fillRect(x + 4, y + 6, 8, 8); // Dress
+            ctx.fillStyle = colors.peach;
+            ctx.beginPath();
+            ctx.arc(x + 8, y + 4, 4, 0, Math.PI * 2); // Head
+            ctx.fill();
+            ctx.fillStyle = colors.yellow;
+            ctx.fillRect(x + 6, y, 4, 2); // Crown
+            ctx.fillStyle = colors.black;
+            if (princess.direction === 'down') {
+                if (princess.frame === 0) {
+                    ctx.fillRect(x + 4, y + 14, 2, 2);
+                    ctx.fillRect(x + 10, y + 14, 2, 2);
+                } else {
+                    ctx.fillRect(x + 2, y + 14, 2, 2);
+                    ctx.fillRect(x + 12, y + 14, 2, 2);
+                }
+            } else if (princess.direction === 'up') {
+                ctx.fillRect(x + 6, y + 14, 2, 2);
+                ctx.fillRect(x + 8, y + 14, 2, 2);
+            } else if (princess.direction === 'left' || princess.direction === 'right') {
+                if (princess.frame === 0) {
+                    ctx.fillRect(x + 4, y + 14, 4, 2);
+                } else {
+                    ctx.fillRect(x + 8, y + 14, 4, 2);
+                }
             }
         }
 
         // Game loop
         function gameLoop() {
+            const scene = scenes[currentScene];
+            princess.tileCol = Math.floor((princess.x + princess.width / 2) / tileSize);
+            princess.tileRow = Math.floor((princess.y + princess.height / 2) / tileSize);
+
             if (!isFading) {
                 let dx = 0, dy = 0;
                 if (keys['ArrowLeft']) { dx -= princess.speed; princess.direction = 'left'; }
@@ -276,23 +370,31 @@
 
                 const newX = princess.x + dx;
                 const newY = princess.y + dy;
-                if (!checkCollision(newX, princess.y)) princess.x = newX;
-                if (!checkCollision(princess.x, newY)) princess.y = newY;
+                if (isWalkable(newX, princess.y)) princess.x = newX;
+                if (isWalkable(princess.x, newY)) princess.y = newY;
 
-                checkItemCollection();
-                checkDoorInteraction();
+                checkItems();
+                checkNPCs();
+                checkEnemies();
+                checkDoors();
             }
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawMap();
-            drawItems();
-            drawPrincess();
+            drawMap(scene.map, scene.offsetX, scene.offsetY);
+            drawItems(scene.items, scene.offsetX, scene.offsetY);
+            drawNPCs(scene.npcs, scene.offsetX, scene.offsetY);
+            drawEnemies(scene.enemies, scene.offsetX, scene.offsetY);
+            drawPrincess(princess.x + scene.offsetX, princess.y + scene.offsetY);
             handleFade();
 
-            // Score display
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '16px Arial'; // Use "Press Start 2P" via Google Fonts for retro style if desired
-            ctx.fillText(`Score: ${score}`, 10, 30);
+            ctx.fillStyle = colors.white;
+            ctx.font = '16px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 20);
+            if (questActive) ctx.fillText(`Flowers: ${questItems}/3`, 10, 40);
+            if (isFading) {
+                ctx.fillStyle = `rgba(0,0,0,${fadeAlpha})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
 
             requestAnimationFrame(gameLoop);
         }
