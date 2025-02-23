@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Princess Adventure - Enhanced SNES Style</title>
+    <title>Princess Adventure - Enhanced Edition</title>
     <style>
         body {
             display: flex;
@@ -11,20 +11,20 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background: linear-gradient(to bottom, #87ceeb, #e0ffff);
+            background: linear-gradient(to bottom, #87ceeb, #e0ffff); /* Gradient sky */
         }
         canvas {
             border: 1px solid black;
-            background-color: #228b22;
+            background-color: #228b22; /* Forest green base */
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="1024" height="768"></canvas>
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const tileSize = 32;
+        const tileSize = 16; // Smaller tiles for detailed graphics
         let score = 0;
         let currentScene = 'town';
         let fadeAlpha = 0;
@@ -32,9 +32,25 @@
         let fadeDirection = 1;
         let targetScene = '';
 
-        // Maps with more detailed grids
+        // Maps for different scenes
         const townMap = {
-            grid: Array.from({ length: 24 }, () => Array(32).fill(0)), // 0: grass, 1: wall, 2: door
+            grid: [
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            ],
             items: [
                 {x: 4 * tileSize, y: 4 * tileSize, type: 'flower', points: 10, collected: false},
                 {x: 6 * tileSize, y: 8 * tileSize, type: 'coin', points: 5, collected: false},
@@ -43,23 +59,37 @@
             ],
             doors: [
                 {x: 2 * tileSize, y: 2 * tileSize, width: tileSize, height: tileSize, target: 'castle'},
-                {x: 28 * tileSize, y: 2 * tileSize, width: tileSize, height: tileSize, target: 'house'}
+                {x: 16 * tileSize, y: 2 * tileSize, width: tileSize, height: tileSize, target: 'house'}
             ]
         };
 
         const castleMap = {
-            grid: Array.from({ length: 12 }, () => Array(16).fill(0)),
+            grid: [
+                [1,1,1,1,1,1,1],
+                [1,0,0,0,0,0,1],
+                [1,0,0,0,0,0,1],
+                [1,0,0,2,0,0,1],
+                [1,0,0,0,0,0,1],
+                [1,0,0,0,0,0,1],
+                [1,1,1,1,1,1,1]
+            ],
             items: [],
             doors: [
-                {x: 8 * tileSize, y: 10 * tileSize, width: tileSize, height: tileSize, target: 'town'}
+                {x: 3 * tileSize, y: 3 * tileSize, width: tileSize, height: tileSize, target: 'town'}
             ]
         };
 
         const houseMap = {
-            grid: Array.from({ length: 8 }, () => Array(12).fill(0)),
+            grid: [
+                [1,1,1,1,1],
+                [1,0,0,0,1],
+                [1,0,0,0,1],
+                [1,0,2,0,1],
+                [1,1,1,1,1]
+            ],
             items: [],
             doors: [
-                {x: 6 * tileSize, y: 6 * tileSize, width: tileSize, height: tileSize, target: 'town'}
+                {x: 2 * tileSize, y: 3 * tileSize, width: tileSize, height: tileSize, target: 'town'}
             ]
         };
 
@@ -69,13 +99,13 @@
             y: 5 * tileSize,
             width: tileSize,
             height: tileSize,
-            speed: 4,
+            speed: 2,
             direction: 'down',
             frame: 0,
             animationCounter: 0
         };
 
-        // Keyboard input
+        // Keyboard input handling
         const keys = {};
         document.addEventListener('keydown', (e) => keys[e.key] = true);
         document.addEventListener('keyup', (e) => keys[e.key] = false);
@@ -121,44 +151,44 @@
             }
         }
 
-        // Drawing functions with enhanced detail
+        // Enhanced drawing functions
         function drawMap() {
             const map = getCurrentMap().grid;
             for (let row = 0; row < map.length; row++) {
                 for (let col = 0; col < map[row].length; col++) {
                     if (map[row][col] === 0) {
-                        // Detailed grass
+                        // Grass with texture
                         ctx.fillStyle = '#32cd32';
                         ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
                         ctx.fillStyle = '#228b22';
-                        ctx.fillRect(col * tileSize + 4, row * tileSize + 4, tileSize - 8, tileSize - 8);
+                        ctx.fillRect(col * tileSize + 2, row * tileSize + 2, tileSize - 4, tileSize - 4);
                     } else if (map[row][col] === 1) {
-                        // Detailed wall
+                        // Stone wall with detail
                         ctx.fillStyle = '#808080';
                         ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
                         ctx.fillStyle = '#a9a9a9';
-                        ctx.fillRect(col * tileSize + 2, row * tileSize + 2, tileSize - 4, tileSize - 4);
+                        ctx.fillRect(col * tileSize + 1, row * tileSize + 1, tileSize - 2, tileSize - 2);
                     } else if (map[row][col] === 2) {
-                        // Detailed door
+                        // Door with wood texture
                         ctx.fillStyle = '#0000ff';
                         ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
                         ctx.fillStyle = '#00008b';
-                        ctx.fillRect(col * tileSize + 4, row * tileSize + 4, tileSize - 8, tileSize - 8);
+                        ctx.fillRect(col * tileSize + 2, row * tileSize + 2, tileSize - 4, tileSize - 4);
                     }
                 }
             }
-            // Add building details in town
+            // Building details in town
             if (currentScene === 'town') {
                 // Castle
                 ctx.fillStyle = '#696969';
-                ctx.fillRect(1 * tileSize, 1 * tileSize, tileSize * 4, tileSize * 4);
+                ctx.fillRect(1 * tileSize, 1 * tileSize, tileSize * 2, tileSize * 2);
                 ctx.fillStyle = '#ff0000';
-                ctx.fillRect(1 * tileSize + 4, 1 * tileSize - 8, tileSize * 4 - 8, 8);
+                ctx.fillRect(1 * tileSize + 2, 1 * tileSize - 4, tileSize * 2 - 4, 4);
                 // House
                 ctx.fillStyle = '#8b4513';
-                ctx.fillRect(26 * tileSize, 1 * tileSize, tileSize * 4, tileSize * 4);
+                ctx.fillRect(15 * tileSize, 1 * tileSize, tileSize * 2, tileSize * 2);
                 ctx.fillStyle = '#cd853f';
-                ctx.fillRect(26 * tileSize + 4, 1 * tileSize - 8, tileSize * 4 - 8, 8);
+                ctx.fillRect(15 * tileSize + 2, 1 * tileSize - 4, tileSize * 2 - 4, 4);
             }
         }
 
@@ -167,19 +197,19 @@
             for (let item of items) {
                 if (!item.collected) {
                     if (item.type === 'flower') {
-                        // Detailed flower
+                        // Detailed flower sprite
                         ctx.fillStyle = '#ffff00';
-                        ctx.fillRect(item.x + 8, item.y + 8, 16, 16);
+                        ctx.fillRect(item.x + 4, item.y + 4, 8, 8);
                         ctx.fillStyle = '#ff4500';
-                        ctx.fillRect(item.x + 12, item.y + 12, 8, 8);
+                        ctx.fillRect(item.x + 6, item.y + 6, 4, 4);
                         ctx.fillStyle = '#006400';
-                        ctx.fillRect(item.x + 14, item.y + 20, 4, 12);
+                        ctx.fillRect(item.x + 7, item.y + 10, 2, 6);
                     } else {
-                        // Detailed coin
+                        // Detailed coin sprite
                         ctx.fillStyle = '#ffa500';
-                        ctx.fillRect(item.x + 8, item.y + 8, 16, 16);
+                        ctx.fillRect(item.x + 4, item.y + 4, 8, 8);
                         ctx.fillStyle = '#ffd700';
-                        ctx.fillRect(item.x + 10, item.y + 10, 8, 8);
+                        ctx.fillRect(item.x + 5, item.y + 5, 4, 4);
                     }
                 }
             }
@@ -192,21 +222,21 @@
             }
             // Dress
             ctx.fillStyle = '#ff69b4';
-            ctx.fillRect(princess.x + 4, princess.y + 8, 24, 20);
+            ctx.fillRect(princess.x + 2, princess.y + 4, 12, 10);
             // Head
             ctx.fillStyle = '#ffdab9';
-            ctx.fillRect(princess.x + 8, princess.y, 16, 12);
+            ctx.fillRect(princess.x + 4, princess.y, 8, 6);
             // Crown
             ctx.fillStyle = '#ffd700';
-            ctx.fillRect(princess.x + 10, princess.y - 4, 12, 6);
+            ctx.fillRect(princess.x + 6, princess.y - 2, 4, 2);
             // Legs animation
             ctx.fillStyle = '#000000';
             if (princess.frame === 0) {
-                ctx.fillRect(princess.x + 8, princess.y + 28, 4, 4);
-                ctx.fillRect(princess.x + 20, princess.y + 28, 4, 4);
+                ctx.fillRect(princess.x + 4, princess.y + 14, 2, 2);
+                ctx.fillRect(princess.x + 10, princess.y + 14, 2, 2);
             } else {
-                ctx.fillRect(princess.x + 12, princess.y + 28, 4, 4);
-                ctx.fillRect(princess.x + 16, princess.y + 28, 4, 4);
+                ctx.fillRect(princess.x + 6, princess.y + 14, 2, 2);
+                ctx.fillRect(princess.x + 8, princess.y + 14, 2, 2);
             }
         }
 
@@ -216,13 +246,13 @@
                 if (fadeAlpha >= 1 && fadeDirection === 1) {
                     currentScene = targetScene;
                     if (currentScene === 'town') {
-                        princess.x = targetScene === 'castle' ? 2 * tileSize : 28 * tileSize;
+                        princess.x = targetScene === 'castle' ? 2 * tileSize : 16 * tileSize;
                         princess.y = 3 * tileSize;
                     } else if (currentScene === 'castle') {
-                        princess.x = 8 * tileSize;
+                        princess.x = 3 * tileSize;
                         princess.y = 2 * tileSize;
                     } else if (currentScene === 'house') {
-                        princess.x = 6 * tileSize;
+                        princess.x = 2 * tileSize;
                         princess.y = 2 * tileSize;
                     }
                     fadeDirection = -1;
@@ -259,8 +289,9 @@
             drawPrincess();
             handleFade();
 
+            // Score display
             ctx.fillStyle = '#ffffff';
-            ctx.font = '20px "Press Start 2P", Arial';
+            ctx.font = '16px Arial'; // Use "Press Start 2P" via Google Fonts for retro style if desired
             ctx.fillText(`Score: ${score}`, 10, 30);
 
             requestAnimationFrame(gameLoop);
