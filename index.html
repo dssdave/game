@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Classic Princess RPG</title>
+    <title>Ultimate Classic Princess RPG</title>
     <style>
         #gameContainer {
             text-align: center;
-            font-family: 'Press Start 2P', cursive; /* Retro font (you may need to include this font via CDN or locally) */
-            background: #87ceeb; /* Sky blue background for retro feel */
+            font-family: 'Press Start 2P', cursive; /* Retro font */
+            background: #87ceeb; /* Sky blue for retro feel */
         }
         canvas {
             border: 2px solid #4a4a4a;
@@ -43,7 +43,6 @@
             border-radius: 5px;
         }
     </style>
-    <!-- Load retro font (optional, for authenticity) -->
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -197,11 +196,12 @@
         document.addEventListener('keydown', (e) => keys[e.key] = true);
         document.addEventListener('keyup', (e) => keys[e.key] = false);
 
-        // Professional old-school drawing functions for pixel-art-style sprites
+        // Professional old-school pixel-art drawing functions
         function drawTile(type, x, y) {
             ctx.save();
+            ctx.imageSmoothingEnabled = false; // Disable anti-aliasing for pixel-perfect retro look
             switch(type) {
-                case 0: // Grass (lush, retro pixel art with blades and shadows)
+                case 0: // Grass (classic pixel art with blades and shading)
                     ctx.fillStyle = '#6bb26b';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     ctx.fillStyle = '#559955';
@@ -214,19 +214,19 @@
                     ctx.fillStyle = '#558855';
                     for (let i = 0; i < 3; i++) {
                         ctx.beginPath();
-                        ctx.moveTo(x + Math.random() * TILE_SIZE, y + Math.random() * TILE_SIZE);
-                        ctx.lineTo(x + Math.random() * TILE_SIZE, y + Math.random() * TILE_SIZE);
+                        ctx.moveTo(x + 8 + Math.random() * 16, y + 8 + Math.random() * 16);
+                        ctx.lineTo(x + 8 + Math.random() * 16, y + 8 + Math.random() * 16);
                         ctx.lineWidth = 2;
                         ctx.stroke();
                     }
                     break;
-                case 1: // Path (classic cobblestone with detailed cracks and shading)
+                case 1: // Path (retro cobblestone with cracks and depth)
                     ctx.fillStyle = '#b5946b';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     ctx.fillStyle = '#9c7d5a';
                     for (let i = 0; i < 2; i++) {
                         for (let j = 0; j < 2; j++) {
-                            ctx.fillRect(x + i * TILE_SIZE/2, y + j * TILE_SIZE/2, TILE_SIZE/4, TILE_SIZE/4);
+                            ctx.fillRect(x + i * 16, y + j * 16, 16, 16);
                         }
                     }
                     ctx.strokeStyle = '#8b5f3d';
@@ -237,8 +237,9 @@
                     ctx.stroke();
                     ctx.fillStyle = '#664422';
                     ctx.fillRect(x + 4, y + 4, 4, 4);
+                    ctx.fillRect(x + 24, y + 24, 4, 4);
                     break;
-                case 2: // Water (retro animated waves with pixel-perfect reflections)
+                case 2: // Water (pixel-perfect animated waves with reflections)
                     ctx.fillStyle = '#4da6ff';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     ctx.fillStyle = '#3b84cc';
@@ -254,14 +255,18 @@
                     ctx.beginPath();
                     ctx.arc(x + 16, y + 16, 4, 0, Math.PI * 2);
                     ctx.fill();
+                    ctx.fillStyle = '#e0f6ff';
+                    ctx.beginPath();
+                    ctx.arc(x + 16 + Math.sin(Date.now() * 0.01) * 2, y + 16 + Math.cos(Date.now() * 0.01) * 2, 2, 0, Math.PI * 2);
+                    ctx.fill();
                     break;
-                case 3: // Wall (stone with pixel-perfect cracks and moss)
+                case 3: // Wall (retro stone with cracks and moss)
                     ctx.fillStyle = '#808080';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     ctx.fillStyle = '#666666';
                     for (let i = 0; i < 2; i++) {
                         for (let j = 0; j < 2; j++) {
-                            ctx.fillRect(x + i * TILE_SIZE/2, y + j * TILE_SIZE/2, TILE_SIZE/4, TILE_SIZE/4);
+                            ctx.fillRect(x + i * 16, y + j * 16, 16, 16);
                         }
                     }
                     ctx.fillStyle = '#006400';
@@ -272,8 +277,10 @@
                     ctx.moveTo(x + 8, y + 24);
                     ctx.lineTo(x + 24, y + 8);
                     ctx.stroke();
+                    ctx.fillStyle = '#b0b0b0';
+                    ctx.fillRect(x + 4, y + 4, 4, 4);
                     break;
-                case 4: // Door (classic wooden door with pixel-art handle and hinges)
+                case 4: // Door (classic pixel-art wooden door with handle and hinges)
                     ctx.fillStyle = '#8b4513';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     ctx.fillStyle = '#5c2f00';
@@ -304,8 +311,12 @@
                     ctx.lineTo(x + 16, y + 16);
                     ctx.lineTo(x + 20, y + 28);
                     ctx.fill();
+                    ctx.fillStyle = '#e0f6ff';
+                    ctx.beginPath();
+                    ctx.arc(x + 16, y + 20, 2, 0, Math.PI * 2);
+                    ctx.fill(); // Dew drop
                     break;
-                case 6: // Coin (shiny gold coin with pixel-art seal)
+                case 6: // Coin (shiny pixel-art gold coin with royal seal)
                     ctx.fillStyle = '#ffd700';
                     ctx.beginPath();
                     ctx.arc(x + 16, y + 16, 10, 0, Math.PI * 2);
@@ -321,8 +332,14 @@
                     ctx.font = '8px "Press Start 2P"';
                     ctx.textAlign = 'center';
                     ctx.fillText('R', x + 16, y + 18);
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x + 10, y + 10);
+                    ctx.lineTo(x + 22, y + 22);
+                    ctx.stroke();
                     break;
-                case 7: // Gem (pixel-perfect prismatic gem with facets)
+                case 7: // Gem (pixel-perfect prismatic gem with facets and shine)
                     ctx.fillStyle = '#00ffff';
                     ctx.beginPath();
                     ctx.moveTo(x + 16, y + 8);
@@ -344,8 +361,12 @@
                     ctx.lineTo(x + 20, y + 20);
                     ctx.closePath();
                     ctx.fill();
+                    ctx.fillStyle = '#ffff00';
+                    ctx.beginPath();
+                    ctx.arc(x + 16, y + 12, 2, 0, Math.PI * 2);
+                    ctx.fill(); // Shine
                     break;
-                case 8: // Potion (retro glass bottle with glowing liquid)
+                case 8: // Potion (retro pixel-art bottle with glowing liquid and cork)
                     ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
                     ctx.moveTo(x + 8, y + 8);
@@ -371,7 +392,7 @@
                     ctx.fillStyle = '#c0c0c0';
                     ctx.fillRect(x + 14, y + 4, 4, 4); // Cork
                     break;
-                case 9: // NPC (retro guard/villager with detailed armor and expression)
+                case 9: // NPC (retro pixel-art guard/villager with detailed armor and expression)
                     ctx.fillStyle = '#00008b';
                     ctx.fillRect(x + 8, y + 8, 16, 24);
                     ctx.fillStyle = '#ff4500';
@@ -388,7 +409,7 @@
                     ctx.lineWidth = 1;
                     ctx.strokeRect(x + 8, y + 8, 16, 24);
                     break;
-                case 11: // Shop (retro sign with pixel-art goods and glowing light)
+                case 11: // Shop (retro pixel-art sign with goods and glow)
                     ctx.fillStyle = '#808080';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     ctx.fillStyle = '#ffff00';
@@ -419,7 +440,7 @@
                     ctx.lineWidth = 1;
                     ctx.strokeRect(x + 8, y + 16, 16, 8);
                     break;
-                case 13: // Artifact (retro mystic orb with glowing runes)
+                case 13: // Artifact (pixel-art mystic orb with glowing runes and aura)
                     ctx.fillStyle = '#9400d3';
                     ctx.beginPath();
                     ctx.arc(x + 16, y + 16, 10, 0, Math.PI * 2);
@@ -441,8 +462,8 @@
                     ctx.fillText('Rune', x + 16, y + 18);
                     ctx.fillStyle = '#ffeb3b';
                     ctx.beginPath();
-                    ctx.arc(x + 16, y + 16, 8, 0, Math.PI * 2);
-                    ctx.fill(); // Glow effect
+                    ctx.arc(x + 16, y + 16, 12, 0, Math.PI * 2);
+                    ctx.fill(); // Aura
                     break;
             }
             ctx.restore();
@@ -450,7 +471,8 @@
 
         function drawPlayer(x, y, frame, direction) {
             ctx.save();
-            // Body (classic royal dress with pixel-art embroidery and jewels)
+            ctx.imageSmoothingEnabled = false; // Pixel-perfect retro look
+            // Body (classic pixel-art royal dress with embroidery and jewels)
             ctx.fillStyle = '#ff69b4';
             ctx.fillRect(x + 8, y + 8, 16, 24);
             ctx.strokeStyle = '#ffd700';
@@ -706,7 +728,7 @@
         }
 
         function draw() {
-            // Background with day/night and weather (retro style)
+            // Background with day/night and weather (retro pixel-art style)
             ctx.fillStyle = game.time === 'Day' ? '#6bb26b' : '#2f4f4f';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             if (game.weather === 'rain') {
@@ -723,7 +745,7 @@
                 game.playSound('weather');
             }
 
-            // Draw map (classic pixel-art grid)
+            // Draw map (pixel-perfect retro grid)
             for (let y = 0; y < GRID_HEIGHT; y++) {
                 for (let x = 0; x < GRID_WIDTH; x++) {
                     drawTile(maps[game.scene][y][x], x * TILE_SIZE, y * TILE_SIZE);
