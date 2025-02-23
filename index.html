@@ -48,7 +48,7 @@
                     speed: 0.5,
                     yaw: 0,
                     pitch: 0,
-                    model: null // Will hold player geometry
+                    model: null
                 };
                 this.camera = {
                     x: 0,
@@ -111,7 +111,7 @@
             gl.shaderSource(shader, source);
             gl.compileShader(shader);
             if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                console.error(gl.getShaderInfoLog(shader));
+                console.error('Shader compilation error:', gl.getShaderInfoLog(shader));
                 gl.deleteShader(shader);
                 return null;
             }
@@ -192,7 +192,7 @@
                 for (let z = -50; z < 50; z += 2) {
                     const y = Math.sin(x * 0.1) * Math.cos(z * 0.1) * 5;
                     vertices.push(x, y, z);
-                    normals.push(0, 1, 0); // Simplified
+                    normals.push(0, 1, 0);
                     texcoords.push(x / 100 + 0.5, z / 100 + 0.5);
                 }
             }
@@ -210,10 +210,8 @@
         function generatePlayerModel() {
             return {
                 vertices: [
-                    // Body
                     -1, 0, -1,  1, 0, -1,  1, 2, -1, -1, 2, -1,
                     -1, 0,  1,  1, 0,  1,  1, 2,  1, -1, 2,  1,
-                    // Dress
                     -2, 0, -2,  2, 0, -2,  2, 1, -2, -2, 1, -2,
                     -2, 0,  2,  2, 0,  2,  2, 1,  2, -2, 1,  2
                 ],
@@ -304,7 +302,6 @@
         });
 
         function update() {
-            // Player movement
             const forward = [Math.sin(game.player.yaw), 0, Math.cos(game.player.yaw)];
             const right = [Math.cos(game.player.yaw), 0, -Math.sin(game.player.yaw)];
             if (keys['w']) {
@@ -326,11 +323,9 @@
             if (keys['ArrowLeft']) game.player.yaw += 0.05;
             if (keys['ArrowRight']) game.player.yaw -= 0.05;
 
-            // Camera follows player
             game.camera.x = game.player.x;
             game.camera.z = game.player.z + 30 * Math.cos(game.camera.pitch);
 
-            // Object interactions
             const currentObjects = objects[game.scene];
             for (let i = currentObjects.length - 1; i >= 0; i--) {
                 const obj = currentObjects[i];
@@ -446,27 +441,22 @@
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             gl.enable(gl.DEPTH_TEST);
 
-            // Projection
             let projection = mat4();
             perspective(projection, Math.PI / 3, canvas.width / canvas.height, 0.1, 1000);
             gl.uniformMatrix4fv(projLoc, false, projection);
 
-            // View
             let view = mat4();
             view = translate(view, -game.camera.x, -game.camera.y, -game.camera.z);
             view = multiply(mat4(), rotateX(mat4(), game.camera.pitch), view);
             view = multiply(mat4(), rotateY(mat4(), game.camera.yaw), view);
             gl.uniformMatrix4fv(viewLoc, false, view);
 
-            // Lighting
             gl.uniform3fv(lightPosLoc, [game.light.x, game.light.y, game.light.z]);
             gl.uniform3fv(lightColorLoc, game.light.color);
 
-            // Draw scene
             objects[game.scene].forEach(drawObject);
             drawPlayer();
 
-            // Update UI
             document.getElementById('flowers').textContent = game.flowers;
             document.getElementById('coins').textContent = game.coins;
             document.getElementById('location').textContent = game.scene.charAt(0).toUpperCase() + game.scene.slice(1);
