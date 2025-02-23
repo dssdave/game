@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Refined Princess RPG</title>
+    <title>Classic Princess RPG</title>
     <style>
         #gameContainer {
             text-align: center;
-            font-family: 'Arial', sans-serif;
-            background: #f0f0f0;
+            font-family: 'Press Start 2P', cursive; /* Retro font (you may need to include this font via CDN or locally) */
+            background: #87ceeb; /* Sky blue background for retro feel */
         }
         canvas {
             border: 2px solid #4a4a4a;
@@ -14,29 +14,37 @@
         }
         #ui {
             margin-top: 10px;
-            font-size: 18px;
-            color: #333;
+            font-size: 16px;
+            color: #fff;
             font-weight: bold;
+            background: #2f4f4f;
+            padding: 5px;
+            border-radius: 5px;
         }
         #dialogue {
             margin-top: 10px;
-            font-size: 16px;
-            color: #000;
+            font-size: 14px;
+            color: #fff;
             max-width: 600px;
             margin-left: auto;
             margin-right: auto;
-            background: #fff;
+            background: #2f4f4f;
             padding: 10px;
             border-radius: 5px;
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
         }
         #soundCue {
             margin-top: 5px;
-            font-size: 14px;
-            color: #666;
+            font-size: 12px;
+            color: #fff;
             font-style: italic;
+            background: #2f4f4f;
+            padding: 5px;
+            border-radius: 5px;
         }
     </style>
+    <!-- Load retro font (optional, for authenticity) -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="gameContainer">
@@ -120,7 +128,7 @@
 
         let game = new Game();
 
-        // Updated tile map with repositioned doors and no enemies (0=grass, 1=path, 2=water, 3=wall, 4=door, 5=flower, 6=coin, 7=gem, 8=potion, 9=NPC, 11=shop, 12=key, 13=artifact)
+        // Professional old-school tile map (0=grass, 1=path, 2=water, 3=wall, 4=door, 5=flower, 6=coin, 7=gem, 8=potion, 9=NPC, 11=shop, 12=key, 13=artifact)
         const maps = {
             town: [
                 [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
@@ -158,7 +166,7 @@
                 [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
                 [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
                 [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,4,1,0],
+                [0,1,3,0,0,0,0,0,0,0,3,0,4,0,0,0,0,0,0,0,0,0,3,1,0],
                 [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
                 [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
             ],
@@ -189,21 +197,21 @@
         document.addEventListener('keydown', (e) => keys[e.key] = true);
         document.addEventListener('keyup', (e) => keys[e.key] = false);
 
-        // Advanced drawing functions for ultra-detailed pixel-art-style sprites
+        // Professional old-school drawing functions for pixel-art-style sprites
         function drawTile(type, x, y) {
             ctx.save();
             switch(type) {
-                case 0: // Grass (lush, detailed with shadows, highlights, and blades)
-                    ctx.fillStyle = '#90ee90';
+                case 0: // Grass (lush, retro pixel art with blades and shadows)
+                    ctx.fillStyle = '#6bb26b';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                    ctx.fillStyle = '#7b9e7b';
-                    ctx.fillRect(x, y, TILE_SIZE/2, TILE_SIZE/2);
-                    ctx.fillStyle = '#a2d6a2';
-                    ctx.fillRect(x + TILE_SIZE/4, y + TILE_SIZE/4, TILE_SIZE/4, TILE_SIZE/4);
-                    ctx.strokeStyle = '#558855';
+                    ctx.fillStyle = '#559955';
+                    ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+                    ctx.fillStyle = '#77c877';
+                    ctx.fillRect(x + 4, y + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+                    ctx.strokeStyle = '#447744';
                     ctx.lineWidth = 1;
                     ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
-                    ctx.fillStyle = '#4caf50';
+                    ctx.fillStyle = '#558855';
                     for (let i = 0; i < 3; i++) {
                         ctx.beginPath();
                         ctx.moveTo(x + Math.random() * TILE_SIZE, y + Math.random() * TILE_SIZE);
@@ -212,43 +220,42 @@
                         ctx.stroke();
                     }
                     break;
-                case 1: // Path (realistic cobblestone with cracks and moss)
-                    ctx.fillStyle = '#d2b48c';
+                case 1: // Path (classic cobblestone with detailed cracks and shading)
+                    ctx.fillStyle = '#b5946b';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                    ctx.fillStyle = '#c68e6e';
+                    ctx.fillStyle = '#9c7d5a';
                     for (let i = 0; i < 2; i++) {
                         for (let j = 0; j < 2; j++) {
                             ctx.fillRect(x + i * TILE_SIZE/2, y + j * TILE_SIZE/2, TILE_SIZE/4, TILE_SIZE/4);
                         }
                     }
                     ctx.strokeStyle = '#8b5f3d';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.moveTo(x + TILE_SIZE/4, y + TILE_SIZE/4);
-                    ctx.lineTo(x + 3*TILE_SIZE/4, y + 3*TILE_SIZE/4);
-                    ctx.stroke();
-                    ctx.fillStyle = '#006400';
-                    ctx.fillRect(x + TILE_SIZE/8, y + 3*TILE_SIZE/8, TILE_SIZE/8, TILE_SIZE/8);
-                    break;
-                case 2: // Water (animated, reflective waves with light ripples)
-                    ctx.fillStyle = '#87ceeb';
-                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                    ctx.strokeStyle = '#4169e1';
                     ctx.lineWidth = 1;
                     ctx.beginPath();
-                    ctx.moveTo(x, y + TILE_SIZE/2 + Math.sin(Date.now() * 0.005 + x + y) * 3);
-                    ctx.quadraticCurveTo(x + TILE_SIZE/2, y, x + TILE_SIZE, y + TILE_SIZE/2 + Math.sin(Date.now() * 0.005 + x + y) * 3);
+                    ctx.moveTo(x + 8, y + 8);
+                    ctx.lineTo(x + 24, y + 24);
                     ctx.stroke();
-                    ctx.fillStyle = '#e0f6ff';
+                    ctx.fillStyle = '#664422';
+                    ctx.fillRect(x + 4, y + 4, 4, 4);
+                    break;
+                case 2: // Water (retro animated waves with pixel-perfect reflections)
+                    ctx.fillStyle = '#4da6ff';
+                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = '#3b84cc';
+                    ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+                    ctx.strokeStyle = '#2e6699';
+                    ctx.lineWidth = 1;
                     ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/6, 0, Math.PI * 2);
-                    ctx.fill();
+                    const waveOffset = Math.sin(Date.now() * 0.005 + x + y) * 3;
+                    ctx.moveTo(x, y + 16 + waveOffset);
+                    ctx.quadraticCurveTo(x + 16, y + 8, x + 32, y + 16 + waveOffset);
+                    ctx.stroke();
                     ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/2 + Math.sin(Date.now() * 0.01) * 2, y + TILE_SIZE/2 + Math.cos(Date.now() * 0.01) * 2, TILE_SIZE/8, 0, Math.PI * 2);
+                    ctx.arc(x + 16, y + 16, 4, 0, Math.PI * 2);
                     ctx.fill();
                     break;
-                case 3: // Wall (stone with deep cracks, moss, and weathering)
+                case 3: // Wall (stone with pixel-perfect cracks and moss)
                     ctx.fillStyle = '#808080';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     ctx.fillStyle = '#666666';
@@ -258,117 +265,93 @@
                         }
                     }
                     ctx.fillStyle = '#006400';
-                    ctx.fillRect(x + TILE_SIZE/4, y + TILE_SIZE/4, TILE_SIZE/8, TILE_SIZE/8);
+                    ctx.fillRect(x + 8, y + 8, 4, 4);
                     ctx.strokeStyle = '#4a4a4a';
-                    ctx.lineWidth = 2;
+                    ctx.lineWidth = 1;
                     ctx.beginPath();
-                    ctx.moveTo(x + TILE_SIZE/4, y + 3*TILE_SIZE/4);
-                    ctx.lineTo(x + 3*TILE_SIZE/4, y + TILE_SIZE/4);
+                    ctx.moveTo(x + 8, y + 24);
+                    ctx.lineTo(x + 24, y + 8);
                     ctx.stroke();
-                    ctx.fillStyle = '#b0b0b0';
-                    ctx.fillRect(x + TILE_SIZE/8, y + TILE_SIZE/8, TILE_SIZE/4, TILE_SIZE/4);
                     break;
-                case 4: // Door (ornate wood with intricate carvings and handle)
+                case 4: // Door (classic wooden door with pixel-art handle and hinges)
                     ctx.fillStyle = '#8b4513';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     ctx.fillStyle = '#5c2f00';
-                    ctx.fillRect(x + TILE_SIZE/4, y + TILE_SIZE/4, TILE_SIZE/2, TILE_SIZE/2);
+                    ctx.fillRect(x + 8, y + 8, 16, 16);
                     ctx.fillStyle = '#c0c0c0';
-                    ctx.fillRect(x + TILE_SIZE/2 - 2, y + TILE_SIZE/4, 4, 8);
-                    ctx.fillRect(x + TILE_SIZE/2 - 2, y + 3*TILE_SIZE/4, 4, 8);
-                    ctx.strokeStyle = '#000000';
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
-                    ctx.fillStyle = '#ffd700';
-                    ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/4, y + TILE_SIZE/2, TILE_SIZE/8, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.strokeStyle = '#000000';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
+                    ctx.fillRect(x + 14, y + 12, 4, 8); // Handle
+                    ctx.fillStyle = '#808080';
+                    ctx.fillRect(x + 4, y + 12, 2, 8); // Hinge 1
+                    ctx.fillRect(x + 26, y + 12, 2, 8); // Hinge 2
                     break;
-                case 5: // Flower (ultra-detailed with petals, stem, leaves, and dew)
+                case 5: // Flower (vibrant pixel-art flower with stem and leaves)
                     ctx.fillStyle = '#ff00ff';
                     for (let i = 0; i < 5; i++) {
                         ctx.beginPath();
-                        ctx.moveTo(x + TILE_SIZE/2, y + TILE_SIZE/2);
-                        ctx.lineTo(x + TILE_SIZE/2 + Math.cos(i * 2*Math.PI/5) * TILE_SIZE/2, y + TILE_SIZE/2 + Math.sin(i * 2*Math.PI/5) * TILE_SIZE/2);
-                        ctx.lineTo(x + TILE_SIZE/2 + Math.cos(i * 2*Math.PI/5 + Math.PI/10) * TILE_SIZE/3, y + TILE_SIZE/2 + Math.sin(i * 2*Math.PI/5 + Math.PI/10) * TILE_SIZE/3);
+                        ctx.moveTo(x + 16, y + 16);
+                        ctx.lineTo(x + 16 + Math.cos(i * 2*Math.PI/5) * 12, y + 16 + Math.sin(i * 2*Math.PI/5) * 12);
+                        ctx.lineTo(x + 16 + Math.cos(i * 2*Math.PI/5 + Math.PI/10) * 8, y + 16 + Math.sin(i * 2*Math.PI/5 + Math.PI/10) * 8);
                         ctx.fill();
                     }
                     ctx.fillStyle = '#00ff00';
                     ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/6, 0, Math.PI * 2);
+                    ctx.arc(x + 16, y + 16, 6, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.fillStyle = '#228b22';
-                    ctx.fillRect(x + TILE_SIZE/2 - 2, y + TILE_SIZE/2, 4, TILE_SIZE/2);
+                    ctx.fillRect(x + 14, y + 16, 4, 16);
                     ctx.beginPath();
-                    ctx.moveTo(x + TILE_SIZE/2 - 4, y + 3*TILE_SIZE/4);
-                    ctx.lineTo(x + TILE_SIZE/2, y + TILE_SIZE/2);
-                    ctx.lineTo(x + TILE_SIZE/2 + 4, y + 3*TILE_SIZE/4);
+                    ctx.moveTo(x + 12, y + 28);
+                    ctx.lineTo(x + 16, y + 16);
+                    ctx.lineTo(x + 20, y + 28);
                     ctx.fill();
-                    ctx.fillStyle = '#e0f6ff';
-                    ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2 + TILE_SIZE/4, TILE_SIZE/8, 0, Math.PI * 2);
-                    ctx.fill(); // Dew drop
                     break;
-                case 6: // Coin (highly reflective gold with royal seal)
+                case 6: // Coin (shiny gold coin with pixel-art seal)
                     ctx.fillStyle = '#ffd700';
                     ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/3, 0, Math.PI * 2);
+                    ctx.arc(x + 16, y + 16, 10, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.strokeStyle = '#daa520';
-                    ctx.lineWidth = 2;
+                    ctx.lineWidth = 1;
                     ctx.stroke();
                     ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/6, 0, Math.PI * 2);
+                    ctx.arc(x + 16, y + 16, 6, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.fillStyle = '#000000';
-                    ctx.font = '8px Arial';
+                    ctx.font = '8px "Press Start 2P"';
                     ctx.textAlign = 'center';
-                    ctx.fillText('Royal', x + TILE_SIZE/2, y + TILE_SIZE/2 + 2);
-                    ctx.strokeStyle = '#000000';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(x + TILE_SIZE/2 - TILE_SIZE/6, y + TILE_SIZE/2 - TILE_SIZE/6);
-                    ctx.lineTo(x + TILE_SIZE/2 + TILE_SIZE/6, y + TILE_SIZE/2 + TILE_SIZE/6);
-                    ctx.stroke();
+                    ctx.fillText('R', x + 16, y + 18);
                     break;
-                case 7: // Gem (prismatic with deep facets and light refraction)
+                case 7: // Gem (pixel-perfect prismatic gem with facets)
                     ctx.fillStyle = '#00ffff';
                     ctx.beginPath();
-                    ctx.moveTo(x + TILE_SIZE/2, y + TILE_SIZE/4);
-                    ctx.lineTo(x + TILE_SIZE/4, y + 3*TILE_SIZE/4);
-                    ctx.lineTo(x + 3*TILE_SIZE/4, y + 3*TILE_SIZE/4);
+                    ctx.moveTo(x + 16, y + 8);
+                    ctx.lineTo(x + 8, y + 24);
+                    ctx.lineTo(x + 24, y + 24);
                     ctx.closePath();
                     ctx.fill();
                     ctx.strokeStyle = '#00c0c0';
-                    ctx.lineWidth = 2;
+                    ctx.lineWidth = 1;
                     ctx.stroke();
                     ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/8, 0, Math.PI * 2);
+                    ctx.arc(x + 16, y + 16, 4, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.fillStyle = '#ff00ff';
                     ctx.beginPath();
-                    ctx.moveTo(x + TILE_SIZE/2, y + TILE_SIZE/2);
-                    ctx.lineTo(x + TILE_SIZE/2 - TILE_SIZE/8, y + TILE_SIZE/2 + TILE_SIZE/8);
-                    ctx.lineTo(x + TILE_SIZE/2 + TILE_SIZE/8, y + TILE_SIZE/2 + TILE_SIZE/8);
+                    ctx.moveTo(x + 16, y + 16);
+                    ctx.lineTo(x + 12, y + 20);
+                    ctx.lineTo(x + 20, y + 20);
                     ctx.closePath();
                     ctx.fill();
-                    ctx.fillStyle = '#ffff00';
-                    ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/2 + TILE_SIZE/12, y + TILE_SIZE/2 - TILE_SIZE/12, TILE_SIZE/12, 0, Math.PI * 2);
-                    ctx.fill(); // Light refraction
                     break;
-                case 8: // Potion (crystal bottle with swirling liquid and cork)
+                case 8: // Potion (retro glass bottle with glowing liquid)
                     ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
-                    ctx.moveTo(x + TILE_SIZE/4, y + TILE_SIZE/4);
-                    ctx.lineTo(x + 3*TILE_SIZE/4, y + TILE_SIZE/4);
-                    ctx.lineTo(x + 3*TILE_SIZE/4, y + 3*TILE_SIZE/4);
-                    ctx.lineTo(x + TILE_SIZE/4, y + 3*TILE_SIZE/4);
+                    ctx.moveTo(x + 8, y + 8);
+                    ctx.lineTo(x + 24, y + 8);
+                    ctx.lineTo(x + 24, y + 24);
+                    ctx.lineTo(x + 8, y + 24);
                     ctx.closePath();
                     ctx.fill();
                     ctx.strokeStyle = '#000000';
@@ -376,19 +359,19 @@
                     ctx.stroke();
                     ctx.fillStyle = '#ff4500';
                     ctx.beginPath();
-                    ctx.moveTo(x + TILE_SIZE/3, y + TILE_SIZE/3);
-                    ctx.lineTo(x + 2*TILE_SIZE/3, y + TILE_SIZE/3);
-                    ctx.lineTo(x + TILE_SIZE/2, y + 2*TILE_SIZE/3);
+                    ctx.moveTo(x + 12, y + 12);
+                    ctx.lineTo(x + 20, y + 12);
+                    ctx.lineTo(x + 16, y + 20);
                     ctx.closePath();
                     ctx.fill();
                     ctx.fillStyle = '#ff8c00';
                     ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/6, 0, Math.PI * 2);
+                    ctx.arc(x + 16, y + 16, 6, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.fillStyle = '#c0c0c0';
-                    ctx.fillRect(x + TILE_SIZE/2 - 2, y + TILE_SIZE/4 - 4, 4, 8); // Cork
+                    ctx.fillRect(x + 14, y + 4, 4, 4); // Cork
                     break;
-                case 9: // NPC (highly detailed guard/villager with armor, weapons, and expressions)
+                case 9: // NPC (retro guard/villager with detailed armor and expression)
                     ctx.fillStyle = '#00008b';
                     ctx.fillRect(x + 8, y + 8, 16, 24);
                     ctx.fillStyle = '#ff4500';
@@ -399,66 +382,66 @@
                     ctx.fillRect(x + 10, y + 18, 12, 6); // Armor
                     ctx.fillStyle = '#ffd700';
                     ctx.fillRect(x + 24, y + 20, 4, 8); // Sword handle
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(x + 26, y + 20, 2, 8); // Sword blade
                     ctx.strokeStyle = '#000000';
                     ctx.lineWidth = 1;
                     ctx.strokeRect(x + 8, y + 8, 16, 24);
-                    ctx.fillStyle = '#ff0000';
-                    ctx.fillRect(x + 26, y + 20, 2, 8); // Sword blade
                     break;
-                case 11: // Shop (elaborate sign with goods and glowing light)
+                case 11: // Shop (retro sign with pixel-art goods and glowing light)
                     ctx.fillStyle = '#808080';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     ctx.fillStyle = '#ffff00';
-                    ctx.fillRect(x + TILE_SIZE/4, y + TILE_SIZE/4, TILE_SIZE/2, TILE_SIZE/2);
+                    ctx.fillRect(x + 8, y + 8, 16, 16);
                     ctx.fillStyle = '#000000';
-                    ctx.font = '12px Arial';
+                    ctx.font = '10px "Press Start 2P"';
                     ctx.textAlign = 'center';
-                    ctx.fillText('Shop', x + TILE_SIZE/2, y + TILE_SIZE/2 + 4);
+                    ctx.fillText('Shop', x + 16, y + 16);
                     ctx.fillStyle = '#ffeb3b';
                     ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/4, TILE_SIZE/8, 0, Math.PI * 2);
-                    ctx.fill(); // Glowing light
+                    ctx.arc(x + 16, y + 8, 4, 0, Math.PI * 2);
+                    ctx.fill();
                     break;
-                case 12: // Key (intricate golden key with detailed handle and teeth)
+                case 12: // Key (pixel-art golden key with intricate handle and teeth)
                     ctx.fillStyle = '#ffd700';
-                    ctx.fillRect(x + TILE_SIZE/4, y + TILE_SIZE/2, TILE_SIZE/2, TILE_SIZE/4);
+                    ctx.fillRect(x + 8, y + 16, 16, 8);
                     ctx.fillStyle = '#daa520';
                     ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/4, y + TILE_SIZE/2 + TILE_SIZE/8, TILE_SIZE/8, 0, Math.PI * 2);
+                    ctx.arc(x + 8, y + 20, 4, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
-                    ctx.arc(x + 3*TILE_SIZE/4, y + TILE_SIZE/2 + TILE_SIZE/8, TILE_SIZE/8, 0, Math.PI * 2);
+                    ctx.arc(x + 24, y + 20, 4, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.fillStyle = '#ffd700';
-                    ctx.fillRect(x + 3*TILE_SIZE/4 - 2, y + TILE_SIZE/2 - 2, 4, 8); // Teeth
+                    ctx.fillRect(x + 22, y + 14, 4, 8); // Teeth
                     ctx.strokeStyle = '#000000';
                     ctx.lineWidth = 1;
-                    ctx.strokeRect(x + TILE_SIZE/4, y + TILE_SIZE/2, TILE_SIZE/2, TILE_SIZE/4);
+                    ctx.strokeRect(x + 8, y + 16, 16, 8);
                     break;
-                case 13: // Artifact (glowing mystic orb with runes)
+                case 13: // Artifact (retro mystic orb with glowing runes)
                     ctx.fillStyle = '#9400d3';
                     ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/3, 0, Math.PI * 2);
+                    ctx.arc(x + 16, y + 16, 10, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.strokeStyle = '#4b0082';
-                    ctx.lineWidth = 2;
+                    ctx.lineWidth = 1;
                     ctx.stroke();
                     ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/6, 0, Math.PI * 2);
+                    ctx.arc(x + 16, y + 16, 6, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.fillStyle = '#ff00ff';
                     ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/2 + TILE_SIZE/8, y + TILE_SIZE/2 - TILE_SIZE/8, TILE_SIZE/12, 0, Math.PI * 2);
+                    ctx.arc(x + 20, y + 12, 4, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.fillStyle = '#000000';
-                    ctx.font = '8px Arial';
+                    ctx.font = '8px "Press Start 2P"';
                     ctx.textAlign = 'center';
-                    ctx.fillText('Rune', x + TILE_SIZE/2, y + TILE_SIZE/2 + 2);
+                    ctx.fillText('Rune', x + 16, y + 18);
                     ctx.fillStyle = '#ffeb3b';
                     ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/4, 0, Math.PI * 2);
+                    ctx.arc(x + 16, y + 16, 8, 0, Math.PI * 2);
                     ctx.fill(); // Glow effect
                     break;
             }
@@ -467,11 +450,11 @@
 
         function drawPlayer(x, y, frame, direction) {
             ctx.save();
-            // Body (exquisite royal dress with embroidery, jewels, and flowing fabric)
+            // Body (classic royal dress with pixel-art embroidery and jewels)
             ctx.fillStyle = '#ff69b4';
             ctx.fillRect(x + 8, y + 8, 16, 24);
             ctx.strokeStyle = '#ffd700';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1;
             ctx.strokeRect(x + 8, y + 8, 16, 24);
             ctx.fillStyle = '#ffffff';
             for (let i = 0; i < 3; i++) {
@@ -480,8 +463,8 @@
             ctx.fillStyle = '#00ffff';
             ctx.beginPath();
             ctx.arc(x + 12, y + 22, 4, 0, Math.PI * 2);
-            ctx.fill(); // Jewel on dress
-            // Crown (ornate gold with multiple jewels and filigree)
+            ctx.fill();
+            // Crown (pixel-art gold with jewels and filigree)
             ctx.fillStyle = '#ffd700';
             ctx.fillRect(x + 6, y, 20, 8);
             ctx.fillStyle = '#00ffff';
@@ -500,8 +483,8 @@
             ctx.beginPath();
             ctx.moveTo(x + 8, y + 8);
             ctx.lineTo(x + 24, y + 8);
-            ctx.stroke(); // Crown filigree
-            // Face (realistic with eyes, nose, mouth, and blush)
+            ctx.stroke();
+            // Face (pixel-art with eyes, nose, mouth, and blush)
             ctx.fillStyle = '#ffe4c4';
             ctx.fillRect(x + 12, y + 10, 8, 6);
             ctx.fillStyle = '#ff69b4';
@@ -517,17 +500,17 @@
             ctx.fillStyle = '#ff8c8c';
             ctx.beginPath();
             ctx.arc(x + 14, y + 14, 2, 0, Math.PI * 2);
-            ctx.fill(); // Blush left
+            ctx.fill();
             ctx.beginPath();
             ctx.arc(x + 18, y + 14, 2, 0, Math.PI * 2);
-            ctx.fill(); // Blush right
-            // Walking animation (ultra-detailed limbs with flowing fabric and motion blur)
+            ctx.fill();
+            // Walking animation (pixel-perfect limbs with flowing fabric)
             if (frame > 15) {
                 ctx.fillStyle = '#ff69b4';
                 if (direction === 'left') {
                     ctx.fillRect(x + 4, y + 24, 8, 8); // Left leg
                     ctx.fillStyle = '#ff8c8c';
-                    ctx.fillRect(x + 4, y + 24 + Math.sin(frame * 0.1) * 4, 8, 4); // Motion blur
+                    ctx.fillRect(x + 4, y + 24 + Math.sin(frame * 0.1) * 4, 8, 4);
                     ctx.fillRect(x + 24, y + 16, 8, 8); // Right arm
                     ctx.fillStyle = '#ff8c8c';
                     ctx.fillRect(x + 24, y + 16 + Math.sin(frame * 0.1) * 4, 8, 4);
@@ -536,7 +519,7 @@
                     ctx.beginPath();
                     ctx.moveTo(x + 24, y + 16);
                     ctx.lineTo(x + 32, y + 16 + Math.sin(frame * 0.1) * 4);
-                    ctx.stroke(); // Flowing fabric
+                    ctx.stroke();
                 } else if (direction === 'right') {
                     ctx.fillRect(x + 20, y + 24, 8, 8); // Right leg
                     ctx.fillStyle = '#ff8c8c';
@@ -549,7 +532,7 @@
                     ctx.beginPath();
                     ctx.moveTo(x + 4, y + 16);
                     ctx.lineTo(x - 4, y + 16 + Math.sin(frame * 0.1) * 4);
-                    ctx.stroke(); // Flowing fabric
+                    ctx.stroke();
                 } else if (direction === 'up') {
                     ctx.fillRect(x + 12, y + 16, 8, 8); // Legs
                     ctx.fillStyle = '#ff8c8c';
@@ -562,7 +545,7 @@
                     ctx.beginPath();
                     ctx.moveTo(x + 8, y + 8);
                     ctx.lineTo(x + 8 + Math.sin(frame * 0.1) * 4, y);
-                    ctx.stroke(); // Flowing fabric
+                    ctx.stroke();
                 } else if (direction === 'down') {
                     ctx.fillRect(x + 12, y + 24, 8, 8); // Legs
                     ctx.fillStyle = '#ff8c8c';
@@ -575,7 +558,7 @@
                     ctx.beginPath();
                     ctx.moveTo(x + 16, y + 8);
                     ctx.lineTo(x + 16 + Math.sin(frame * 0.1) * 4, y + 16);
-                    ctx.stroke(); // Flowing fabric
+                    ctx.stroke();
                 }
             }
             ctx.restore();
@@ -723,24 +706,24 @@
         }
 
         function draw() {
-            // Background with day/night and weather
-            ctx.fillStyle = game.time === 'Day' ? '#90ee90' : '#2f4f4f';
+            // Background with day/night and weather (retro style)
+            ctx.fillStyle = game.time === 'Day' ? '#6bb26b' : '#2f4f4f';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             if (game.weather === 'rain') {
-                ctx.fillStyle = 'rgba(0, 0, 255, 0.5)';
+                ctx.fillStyle = 'rgba(0, 0, 255, 0.3)';
                 for (let i = 0; i < 50; i++) {
-                    ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 10);
+                    ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 1, 4);
                 }
                 game.playSound('weather');
             } else if (game.weather === 'snow') {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
                 for (let i = 0; i < 50; i++) {
-                    ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
+                    ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 1, 1);
                 }
                 game.playSound('weather');
             }
 
-            // Draw map
+            // Draw map (classic pixel-art grid)
             for (let y = 0; y < GRID_HEIGHT; y++) {
                 for (let x = 0; x < GRID_WIDTH; x++) {
                     drawTile(maps[game.scene][y][x], x * TILE_SIZE, y * TILE_SIZE);
