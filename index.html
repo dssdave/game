@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Ultimate Princess RPG</title>
+    <title>Refined Princess RPG</title>
     <style>
         #gameContainer {
             text-align: center;
@@ -85,13 +85,11 @@
                     questStatus: {
                         townGuard: false,
                         castleKing: false,
-                        villagerQuest: false,
-                        enemyDefeated: false
+                        villagerQuest: false
                     }
                 };
                 this.dialogue = '';
                 this.dialogueTimer = 0;
-                this.enemies = [];
                 this.weather = 'clear';
             }
             showDialogue(text) {
@@ -104,7 +102,6 @@
                 switch(type) {
                     case 'dialogue': soundCue.textContent = '*Chime sound*'; break;
                     case 'collect': soundCue.textContent = '*Ding sound*'; break;
-                    case 'combat': soundCue.textContent = '*Clash sound*'; break;
                     case 'weather': soundCue.textContent = '*Wind/rain sound*'; break;
                 }
                 setTimeout(() => soundCue.textContent = '', 1000);
@@ -123,7 +120,7 @@
 
         let game = new Game();
 
-        // Expanded tile map (0=grass, 1=path, 2=water, 3=wall, 4=door, 5=flower, 6=coin, 7=gem, 8=potion, 9=NPC, 10=enemy, 11=shop, 12=key, 13=artifact)
+        // Updated tile map with repositioned doors and no enemies (0=grass, 1=path, 2=water, 3=wall, 4=door, 5=flower, 6=coin, 7=gem, 8=potion, 9=NPC, 11=shop, 12=key, 13=artifact)
         const maps = {
             town: [
                 [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
@@ -133,13 +130,13 @@
                 [2,0,1,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,2],
                 [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,6,0,2],
                 [2,0,1,0,0,0,0,0,0,0,3,3,3,3,3,0,0,0,0,1,0,0,0,0,2],
-                [2,0,1,0,0,0,0,0,0,0,3,4,3,0,0,0,0,0,0,1,0,0,0,0,2],
+                [2,0,1,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,1,0,0,0,0,2],
                 [2,0,1,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,1,0,0,0,0,2],
                 [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,2],
                 [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,1,0,5,0,0,2],
                 [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,7,0,2],
                 [2,0,1,0,0,0,0,0,0,0,0,3,3,0,0,0,0,0,0,1,0,0,0,0,2],
-                [2,0,1,0,0,0,0,0,0,0,0,3,4,0,0,0,0,0,0,1,0,0,0,0,2],
+                [2,0,1,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,1,0,0,0,0,2],
                 [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,1,0,0,0,0,2],
                 [2,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,2],
                 [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
@@ -155,13 +152,13 @@
                 [0,1,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1,0],
                 [0,1,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1,0],
                 [0,1,3,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,4,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,3,1,0],
                 [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
                 [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
                 [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
                 [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,4,0,0,0,0,0,0,0,0,0,3,1,0],
+                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
+                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
+                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,4,1,0],
                 [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
                 [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
             ],
@@ -173,10 +170,10 @@
                 [0,1,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1,0],
                 [0,1,3,0,0,0,0,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1,0],
                 [0,1,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1,0],
                 [0,1,3,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,4,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,3,1,0],
+                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
+                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
+                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
                 [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
                 [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
                 [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
@@ -192,11 +189,11 @@
         document.addEventListener('keydown', (e) => keys[e.key] = true);
         document.addEventListener('keyup', (e) => keys[e.key] = false);
 
-        // Advanced drawing functions for pixel-art-style sprites
+        // Advanced drawing functions for ultra-detailed pixel-art-style sprites
         function drawTile(type, x, y) {
             ctx.save();
             switch(type) {
-                case 0: // Grass (rich pixel art with shadows and highlights)
+                case 0: // Grass (lush, detailed with shadows, highlights, and blades)
                     ctx.fillStyle = '#90ee90';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     ctx.fillStyle = '#7b9e7b';
@@ -206,8 +203,16 @@
                     ctx.strokeStyle = '#558855';
                     ctx.lineWidth = 1;
                     ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = '#4caf50';
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(x + Math.random() * TILE_SIZE, y + Math.random() * TILE_SIZE);
+                        ctx.lineTo(x + Math.random() * TILE_SIZE, y + Math.random() * TILE_SIZE);
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
                     break;
-                case 1: // Path (detailed cobblestone with cracks)
+                case 1: // Path (realistic cobblestone with cracks and moss)
                     ctx.fillStyle = '#d2b48c';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     ctx.fillStyle = '#c68e6e';
@@ -222,22 +227,28 @@
                     ctx.moveTo(x + TILE_SIZE/4, y + TILE_SIZE/4);
                     ctx.lineTo(x + 3*TILE_SIZE/4, y + 3*TILE_SIZE/4);
                     ctx.stroke();
+                    ctx.fillStyle = '#006400';
+                    ctx.fillRect(x + TILE_SIZE/8, y + 3*TILE_SIZE/8, TILE_SIZE/8, TILE_SIZE/8);
                     break;
-                case 2: // Water (animated waves with reflections)
+                case 2: // Water (animated, reflective waves with light ripples)
                     ctx.fillStyle = '#87ceeb';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     ctx.strokeStyle = '#4169e1';
                     ctx.lineWidth = 1;
                     ctx.beginPath();
-                    ctx.moveTo(x, y + TILE_SIZE/2 + Math.sin(Date.now() * 0.005 + x + y) * 2);
-                    ctx.quadraticCurveTo(x + TILE_SIZE/2, y, x + TILE_SIZE, y + TILE_SIZE/2 + Math.sin(Date.now() * 0.005 + x + y) * 2);
+                    ctx.moveTo(x, y + TILE_SIZE/2 + Math.sin(Date.now() * 0.005 + x + y) * 3);
+                    ctx.quadraticCurveTo(x + TILE_SIZE/2, y, x + TILE_SIZE, y + TILE_SIZE/2 + Math.sin(Date.now() * 0.005 + x + y) * 3);
                     ctx.stroke();
                     ctx.fillStyle = '#e0f6ff';
                     ctx.beginPath();
                     ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/6, 0, Math.PI * 2);
                     ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(x + TILE_SIZE/2 + Math.sin(Date.now() * 0.01) * 2, y + TILE_SIZE/2 + Math.cos(Date.now() * 0.01) * 2, TILE_SIZE/8, 0, Math.PI * 2);
+                    ctx.fill();
                     break;
-                case 3: // Wall (stone with moss and cracks)
+                case 3: // Wall (stone with deep cracks, moss, and weathering)
                     ctx.fillStyle = '#808080';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     ctx.fillStyle = '#666666';
@@ -254,8 +265,10 @@
                     ctx.moveTo(x + TILE_SIZE/4, y + 3*TILE_SIZE/4);
                     ctx.lineTo(x + 3*TILE_SIZE/4, y + TILE_SIZE/4);
                     ctx.stroke();
+                    ctx.fillStyle = '#b0b0b0';
+                    ctx.fillRect(x + TILE_SIZE/8, y + TILE_SIZE/8, TILE_SIZE/4, TILE_SIZE/4);
                     break;
-                case 4: // Door (ornate wood with metal fittings)
+                case 4: // Door (ornate wood with intricate carvings and handle)
                     ctx.fillStyle = '#8b4513';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     ctx.fillStyle = '#5c2f00';
@@ -266,8 +279,15 @@
                     ctx.strokeStyle = '#000000';
                     ctx.lineWidth = 1;
                     ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = '#ffd700';
+                    ctx.beginPath();
+                    ctx.arc(x + TILE_SIZE/4, y + TILE_SIZE/2, TILE_SIZE/8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
                     break;
-                case 5: // Flower (vibrant petals with stem and leaves)
+                case 5: // Flower (ultra-detailed with petals, stem, leaves, and dew)
                     ctx.fillStyle = '#ff00ff';
                     for (let i = 0; i < 5; i++) {
                         ctx.beginPath();
@@ -287,8 +307,12 @@
                     ctx.lineTo(x + TILE_SIZE/2, y + TILE_SIZE/2);
                     ctx.lineTo(x + TILE_SIZE/2 + 4, y + 3*TILE_SIZE/4);
                     ctx.fill();
+                    ctx.fillStyle = '#e0f6ff';
+                    ctx.beginPath();
+                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2 + TILE_SIZE/4, TILE_SIZE/8, 0, Math.PI * 2);
+                    ctx.fill(); // Dew drop
                     break;
-                case 6: // Coin (shiny gold with engraving)
+                case 6: // Coin (highly reflective gold with royal seal)
                     ctx.fillStyle = '#ffd700';
                     ctx.beginPath();
                     ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/3, 0, Math.PI * 2);
@@ -304,8 +328,14 @@
                     ctx.font = '8px Arial';
                     ctx.textAlign = 'center';
                     ctx.fillText('Royal', x + TILE_SIZE/2, y + TILE_SIZE/2 + 2);
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x + TILE_SIZE/2 - TILE_SIZE/6, y + TILE_SIZE/2 - TILE_SIZE/6);
+                    ctx.lineTo(x + TILE_SIZE/2 + TILE_SIZE/6, y + TILE_SIZE/2 + TILE_SIZE/6);
+                    ctx.stroke();
                     break;
-                case 7: // Gem (prismatic with facets)
+                case 7: // Gem (prismatic with deep facets and light refraction)
                     ctx.fillStyle = '#00ffff';
                     ctx.beginPath();
                     ctx.moveTo(x + TILE_SIZE/2, y + TILE_SIZE/4);
@@ -327,8 +357,12 @@
                     ctx.lineTo(x + TILE_SIZE/2 + TILE_SIZE/8, y + TILE_SIZE/2 + TILE_SIZE/8);
                     ctx.closePath();
                     ctx.fill();
+                    ctx.fillStyle = '#ffff00';
+                    ctx.beginPath();
+                    ctx.arc(x + TILE_SIZE/2 + TILE_SIZE/12, y + TILE_SIZE/2 - TILE_SIZE/12, TILE_SIZE/12, 0, Math.PI * 2);
+                    ctx.fill(); // Light refraction
                     break;
-                case 8: // Potion (glass bottle with glowing liquid)
+                case 8: // Potion (crystal bottle with swirling liquid and cork)
                     ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
                     ctx.moveTo(x + TILE_SIZE/4, y + TILE_SIZE/4);
@@ -341,44 +375,37 @@
                     ctx.lineWidth = 1;
                     ctx.stroke();
                     ctx.fillStyle = '#ff4500';
-                    ctx.fillRect(x + TILE_SIZE/3, y + TILE_SIZE/3, TILE_SIZE/3, TILE_SIZE/3);
+                    ctx.beginPath();
+                    ctx.moveTo(x + TILE_SIZE/3, y + TILE_SIZE/3);
+                    ctx.lineTo(x + 2*TILE_SIZE/3, y + TILE_SIZE/3);
+                    ctx.lineTo(x + TILE_SIZE/2, y + 2*TILE_SIZE/3);
+                    ctx.closePath();
+                    ctx.fill();
                     ctx.fillStyle = '#ff8c00';
                     ctx.beginPath();
                     ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/6, 0, Math.PI * 2);
                     ctx.fill();
-                    ctx.fillStyle = '#ffffff';
-                    ctx.beginPath();
-                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/4, TILE_SIZE/8, 0, Math.PI * 2);
-                    ctx.fill();
+                    ctx.fillStyle = '#c0c0c0';
+                    ctx.fillRect(x + TILE_SIZE/2 - 2, y + TILE_SIZE/4 - 4, 4, 8); // Cork
                     break;
-                case 9: // NPC (detailed guard/villager with armor/clothes)
+                case 9: // NPC (highly detailed guard/villager with armor, weapons, and expressions)
                     ctx.fillStyle = '#00008b';
                     ctx.fillRect(x + 8, y + 8, 16, 24);
                     ctx.fillStyle = '#ff4500';
-                    ctx.fillRect(x + 12, y + 10, 8, 8); // Helmet or hat
+                    ctx.fillRect(x + 12, y + 10, 8, 8); // Helmet
                     ctx.fillStyle = '#ffffff';
                     ctx.fillRect(x + 14, y + 12, 4, 4); // Eyes
                     ctx.fillStyle = '#c0c0c0';
-                    ctx.fillRect(x + 10, y + 18, 12, 6); // Armor/shirt
+                    ctx.fillRect(x + 10, y + 18, 12, 6); // Armor
+                    ctx.fillStyle = '#ffd700';
+                    ctx.fillRect(x + 24, y + 20, 4, 8); // Sword handle
                     ctx.strokeStyle = '#000000';
                     ctx.lineWidth = 1;
                     ctx.strokeRect(x + 8, y + 8, 16, 24);
-                    break;
-                case 10: // Enemy (monster with spikes)
-                    ctx.fillStyle = '#8b0000';
-                    ctx.fillRect(x + 8, y + 8, 16, 16);
                     ctx.fillStyle = '#ff0000';
-                    for (let i = 0; i < 4; i++) {
-                        ctx.beginPath();
-                        ctx.moveTo(x + TILE_SIZE/2, y + TILE_SIZE/2);
-                        ctx.lineTo(x + TILE_SIZE/2 + Math.cos(i * Math.PI/2) * TILE_SIZE/2, y + TILE_SIZE/2 + Math.sin(i * Math.PI/2) * TILE_SIZE/2);
-                        ctx.lineWidth = 2;
-                        ctx.stroke();
-                    }
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(x + 12, y + 12, 4, 4); // Eyes
+                    ctx.fillRect(x + 26, y + 20, 2, 8); // Sword blade
                     break;
-                case 11: // Shop (sign with goods)
+                case 11: // Shop (elaborate sign with goods and glowing light)
                     ctx.fillStyle = '#808080';
                     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
                     ctx.fillStyle = '#ffff00';
@@ -387,8 +414,12 @@
                     ctx.font = '12px Arial';
                     ctx.textAlign = 'center';
                     ctx.fillText('Shop', x + TILE_SIZE/2, y + TILE_SIZE/2 + 4);
+                    ctx.fillStyle = '#ffeb3b';
+                    ctx.beginPath();
+                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/4, TILE_SIZE/8, 0, Math.PI * 2);
+                    ctx.fill(); // Glowing light
                     break;
-                case 12: // Key (golden with handle)
+                case 12: // Key (intricate golden key with detailed handle and teeth)
                     ctx.fillStyle = '#ffd700';
                     ctx.fillRect(x + TILE_SIZE/4, y + TILE_SIZE/2, TILE_SIZE/2, TILE_SIZE/4);
                     ctx.fillStyle = '#daa520';
@@ -399,8 +430,13 @@
                     ctx.beginPath();
                     ctx.arc(x + 3*TILE_SIZE/4, y + TILE_SIZE/2 + TILE_SIZE/8, TILE_SIZE/8, 0, Math.PI * 2);
                     ctx.fill();
+                    ctx.fillStyle = '#ffd700';
+                    ctx.fillRect(x + 3*TILE_SIZE/4 - 2, y + TILE_SIZE/2 - 2, 4, 8); // Teeth
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x + TILE_SIZE/4, y + TILE_SIZE/2, TILE_SIZE/2, TILE_SIZE/4);
                     break;
-                case 13: // Artifact (mystical orb)
+                case 13: // Artifact (glowing mystic orb with runes)
                     ctx.fillStyle = '#9400d3';
                     ctx.beginPath();
                     ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/3, 0, Math.PI * 2);
@@ -416,6 +452,14 @@
                     ctx.beginPath();
                     ctx.arc(x + TILE_SIZE/2 + TILE_SIZE/8, y + TILE_SIZE/2 - TILE_SIZE/8, TILE_SIZE/12, 0, Math.PI * 2);
                     ctx.fill();
+                    ctx.fillStyle = '#000000';
+                    ctx.font = '8px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Rune', x + TILE_SIZE/2, y + TILE_SIZE/2 + 2);
+                    ctx.fillStyle = '#ffeb3b';
+                    ctx.beginPath();
+                    ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/4, 0, Math.PI * 2);
+                    ctx.fill(); // Glow effect
                     break;
             }
             ctx.restore();
@@ -423,7 +467,7 @@
 
         function drawPlayer(x, y, frame, direction) {
             ctx.save();
-            // Body (elaborate royal dress with embroidery and jewels)
+            // Body (exquisite royal dress with embroidery, jewels, and flowing fabric)
             ctx.fillStyle = '#ff69b4';
             ctx.fillRect(x + 8, y + 8, 16, 24);
             ctx.strokeStyle = '#ffd700';
@@ -433,7 +477,11 @@
             for (let i = 0; i < 3; i++) {
                 ctx.fillRect(x + 10 + i * 4, y + 20, 2, 4);
             }
-            // Crown (ornate gold with multiple jewels)
+            ctx.fillStyle = '#00ffff';
+            ctx.beginPath();
+            ctx.arc(x + 12, y + 22, 4, 0, Math.PI * 2);
+            ctx.fill(); // Jewel on dress
+            // Crown (ornate gold with multiple jewels and filigree)
             ctx.fillStyle = '#ffd700';
             ctx.fillRect(x + 6, y, 20, 8);
             ctx.fillStyle = '#00ffff';
@@ -447,7 +495,13 @@
             ctx.beginPath();
             ctx.arc(x + 16, y + 4, 4, 0, Math.PI * 2);
             ctx.fill();
-            // Face (realistic with eyes, nose, mouth)
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x + 8, y + 8);
+            ctx.lineTo(x + 24, y + 8);
+            ctx.stroke(); // Crown filigree
+            // Face (realistic with eyes, nose, mouth, and blush)
             ctx.fillStyle = '#ffe4c4';
             ctx.fillRect(x + 12, y + 10, 8, 6);
             ctx.fillStyle = '#ff69b4';
@@ -460,7 +514,14 @@
             ctx.fillStyle = '#000000';
             ctx.fillRect(x + 15, y + 13, 2, 2); // Nose
             ctx.fillRect(x + 14, y + 15, 2, 1); // Mouth
-            // Walking animation (detailed limbs with motion blur)
+            ctx.fillStyle = '#ff8c8c';
+            ctx.beginPath();
+            ctx.arc(x + 14, y + 14, 2, 0, Math.PI * 2);
+            ctx.fill(); // Blush left
+            ctx.beginPath();
+            ctx.arc(x + 18, y + 14, 2, 0, Math.PI * 2);
+            ctx.fill(); // Blush right
+            // Walking animation (ultra-detailed limbs with flowing fabric and motion blur)
             if (frame > 15) {
                 ctx.fillStyle = '#ff69b4';
                 if (direction === 'left') {
@@ -470,6 +531,12 @@
                     ctx.fillRect(x + 24, y + 16, 8, 8); // Right arm
                     ctx.fillStyle = '#ff8c8c';
                     ctx.fillRect(x + 24, y + 16 + Math.sin(frame * 0.1) * 4, 8, 4);
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x + 24, y + 16);
+                    ctx.lineTo(x + 32, y + 16 + Math.sin(frame * 0.1) * 4);
+                    ctx.stroke(); // Flowing fabric
                 } else if (direction === 'right') {
                     ctx.fillRect(x + 20, y + 24, 8, 8); // Right leg
                     ctx.fillStyle = '#ff8c8c';
@@ -477,6 +544,12 @@
                     ctx.fillRect(x + 4, y + 16, 8, 8); // Left arm
                     ctx.fillStyle = '#ff8c8c';
                     ctx.fillRect(x + 4, y + 16 + Math.sin(frame * 0.1) * 4, 8, 4);
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x + 4, y + 16);
+                    ctx.lineTo(x - 4, y + 16 + Math.sin(frame * 0.1) * 4);
+                    ctx.stroke(); // Flowing fabric
                 } else if (direction === 'up') {
                     ctx.fillRect(x + 12, y + 16, 8, 8); // Legs
                     ctx.fillStyle = '#ff8c8c';
@@ -484,6 +557,12 @@
                     ctx.fillRect(x + 8, y + 8, 8, 8); // Arms up
                     ctx.fillStyle = '#ff8c8c';
                     ctx.fillRect(x + 8, y + 8 + Math.sin(frame * 0.1) * 4, 8, 4);
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x + 8, y + 8);
+                    ctx.lineTo(x + 8 + Math.sin(frame * 0.1) * 4, y);
+                    ctx.stroke(); // Flowing fabric
                 } else if (direction === 'down') {
                     ctx.fillRect(x + 12, y + 24, 8, 8); // Legs
                     ctx.fillStyle = '#ff8c8c';
@@ -491,25 +570,14 @@
                     ctx.fillRect(x + 16, y + 8, 8, 8); // Arms down
                     ctx.fillStyle = '#ff8c8c';
                     ctx.fillRect(x + 16, y + 8 + Math.sin(frame * 0.1) * 4, 8, 4);
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x + 16, y + 8);
+                    ctx.lineTo(x + 16 + Math.sin(frame * 0.1) * 4, y + 16);
+                    ctx.stroke(); // Flowing fabric
                 }
             }
-            ctx.restore();
-        }
-
-        function drawEnemy(x, y, frame) {
-            ctx.save();
-            ctx.fillStyle = '#8b0000';
-            ctx.fillRect(x + 8, y + 8, 16, 16);
-            ctx.fillStyle = '#ff0000';
-            for (let i = 0; i < 4; i++) {
-                ctx.beginPath();
-                ctx.moveTo(x + TILE_SIZE/2, y + TILE_SIZE/2);
-                ctx.lineTo(x + TILE_SIZE/2 + Math.cos(i * Math.PI/2 + frame * 0.05) * TILE_SIZE/2, y + TILE_SIZE/2 + Math.sin(i * Math.PI/2 + frame * 0.05) * TILE_SIZE/2);
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            }
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(x + 12, y + 12, 4, 4); // Eyes
             ctx.restore();
         }
 
@@ -519,10 +587,6 @@
             const gridY = Math.floor(y / TILE_SIZE);
             const tile = maps[game.scene][gridY][gridX];
             return tile === 2 || tile === 3; // Water or wall
-        }
-
-        function isEnemyCollision(x, y) {
-            return game.enemies.some(enemy => Math.abs(enemy.x - x) < TILE_SIZE && Math.abs(enemy.y - y) < TILE_SIZE);
         }
 
         function update() {
@@ -550,8 +614,7 @@
             }
 
             if (!isCollision(newX, newY) && !isCollision(newX + TILE_SIZE - 1, newY) &&
-                !isCollision(newX, newY + TILE_SIZE - 1) && !isCollision(newX + TILE_SIZE - 1, newY + TILE_SIZE - 1) &&
-                !isEnemyCollision(newX, newY)) {
+                !isCollision(newX, newY + TILE_SIZE - 1) && !isCollision(newX + TILE_SIZE - 1, newY + TILE_SIZE - 1)) {
                 game.player.x = Math.max(0, Math.min(canvas.width - TILE_SIZE, newX));
                 game.player.y = Math.max(0, Math.min(canvas.height - TILE_SIZE, newY));
             }
@@ -591,20 +654,17 @@
                 game.playSound('collect');
             } else if (tile === 9) { // NPC
                 if (game.scene === 'town' && !game.questStatus.townGuard) {
-                    game.showDialogue('Town Guard: Princess, a monster roams the castle! Bring a key to defeat it and earn an artifact.');
+                    game.showDialogue('Town Guard: Princess, the king needs a flower for his crown. Bring one to the castle!');
                     game.questStatus.townGuard = true;
                 } else if (game.scene === 'town' && game.questStatus.townGuard) {
-                    game.showDialogue('Town Guard: Have you defeated the castle monster yet?');
-                } else if (game.scene === 'castle' && !game.questStatus.castleKing && game.keys > 0) {
-                    game.showDialogue('King: Use this key to unlock the monster’s lair! Defeat it for an artifact.');
-                    game.keys--;
+                    game.showDialogue('Town Guard: Have you given the flower to the king?');
+                } else if (game.scene === 'castle' && !game.questStatus.castleKing && game.flowers > 0) {
+                    game.showDialogue('King: Thank you, princess! Here’s a gem as reward.');
+                    game.gems++;
+                    game.flowers--;
                     game.questStatus.castleKing = true;
-                    maps.castle[15][12] = 10; // Spawn enemy
-                } else if (game.scene === 'castle' && game.questStatus.castleKing && !game.questStatus.enemyDefeated) {
-                    game.showDialogue('King: Hurry, the monster threatens us!');
-                } else if (game.scene === 'castle' && game.questStatus.enemyDefeated) {
-                    game.showDialogue('King: You’re our savior! Here’s a royal artifact.');
-                    game.artifacts++;
+                } else if (game.scene === 'castle' && game.questStatus.castleKing) {
+                    game.showDialogue('King: You’re a hero, princess!');
                 } else if (game.scene === 'house' && !game.questStatus.villagerQuest) {
                     game.showDialogue('Villager: I lost my gem in the house. Find it, and I’ll give you a potion!');
                     game.questStatus.villagerQuest = true;
@@ -616,26 +676,6 @@
                     game.questStatus.villagerQuest = false;
                 }
                 game.playSound('dialogue');
-            } else if (tile === 10) { // Enemy
-                if (game.keys > 0) {
-                    game.health -= 10;
-                    if (game.health <= 0) {
-                        game.showDialogue('You’ve been defeated! Game Over.');
-                        game.health = 100;
-                        game.player.x = 12 * TILE_SIZE;
-                        game.player.y = 9 * TILE_SIZE;
-                        game.scene = 'town';
-                        maps.castle[15][12] = 0; // Reset enemy
-                    } else {
-                        game.showDialogue('Monster attacks! Health: ' + game.health);
-                        game.keys--;
-                        game.playSound('combat');
-                    }
-                    game.questStatus.enemyDefeated = true;
-                    maps[game.scene][gridY][gridX] = 0; // Remove enemy
-                } else {
-                    game.showDialogue('You need a key to fight the monster!');
-                }
             } else if (tile === 11) { // Shop
                 if (game.coins >= 5) {
                     game.coins -= 5;
@@ -656,18 +696,6 @@
                 game.showDialogue('You discovered a mystical artifact!');
                 game.playSound('collect');
             }
-
-            // Update enemies
-            game.enemies.forEach(enemy => {
-                const dx = game.player.x - enemy.x;
-                const dy = game.player.y - enemy.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                if (distance < 100) {
-                    enemy.x += dx / distance * 2;
-                    enemy.y += dy / distance * 2;
-                }
-                enemy.frame = (enemy.frame + 1) % 60;
-            });
 
             if (Object.values(keys).some(k => k)) {
                 game.player.frame = (game.player.frame + 1) % 30;
@@ -719,17 +747,9 @@
                 }
             }
 
-            // Draw enemies
-            game.enemies.forEach(enemy => {
-                drawEnemy(enemy.x, enemy.y, enemy.frame);
-            });
-
             // Draw player
             drawPlayer(game.player.x, game.player.y, game.player.frame, game.player.direction);
         }
-
-        // Initialize enemies
-        game.enemies.push({ x: 15 * TILE_SIZE, y: 5 * TILE_SIZE, frame: 0 });
 
         function gameLoop() {
             update();
