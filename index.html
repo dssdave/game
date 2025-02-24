@@ -91,6 +91,21 @@
         bottom: 20px;
         right: 20px;
       }
+      /* Celebration star overlay */
+      #celebration {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #ff0;
+        font-size: 48px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 20px;
+        border-radius: 10px;
+        z-index: 200;
+        display: none; /* hidden by default */
+        text-align: center;
+      }
     </style>
     <!-- Include Three.js and NippleJS from CDNs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -126,6 +141,8 @@
       <div id="errorMessage">
         WebGL is not supported in your browser. Please use a modern browser like Chrome, Firefox, or Edge.
       </div>
+      <!-- Celebration overlay -->
+      <div id="celebration">⭐ Princess Donia Trophy! ⭐</div>
     </div>
 
     <script>
@@ -182,11 +199,11 @@
             this.time = 'Day';
             this.dayNightCycle = 0;
 
-            // Slower speed to ensure calmer joystick movement
+            // Even slower movement speed
             this.player = {
               x: 0,
               z: 0,
-              speed: 0.2,
+              speed: 0.1, // reduced from 0.2
               yaw: 0,
               pitch: 0,
               object: null
@@ -197,9 +214,11 @@
             this.objects = [];
             this.npcs = [];
             this.quests = {};
-            // Throw limit 1000x higher (1 billion)
+
+            // Increase balloon limit
             this.ballCount = 0;
-            this.ballLimit = 1000000000; 
+            this.ballLimit = 1000000000; // 1 billion
+
             this.thrownBalls = [];
             this.collectionGlow = null;
             this.joystickLeft = null;
@@ -208,6 +227,10 @@
             this.sceneObj = scene;
             this.camera = camera;
             this.renderer = renderer;
+
+            // We'll define how many total flowers/coins we place
+            this.totalFlowers = 10;
+            this.totalCoins = 5;
 
             this.initScene();
             this.initJoysticks();
@@ -220,6 +243,15 @@
             this.dialogue = text;
             this.dialogueTimer = 120;
             document.getElementById('dialogue').textContent = this.dialogue;
+          }
+
+          showCelebration() {
+            // Display the big star overlay for a few seconds
+            const celeb = document.getElementById('celebration');
+            celeb.style.display = 'block';
+            setTimeout(() => {
+              celeb.style.display = 'none';
+            }, 3000);
           }
 
           updateDayNight() {
@@ -321,15 +353,14 @@
             const newX = this.player.x + dx * Math.cos(this.player.yaw) + dz * Math.sin(this.player.yaw);
             const newZ = this.player.z - dx * Math.sin(this.player.yaw) + dz * Math.cos(this.player.yaw);
 
-            // Check collisions with any blocking object
+            // Check collisions
             let blocked = false;
             for (const obj of this.objects) {
               if (obj.type === 'building' || obj.type === 'wall' || obj.type === 'boundary') {
-                // Simple bounding-circle collision
                 const dxObj = newX - obj.x;
                 const dzObj = newZ - obj.z;
                 const distSq = dxObj * dxObj + dzObj * dzObj;
-                const r = (obj.boundingRadius || 1) + 0.5; // +0.5 for player's radius
+                const r = (obj.boundingRadius || 1) + 0.5; // player's half width
                 if (distSq < r * r) {
                   blocked = true;
                   break;
@@ -337,7 +368,6 @@
               }
             }
 
-            // Only move if not blocked
             if (!blocked) {
               this.player.x = newX;
               this.player.z = newZ;
@@ -347,7 +377,7 @@
             this.player.object.position.set(this.player.x, 0.5, this.player.z);
             this.player.object.rotation.y = -this.player.yaw;
 
-            // Simple "walking" sway if moving
+            // Simple "walking" sway
             const isMoving =
               Object.values(this.keys).some(k => k) ||
               (this.joystickLeft && this.joystickLeft.active);
@@ -403,6 +433,14 @@
                   this.sceneObj.remove(obj.mesh);
                   this.objects = this.objects.filter(o => o !== obj);
                   this.startCollectionGlow();
+
+                  // Check if all flowers & coins are collected
+                  if (
+                    this.flowers === this.totalFlowers &&
+                    this.coins === this.totalCoins
+                  ) {
+                    this.showCelebration();
+                  }
                 }
               }
             }
@@ -476,22 +514,21 @@
             // Boundary
             this.createBoundary();
 
-            // Castle with towers + door
+            // Castle
             this.createCastle();
 
-            // House with door + roof
+            // House
             this.createHouse();
 
-            // Flowers (multiple)
+            // Flowers
             this.createFlowers();
 
-            // Coins (let's drop a few)
+            // Coins
             this.createCoins();
           }
 
           createBoundary() {
-            // We'll create shrubs around the edges at +/- 90 for a big area
-            // Each shrub is an object with boundingRadius ~1
+            // We'll create shrubs around the edges at +/- 90
             for (let x = -90; x <= 90; x += 4) {
               // top row
               this.addShrub(x, -90);
@@ -520,15 +557,14 @@
               type: 'boundary',
               x: x,
               z: z,
-              boundingRadius: 2 // bigger radius so you can't slip through
+              boundingRadius: 2
             });
           }
 
           createCastle() {
-            // We'll create a group with a main keep, four towers, and a door plane
             const castleGroup = new THREE.Group();
 
-            // Main keep (big box)
+            // Main keep
             const keepGeo = new THREE.BoxGeometry(20, 10, 20);
             const keepMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
             const keep = new THREE.Mesh(keepGeo, keepMat);
@@ -537,7 +573,7 @@
             keep.receiveShadow = true;
             castleGroup.add(keep);
 
-            // Four towers (cylinders) at corners
+            // Four towers
             const towerGeo = new THREE.CylinderGeometry(3, 3, 15, 16);
             const towerMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
             const towerPositions = [
@@ -554,29 +590,26 @@
               castleGroup.add(tower);
             });
 
-            // Door (plane) at the front (z = 10 side)
+            // Door plane at front
             const doorGeo = new THREE.PlaneGeometry(4, 6);
             const doorMat = new THREE.MeshStandardMaterial({ color: 0x553300, side: THREE.DoubleSide });
             const door = new THREE.Mesh(doorGeo, doorMat);
-            door.position.set(0, 3, 10.01); // slightly in front
+            door.position.set(0, 3, 10.01);
             castleGroup.add(door);
 
-            // Position entire castle group
             castleGroup.position.set(40, 0, 40);
             this.sceneObj.add(castleGroup);
 
-            // Single bounding object for collisions
             this.objects.push({
               mesh: castleGroup,
               type: 'building',
               x: 40,
               z: 40,
-              boundingRadius: 15 // so you can't walk through the walls
+              boundingRadius: 15
             });
           }
 
           createHouse() {
-            // Group with a box base, a triangular roof, and a door
             const houseGroup = new THREE.Group();
 
             // Base
@@ -588,16 +621,12 @@
             base.receiveShadow = true;
             houseGroup.add(base);
 
-            // Roof (triangular prism or a simple wedge)
-            // We'll use a simple wedge by combining a box + rotation, or we can do a custom geometry.
-            // Let's do a box rotated at 45 degrees:
-            const roofGeo = new THREE.CylinderGeometry(1, 6, 10, 4, 1); 
-            // Or do a simpler approach with a Cone
+            // Roof (cone)
             const roofConeGeo = new THREE.ConeGeometry(6, 4, 4);
             const roofMat = new THREE.MeshStandardMaterial({ color: 0x800000 });
             const roof = new THREE.Mesh(roofConeGeo, roofMat);
-            roof.position.set(0, 7, 0); 
-            roof.rotation.y = Math.PI / 4; // rotate so corners line up
+            roof.position.set(0, 7, 0);
+            roof.rotation.y = Math.PI / 4;
             roof.castShadow = true;
             roof.receiveShadow = true;
             houseGroup.add(roof);
@@ -606,14 +635,12 @@
             const doorGeo = new THREE.PlaneGeometry(2, 4);
             const doorMat = new THREE.MeshStandardMaterial({ color: 0x553300, side: THREE.DoubleSide });
             const door = new THREE.Mesh(doorGeo, doorMat);
-            door.position.set(0, 2, 4.01); // front side
+            door.position.set(0, 2, 4.01);
             houseGroup.add(door);
 
-            // Position the house group
             houseGroup.position.set(-40, 0, -40);
             this.sceneObj.add(houseGroup);
 
-            // Single bounding object
             this.objects.push({
               mesh: houseGroup,
               type: 'building',
@@ -624,10 +651,9 @@
           }
 
           createFlowers() {
-            // Each flower: thin green stem + red bloom (small sphere).
-            // Place ~10 flowers at random spots near center
-            for (let i = 0; i < 10; i++) {
-              const fx = Math.random() * 40 - 20; // from -20 to 20
+            // Place totalFlowers
+            for (let i = 0; i < this.totalFlowers; i++) {
+              const fx = Math.random() * 40 - 20;
               const fz = Math.random() * 40 - 20;
 
               // Stem
@@ -659,15 +685,15 @@
           }
 
           createCoins() {
-            // Drop a few coins around
-            for (let i = 0; i < 5; i++) {
+            // Place totalCoins
+            for (let i = 0; i < this.totalCoins; i++) {
               const cx = Math.random() * 40 - 20;
               const cz = Math.random() * 40 - 20;
 
               const coinGeo = new THREE.CircleGeometry(0.3, 16);
               const coinMat = new THREE.MeshStandardMaterial({ color: 0xffff00 });
               const coinMesh = new THREE.Mesh(coinGeo, coinMat);
-              coinMesh.rotation.x = -Math.PI / 2; // lay flat
+              coinMesh.rotation.x = -Math.PI / 2;
               coinMesh.position.set(cx, 0.01, cz);
               coinMesh.castShadow = true;
               coinMesh.receiveShadow = true;
@@ -683,10 +709,10 @@
           }
 
           createPlayerModel() {
-            // More cohesive "humanoid" approach
+            // More cohesive humanoid approach
             const playerGroup = new THREE.Group();
 
-            // Body (cylinder)
+            // Body
             const bodyGeo = new THREE.CylinderGeometry(0.4, 0.5, 1.2, 16);
             const bodyMat = new THREE.MeshStandardMaterial({ color: 0x993366 });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
@@ -694,7 +720,7 @@
             body.userData.isBodyPart = true;
             playerGroup.add(body);
 
-            // Head (sphere)
+            // Head
             const headGeo = new THREE.SphereGeometry(0.3, 16, 16);
             const skinMat = new THREE.MeshStandardMaterial({ color: 0xffddc1 });
             const head = new THREE.Mesh(headGeo, skinMat);
@@ -702,16 +728,16 @@
             head.userData.isBodyPart = true;
             playerGroup.add(head);
 
-            // Hair (another sphere, slightly bigger, half-clipped?)
+            // Hair (cap)
             const hairGeo = new THREE.SphereGeometry(0.31, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
             const hairMat = new THREE.MeshStandardMaterial({ color: 0x553322 });
             const hair = new THREE.Mesh(hairGeo, hairMat);
             hair.position.set(0, 1.4, 0);
-            hair.rotation.x = Math.PI; // "cap" on top
+            hair.rotation.x = Math.PI;
             hair.userData.isBodyPart = true;
             playerGroup.add(hair);
 
-            // Arms (two cylinders)
+            // Arms
             const armGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
             const leftArm = new THREE.Mesh(armGeo, skinMat);
             leftArm.position.set(-0.5, 1.0, 0);
@@ -723,7 +749,7 @@
             rightArm.userData.isBodyPart = true;
             playerGroup.add(rightArm);
 
-            // Legs (two cylinders)
+            // Legs
             const legGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.8, 8);
             const leftLeg = new THREE.Mesh(legGeo, skinMat);
             leftLeg.position.set(-0.2, 0.2, 0);
@@ -735,7 +761,7 @@
             rightLeg.userData.isBodyPart = true;
             playerGroup.add(rightLeg);
 
-            // Position player at ground level
+            // Position
             playerGroup.position.set(this.player.x, 0.5, this.player.z);
             this.player.object = playerGroup;
             this.sceneObj.add(playerGroup);
@@ -800,7 +826,8 @@
 
             this.joystickRight.on('move', (evt, data) => {
               if (data && data.force > 0) {
-                const sensitivity = 0.002;
+                // Lower rotation sensitivity from 0.002 to 0.001
+                const sensitivity = 0.001;
                 this.player.yaw += data.vector.x * sensitivity * data.force;
                 this.player.pitch = Math.max(
                   -Math.PI / 2,
@@ -846,10 +873,12 @@
               if (document.pointerLockElement === document.body) {
                 const movementX = event.movementX || 0;
                 const movementY = event.movementY || 0;
-                this.player.yaw += movementX * 0.002;
+                // Lower rotation sensitivity for mouse as well
+                const sensitivity = 0.001;
+                this.player.yaw += movementX * sensitivity;
                 this.player.pitch = Math.max(
                   -Math.PI / 2,
-                  Math.min(Math.PI / 2, this.player.pitch + movementY * 0.002)
+                  Math.min(Math.PI / 2, this.player.pitch + movementY * sensitivity)
                 );
               }
             });
