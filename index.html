@@ -178,26 +178,36 @@
             // Splash screen disappears after 3 seconds or on any click/touch
             let splashTimeout = setTimeout(() => {
                 splashScreen.classList.add('hidden');
+                loadingElement.style.display = 'none'; // Ensure loading message hides
             }, 3000);
 
-            splashScreen.addEventListener('click', () => {
+            // Handle clicks/touches to dismiss splash screen
+            splashScreen.addEventListener('click', (e) => {
+                e.preventDefault();
                 clearTimeout(splashTimeout);
                 splashScreen.classList.add('hidden');
+                loadingElement.style.display = 'none'; // Ensure loading message hides
             });
 
             document.getElementById('gameContainer').addEventListener('click', (e) => {
+                e.preventDefault();
                 clearTimeout(splashTimeout);
                 splashScreen.classList.add('hidden');
+                loadingElement.style.display = 'none'; // Ensure loading message hides
             });
 
-            document.getElementById('joystickLeft').addEventListener('touchstart', () => {
+            document.getElementById('joystickLeft').addEventListener('touchstart', (e) => {
+                e.preventDefault();
                 clearTimeout(splashTimeout);
                 splashScreen.classList.add('hidden');
+                loadingElement.style.display = 'none'; // Ensure loading message hides
             });
 
-            document.getElementById('joystickRight').addEventListener('touchstart', () => {
+            document.getElementById('joystickRight').addEventListener('touchstart', (e) => {
+                e.preventDefault();
                 clearTimeout(splashTimeout);
                 splashScreen.classList.add('hidden');
+                loadingElement.style.display = 'none'; // Ensure loading message hides
             });
 
             // Scene setup
@@ -1242,10 +1252,4 @@
                         artifactGroup2.add(artifact2, glow2);
                         objects.push({ mesh: artifactGroup2, type: 'artifact', x: 25, z: 5 });
 
-                        const treeTrunkGeometry = new THREE.CylinderGeometry(0.5, 0.5, 3, 32);
-                        const treeTrunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7 });
-                        const treeLeavesGeometry = new THREE.SphereGeometry(1.5, 32, 32);
-                        const treeLeavesMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 });
-                        const tree1Group = new THREE.Group();
-                        const trunk1 = new THREE.Mesh(treeTrunkGeometry, treeTrunkMaterial);
-                        const leaves1 = new THREE.Mesh(tree
+                        const
