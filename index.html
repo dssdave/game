@@ -198,6 +198,7 @@
                     this.initScene();
                     this.initJoysticks();
                     this.initKeyboardMouse();
+                    this.startAnimation(); // Start the animation loop immediately
                     console.log('Game initialized successfully:', this);
                 }
                 showDialogue(text) {
@@ -454,8 +455,8 @@
                     houseBase.castShadow = true;
                     houseBase.receiveShadow = true;
 
-                    const houseRoofGeometry = new THREE.ConeGeometry(4, 4, 32);
-                    const houseRoofMaterial = new THREE.MeshStandardMaterial({ color: 0x800000, metalness: 0.2, roughness: 0.7 }); // Red roof
+                    const houseRoafGeometry = new THREE.ConeGeometry(4, 4, 32);
+                    const houseRoafMaterial = new THREE.MeshStandardMaterial({ color: 0x800000, metalness: 0.2, roughness: 0.7 }); // Red roof
                     const houseRoaf = new THREE.Mesh(houseRoafGeometry, houseRoafMaterial);
                     houseRoaf.position.set(-40, 7, -40);
                     houseRoaf.castShadow = true;
@@ -1218,5 +1219,4 @@
                         const fountainBowlGeometry = new THREE.TorusGeometry(2, 0.5, 32, 32);
                         const fountainBowlMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
                         const fountainWaterGeometry = new THREE.CylinderGeometry(1, 1, 0.1, 32);
-                        const fountainWaterMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.1, roughness: 0.7, transparent: true, opacity: 0.7 });
-                        const
+                        const fountainWaterMaterial = new THREE.MeshStandardMaterial({ color:
