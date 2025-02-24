@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Refined Classic Princess RPG</title>
+    <title>Ultimate Classic Princess RPG</title>
     <style>
         #gameContainer {
             text-align: center;
@@ -97,7 +97,6 @@
                 };
                 this.dialogue = '';
                 this.dialogueTimer = 0;
-                this.weather = 'clear';
             }
             showDialogue(text) {
                 this.dialogue = text;
@@ -111,12 +110,6 @@
                     case 'collect': soundCue.textContent = '*Ding sound*'; break;
                 }
                 setTimeout(() => soundCue.textContent = '', 1000);
-            }
-            updateWeather() {
-                const random = Math.random();
-                if (random < 0.1) this.weather = 'rain';
-                else if (random < 0.2) this.weather = 'snow';
-                else this.weather = 'clear';
             }
             updateDayNight() {
                 this.dayNightCycle = (this.dayNightCycle + 1) % 1200; // 20-second cycle (60 FPS)
@@ -136,7 +129,7 @@
                 [2,0,1,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,2],
                 [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,6,0,2],
                 [2,0,1,0,0,0,0,0,0,0,3,3,3,3,3,0,0,0,0,1,0,0,0,0,2],
-                [2,0,1,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,1,0,0,0,0,2],
+                [2,0,1,0,0,0,0,0,0,0,3,0,3,4,0,0,0,0,0,1,0,0,0,0,2], // Castle door at bottom-left
                 [2,0,1,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,1,0,0,0,0,2],
                 [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,2],
                 [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,1,0,5,0,0,2],
@@ -512,6 +505,20 @@
             ctx.restore();
         }
 
+        // Draw static day/night sky with stars (inspired by flight sim stars, but static)
+        function drawSky() {
+            ctx.fillStyle = game.time === 'Day' ? '#87ceeb' : '#2f4f4f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            if (game.time === 'Night') {
+                ctx.fillStyle = '#ffffff';
+                for (let i = 0; i < 100; i++) {
+                    ctx.beginPath();
+                    ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 1, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
         // Collision detection
         function isCollision(x, y) {
             const gridX = Math.floor(x / TILE_SIZE);
@@ -522,7 +529,6 @@
 
         function update() {
             game.updateDayNight();
-            game.updateWeather();
 
             let newX = game.player.x;
             let newY = game.player.y;
@@ -654,9 +660,8 @@
         }
 
         function draw() {
-            // Background with day/night (retro pixel-art style, no weather effects)
-            ctx.fillStyle = game.time === 'Day' ? '#6bb26b' : '#2f4f4f';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Static day/night sky with stars (inspired by flight sim, but static and retro)
+            drawSky();
 
             // Draw map (static pixel-art grid like border)
             for (let y = 0; y < GRID_HEIGHT; y++) {
