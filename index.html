@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Enhanced 3D Princess RPG with Boundary and Joysticks</title>
+    <title>Enhanced 3D Princess RPG with Boundary, Joysticks, and Detailed Princess</title>
     <style>
         body {
             margin: 0;
@@ -120,8 +120,9 @@
         <div id="dialogue"></div>
         <div id="controls">
             Controls:<br>
-            Joysticks: Move/Look<br>
-            Tap Center: Throw Ball
+            Joysticks/Arrow Keys: Move<br>
+            Joysticks/Mouse: Look Around<br>
+            Tap Center/Space: Throw Ball
         </div>
         <div id="joystickLeft"></div>
         <div id="joystickRight"></div>
@@ -190,8 +191,10 @@
                     this.thrownBalls = []; // Track thrown balls
                     this.joystickLeft = null;
                     this.joystickRight = null;
+                    this.keys = {}; // Track keyboard input
                     this.initScene();
                     this.initJoysticks();
+                    this.initKeyboardMouse();
                 }
                 showDialogue(text) {
                     this.dialogue = text;
@@ -270,79 +273,82 @@
                     sky.name = 'sky';
                     scene.add(sky);
 
-                    // Princess (highly detailed model with dress, crown, face, and jewelry)
-                    const princessDressGeometry = new THREE.CylinderGeometry(0.6, 0.5, 2, 32, 16);
-                    const princessDressMaterial = new THREE.MeshStandardMaterial({ color: 0xff69b4, metalness: 0.1, roughness: 0.5 }); // Pink flowing dress
-                    const princessDress = new THREE.Mesh(princessDressGeometry, princessDressMaterial);
-                    princessDress.position.y = 1;
-                    princessDress.castShadow = true;
-
-                    const princessTorsoGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.8, 32);
-                    const princessTorsoMaterial = new THREE.MeshStandardMaterial({ color: 0xff69b4, metalness: 0.1, roughness: 0.5 });
-                    const princessTorso = new THREE.Mesh(princessTorsoGeometry, princessTorsoMaterial);
-                    princessTorso.position.y = 1.4;
-                    princessTorso.castShadow = true;
-
-                    const princessHeadGeometry = new THREE.SphereGeometry(0.4, 32, 32);
-                    const princessHeadMaterial = new THREE.MeshStandardMaterial({ color: 0xffe4c4, metalness: 0.1, roughness: 0.5 }); // Skin tone
-                    const princessHead = new THREE.Mesh(princessHeadGeometry, princessHeadMaterial);
-                    princessHead.position.y = 2.2;
-                    princessHead.castShadow = true;
-
-                    // Facial features
-                    const eyeGeometry = new THREE.SphereGeometry(0.05, 16, 16);
-                    const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 0.1, roughness: 0.5 });
-                    const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-                    leftEye.position.set(-0.15, 2.25, 0.35);
-                    const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial.clone());
-                    rightEye.position.set(0.15, 2.25, 0.35);
-                    princessHead.add(leftEye, rightEye);
-
-                    const mouthGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.1, 16);
-                    const mouthMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, metalness: 0.1, roughness: 0.5 });
-                    const mouth = new THREE.Mesh(mouthGeometry, mouthMaterial);
-                    mouth.position.y = 2.15;
-                    mouth.rotation.x = Math.PI / 2;
-                    princessHead.add(mouth);
-
-                    const blushGeometry = new THREE.SphereGeometry(0.05, 16, 16);
-                    const blushMaterial = new THREE.MeshStandardMaterial({ color: 0xff8c8c, metalness: 0.1, roughness: 0.5 });
-                    const leftBlush = new THREE.Mesh(blushGeometry, blushMaterial);
-                    leftBlush.position.set(-0.2, 2.2, 0.35);
-                    const rightBlush = new THREE.Mesh(blushGeometry, blushMaterial.clone());
-                    rightBlush.position.set(0.2, 2.2, 0.35);
-                    princessHead.add(leftBlush, rightBlush);
-
-                    // Jewelry (necklace and earrings)
-                    const necklaceGeometry = new THREE.TorusGeometry(0.45, 0.02, 16, 32);
-                    const necklaceMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
-                    const necklace = new THREE.Mesh(necklaceGeometry, necklaceMaterial);
-                    necklace.position.y = 1.5;
-                    necklace.rotation.x = Math.PI / 2;
-                    necklace.castShadow = true;
-
-                    const earringGeometry = new THREE.SphereGeometry(0.05, 16, 16);
-                    const earringMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
-                    const leftEarring = new THREE.Mesh(earringGeometry, earringMaterial);
-                    leftEarring.position.set(-0.5, 2, 0.4);
-                    const rightEarring = new THREE.Mesh(earringGeometry, earringMaterial.clone());
-                    rightEarring.position.set(0.5, 2, 0.4);
-                    rightEarring.castShadow = true;
-
-                    const crownGeometry = new THREE.TorusGeometry(0.45, 0.05, 16, 32);
-                    const crownMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 }); // Gold crown
-                    const crown = new THREE.Mesh(crownGeometry, crownMaterial);
-                    crown.position.y = 2.6;
-                    crown.rotation.x = Math.PI / 2;
-                    crown.castShadow = true;
-
+                    // Princess (Nintendo 64-style low-poly model with small shapes for realism)
                     const princessGroup = new THREE.Group();
-                    princessGroup.add(princessDress, princessTorso, princessHead, necklace, leftEarring, rightEarring, crown);
-                    princessGroup.position.set(this.player.x, 1, this.player.z);
+                    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xff69b4, metalness: 0.1, roughness: 0.5 }); // Pink dress/body
+                    const skinMaterial = new THREE.MeshStandardMaterial({ color: 0xffe4c4, metalness: 0.1, roughness: 0.5 }); // Skin tone
+                    const goldMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 }); // Gold for crown/jewelry
+
+                    // Torso (small cubes stacked for blocky look)
+                    for (let i = 0; i < 3; i++) {
+                        const torsoSegment = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), bodyMaterial);
+                        torsoSegment.position.y = 0.6 + i * 0.4;
+                        princessGroup.add(torsoSegment);
+                    }
+
+                    // Head (small sphere for low-poly head)
+                    const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), skinMaterial); // Low-poly sphere
+                    head.position.y = 1.5;
+                    princessGroup.add(head);
+
+                    // Facial features (small cubes for eyes, mouth, blush)
+                    const eyeSize = 0.05;
+                    const leftEye = new THREE.Mesh(new THREE.BoxGeometry(eyeSize, eyeSize, eyeSize), new THREE.MeshStandardMaterial({ color: 0x000000 }));
+                    leftEye.position.set(-0.15, 1.6, 0.3);
+                    const rightEye = new THREE.Mesh(new THREE.BoxGeometry(eyeSize, eyeSize, eyeSize), new THREE.MeshStandardMaterial({ color: 0x000000 }));
+                    rightEye.position.set(0.15, 1.6, 0.3);
+                    const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.05), new THREE.MeshStandardMaterial({ color: 0xff0000 }));
+                    mouth.position.set(0, 1.45, 0.3);
+                    const leftBlush = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.05), new THREE.MeshStandardMaterial({ color: 0xff8c8c }));
+                    leftBlush.position.set(-0.15, 1.5, 0.3);
+                    const rightBlush = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.05), new THREE.MeshStandardMaterial({ color: 0xff8c8c }));
+                    rightBlush.position.set(0.15, 1.5, 0.3);
+                    head.add(leftEye, rightEye, mouth, leftBlush, rightBlush);
+
+                    // Arms (small cubes for low-poly arms)
+                    const armSize = 0.2;
+                    const leftArm = new THREE.Mesh(new THREE.BoxGeometry(armSize, armSize, armSize), bodyMaterial);
+                    leftArm.position.set(-0.4, 1.0, 0);
+                    const rightArm = new THREE.Mesh(new THREE.BoxGeometry(armSize, armSize, armSize), bodyMaterial);
+                    rightArm.position.set(0.4, 1.0, 0);
+                    princessGroup.add(leftArm, rightArm);
+
+                    // Legs (small cubes for low-poly legs)
+                    const legSize = 0.2;
+                    const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(legSize, legSize, legSize), bodyMaterial);
+                    leftLeg.position.set(-0.15, 0.3, 0);
+                    const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(legSize, legSize, legSize), bodyMaterial);
+                    rightLeg.position.set(0.15, 0.3, 0);
+                    princessGroup.add(leftLeg, rightLeg);
+
+                    // Crown (small cubes for low-poly crown)
+                    const crownSize = 0.05;
+                    const crownBase = new THREE.Mesh(new THREE.BoxGeometry(0.4, crownSize, 0.4), goldMaterial);
+                    crownBase.position.y = 1.9;
+                    const crownSpike1 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.2, crownSize), goldMaterial);
+                    crownSpike1.position.set(0, 2.0, 0.2);
+                    const crownSpike2 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.2, crownSize), goldMaterial);
+                    crownSpike2.position.set(0, 2.0, -0.2);
+                    const crownSpike3 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.2, crownSize), goldMaterial);
+                    crownSpike3.position.set(0.2, 2.0, 0);
+                    const crownSpike4 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.2, crownSize), goldMaterial);
+                    crownSpike4.position.set(-0.2, 2.0, 0);
+                    princessGroup.add(crownBase, crownSpike1, crownSpike2, crownSpike3, crownSpike4);
+
+                    // Jewelry (necklace and earrings, small cubes for low-poly)
+                    const necklaceCube = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.05, 0.05), goldMaterial);
+                    necklaceCube.position.set(0, 1.0, 0.3);
+                    const leftEarring = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.05), goldMaterial);
+                    leftEarring.position.set(-0.4, 1.5, 0.3);
+                    const rightEarring = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.05), goldMaterial);
+                    rightEarring.position.set(0.4, 1.5, 0.3);
+                    princessGroup.add(necklaceCube, leftEarring, rightEarring);
+
+                    princessGroup.position.set(this.player.x, 0.5, this.player.z); // Lower position for blocky character
                     this.player.object = princessGroup;
                     scene.add(princessGroup);
 
-                    // Walking animation (simple rotation for dress)
+                    // Walking animation (simple rotation for legs)
                     this.player.object.traverse(child => {
                         if (child.isMesh && child.material.color.equals(new THREE.Color(0xff69b4))) {
                             child.userData.originalRotation = child.rotation.clone();
@@ -915,6 +921,30 @@
                         }
                     });
                 }
+                initKeyboardMouse() {
+                    // Keyboard controls for movement
+                    document.addEventListener('keydown', (e) => {
+                        this.keys[e.key] = true;
+                        if (e.key === ' ') this.throwBall(); // Throw ball on Space key
+                    });
+                    document.addEventListener('keyup', (e) => {
+                        this.keys[e.key] = false;
+                    });
+
+                    // Mouse controls for looking (camera rotation)
+                    document.addEventListener('mousedown', () => {
+                        document.body.requestPointerLock();
+                    });
+
+                    document.addEventListener('mousemove', (event) => {
+                        if (document.pointerLockElement === document.body) {
+                            const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+                            const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+                            this.player.yaw += movementX * 0.002;
+                            this.player.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.player.pitch + movementY * 0.002));
+                        }
+                    });
+                }
                 createNPCs(scene) {
                     const npcs = [];
                     if (scene === 'town') {
@@ -948,11 +978,38 @@
             function update() {
                 game.updateDayNight();
 
-                game.player.object.position.set(game.player.x, 1, game.player.z);
+                // Movement (combine keyboard and joystick)
+                let dx = 0, dz = 0;
+                if (game.keys['ArrowUp'] || game.joystickLeft.active) {
+                    dz -= game.player.speed;
+                }
+                if (game.keys['ArrowDown']) {
+                    dz += game.player.speed;
+                }
+                if (game.keys['ArrowLeft']) {
+                    dx -= game.player.speed;
+                }
+                if (game.keys['ArrowRight']) {
+                    dx += game.player.speed;
+                }
+
+                const newX = game.player.x + dx * Math.cos(game.player.yaw) + dz * Math.sin(game.player.yaw);
+                const newZ = game.player.z - dx * Math.sin(game.player.yaw) + dz * Math.cos(game.player.yaw);
+
+                if (!game.objects.some(obj => {
+                    const distX = Math.abs(obj.x - newX);
+                    const distZ = Math.abs(obj.z - newZ);
+                    return (obj.type === 'building' || obj.type === 'wall' || obj.type === 'boundary') && distX < 5 && distZ < 5;
+                })) {
+                    game.player.x = newX;
+                    game.player.z = newZ;
+                }
+
+                game.player.object.position.set(game.player.x, 0.5, game.player.z); // Adjust for lower blocky character height
                 game.player.object.rotation.y = -game.player.yaw;
 
-                // Walking animation for princess dress
-                if (game.joystickLeft.active || Object.values(keys).some(k => k)) {
+                // Walking animation for legs
+                if (Object.values(game.keys).some(k => k) || game.joystickLeft.active) {
                     game.player.object.traverse(child => {
                         if (child.isMesh && child.material.color.equals(new THREE.Color(0xff69b4))) {
                             child.rotation.z = Math.sin(Date.now() * 0.005) * 0.1;
@@ -972,7 +1029,7 @@
                     15 + 15 * Math.sin(game.player.pitch),
                     game.player.z + 15 * Math.cos(game.player.yaw) * Math.cos(game.player.pitch)
                 );
-                camera.lookAt(game.player.x, 1, game.player.z);
+                camera.lookAt(game.player.x, 0.5, game.player.z);
 
                 // Update thrown balls (arc motion and removal)
                 game.thrownBalls.forEach((ball, index) => {
