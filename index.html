@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Expanded 3D Princess RPG</title>
+    <title>Enhanced 3D Princess RPG</title>
     <style>
         body {
             margin: 0;
@@ -136,7 +136,6 @@
                     this.dialogue = '';
                     this.dialogueTimer = 0;
                     this.objects = [];
-                    this.enemies = [];
                     this.npcs = [];
                     this.quests = {
                         townGuard: { active: false, completed: false },
@@ -154,158 +153,278 @@
                     this.time = this.dayNightCycle < 600 ? 'Day' : 'Night';
                 }
                 initScene() {
-                    // Ground (detailed terrain)
+                    // Ground (detailed terrain with grass texture)
                     const groundGeometry = new THREE.PlaneGeometry(100, 100, 50, 50);
-                    const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x6bb26b, side: THREE.DoubleSide });
+                    const groundMaterial = new THREE.MeshStandardMaterial({ 
+                        color: 0x6bb26b, 
+                        side: THREE.DoubleSide,
+                        roughness: 0.8,
+                        metalness: 0.1 
+                    });
                     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
                     ground.rotation.x = Math.PI / 2;
                     ground.castShadow = true;
                     ground.receiveShadow = true;
                     scene.add(ground);
 
-                    // Skybox (day/night effect)
+                    // Skybox (day/night effect with gradient)
                     const skyGeometry = new THREE.SphereGeometry(500, 60, 40);
-                    const skyMaterial = new THREE.MeshBasicMaterial({
-                        map: new THREE.TextureLoader().load('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII='),
+                    const skyMaterial = new THREE.ShaderMaterial({
+                        uniforms: {
+                            topColor: { value: new THREE.Color(0x87ceeb) },
+                            bottomColor: { value: new THREE.Color(0x2f4f4f) },
+                            offset: { value: 0.5 },
+                            exponent: { value: 0.6 }
+                        },
+                        vertexShader: `
+                            varying vec3 vWorldPosition;
+                            void main() {
+                                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                                vWorldPosition = worldPosition.xyz;
+                                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                            }
+                        `,
+                        fragmentShader: `
+                            uniform vec3 topColor;
+                            uniform vec3 bottomColor;
+                            uniform float offset;
+                            uniform float exponent;
+                            varying vec3 vWorldPosition;
+                            void main() {
+                                float h = normalize(vWorldPosition + offset).y;
+                                gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
+                            }
+                        `,
                         side: THREE.BackSide
                     });
                     const sky = new THREE.Mesh(skyGeometry, skyMaterial);
-                    sky.material.color.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
+                    sky.material.uniforms.topColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
+                    sky.material.uniforms.bottomColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
                     sky.name = 'sky';
                     scene.add(sky);
 
-                    // Player (princess, detailed model)
-                    const playerGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 32);
-                    const playerMaterial = new THREE.MeshStandardMaterial({ color: 0xff69b4, metalness: 0.1, roughness: 0.5 });
-                    this.player.object = new THREE.Mesh(playerGeometry, playerMaterial);
-                    this.player.object.position.set(this.player.x, 1, this.player.z);
-                    this.player.object.castShadow = true;
-                    scene.add(this.player.object);
+                    // Princess (detailed model with dress, crown, and face)
+                    const princessBodyGeometry = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 32);
+                    const princessBodyMaterial = new THREE.MeshStandardMaterial({ color: 0xff69b4, metalness: 0.1, roughness: 0.5 }); // Pink dress
+                    const princessBody = new THREE.Mesh(princessBodyGeometry, princessBodyMaterial);
+                    princessBody.position.y = 0.75;
+                    princessBody.castShadow = true;
 
-                    // Lighting (advanced setup)
+                    const princessHeadGeometry = new THREE.SphereGeometry(0.4, 32, 32);
+                    const princessHeadMaterial = new THREE.MeshStandardMaterial({ color: 0xffe4c4, metalness: 0.1, roughness: 0.5 }); // Skin tone
+                    const princessHead = new THREE.Mesh(princessHeadGeometry, princessHeadMaterial);
+                    princessHead.position.y = 1.65;
+                    princessHead.castShadow = true;
+
+                    const crownGeometry = new THREE.TorusGeometry(0.45, 0.05, 16, 32);
+                    const crownMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 }); // Gold crown
+                    const crown = new THREE.Mesh(crownGeometry, crownMaterial);
+                    crown.position.y = 2.05;
+                    crown.rotation.x = Math.PI / 2;
+                    crown.castShadow = true;
+
+                    const princessGroup = new THREE.Group();
+                    princessGroup.add(princessBody, princessHead, crown);
+                    princessGroup.position.set(this.player.x, 1, this.player.z);
+                    this.player.object = princessGroup;
+                    scene.add(princessGroup);
+
+                    // Lighting (advanced setup with soft shadows)
                     const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
                     scene.add(ambientLight);
                     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
                     directionalLight.position.set(10, 20, 10);
                     directionalLight.castShadow = true;
-                    directionalLight.shadow.mapSize.width = 2048;
-                    directionalLight.shadow.mapSize.height = 2048;
+                    directionalLight.shadow.mapSize.width = 4096;
+                    directionalLight.shadow.mapSize.height = 4096;
                     directionalLight.shadow.camera.near = 0.5;
-                    directionalLight.shadow.camera.far = 50;
+                    directionalLight.shadow.camera.far = 100;
+                    directionalLight.shadow.camera.left = -50;
+                    directionalLight.shadow.camera.right = 50;
+                    directionalLight.shadow.camera.top = 50;
+                    directionalLight.shadow.camera.bottom = -50;
                     scene.add(directionalLight);
 
-                    // Objects (buildings, collectibles, NPCs, enemies)
-                    this.objects = this.createObjects(this.scene);
-                    this.objects.forEach(obj => scene.add(obj.mesh));
-                    this.enemies = this.createEnemies(this.scene);
-                    this.enemies.forEach(enemy => scene.add(enemy.mesh));
-                    this.npcs = this.createNPCs(this.scene);
-                    this.npcs.forEach(npc => scene.add(npc.mesh));
-                }
-                createObjects(scene) {
-                    const objects = [];
-                    if (scene === 'town') {
-                        // Castle (large detailed building)
-                        const castleGeometry = new THREE.BoxGeometry(10, 10, 10);
-                        const castleMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.2, roughness: 0.7 });
-                        const castle = new THREE.Mesh(castleGeometry, castleMaterial);
-                        castle.position.set(30, 5, 30);
-                        castle.castShadow = true;
-                        castle.receiveShadow = true;
-                        objects.push({ mesh: castle, type: 'building', x: 30, z: 30 });
+                    // Castle (majestic, multi-towered structure)
+                    const castleBaseGeometry = new THREE.BoxGeometry(20, 10, 20);
+                    const castleBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
+                    const castleBase = new THREE.Mesh(castleBaseGeometry, castleBaseMaterial);
+                    castleBase.position.set(40, 5, 40);
+                    castleBase.castShadow = true;
+                    castleBase.receiveShadow = true;
 
-                        // House (smaller detailed building)
-                        const houseGeometry = new THREE.BoxGeometry(6, 6, 6);
-                        const houseMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.2, roughness: 0.7 });
-                        const house = new THREE.Mesh(houseGeometry, houseMaterial);
-                        house.position.set(-30, 3, -30);
-                        house.castShadow = true;
-                        house.receiveShadow = true;
-                        objects.push({ mesh: house, type: 'building', x: -30, z: -30 });
+                    const castleTowerGeometry = new THREE.CylinderGeometry(3, 3, 15, 32);
+                    const castleTowerMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
+                    const tower1 = new THREE.Mesh(castleTowerGeometry, castleTowerMaterial);
+                    tower1.position.set(40, 12.5, 40);
+                    tower1.castShadow = true;
+                    tower1.receiveShadow = true;
 
-                        // Castle door (red plane at entrance)
-                        const doorGeometry = new THREE.PlaneGeometry(2, 4);
-                        const doorMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, side: THREE.DoubleSide });
-                        const castleDoor = new THREE.Mesh(doorGeometry, doorMaterial);
-                        castleDoor.position.set(25, 2, 30); // Front-left of castle
-                        castleDoor.rotation.y = Math.PI / 2;
-                        objects.push({ mesh: castleDoor, type: 'door', x: 25, z: 30, building: 'castle' });
+                    const tower2 = new THREE.Mesh(castleTowerGeometry, castleTowerMaterial.clone());
+                    tower2.position.set(50, 12.5, 40);
+                    tower2.castShadow = true;
+                    tower2.receiveShadow = true;
 
-                        // House door (red plane at entrance)
-                        const houseDoor = new THREE.Mesh(doorGeometry, doorMaterial);
-                        houseDoor.position.set(-32, 2, -30); // Front-left of house
-                        houseDoor.rotation.y = Math.PI / 2;
-                        objects.push({ mesh: houseDoor, type: 'door', x: -32, z: -30, building: 'house' });
+                    const tower3 = new THREE.Mesh(castleTowerGeometry, castleTowerMaterial.clone());
+                    tower3.position.set(30, 12.5, 40);
+                    tower3.castShadow = true;
+                    tower3.receiveShadow = true;
 
-                        // Flowers (small spheres, magenta)
-                        const flowerGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-                        const flowerMaterial = new THREE.MeshStandardMaterial({ color: 0xff00ff, metalness: 0.1, roughness: 0.8 });
-                        const flower1 = new THREE.Mesh(flowerGeometry, flowerMaterial);
-                        flower1.position.set(10, 0.5, 10);
-                        flower1.castShadow = true;
-                        objects.push({ mesh: flower1, type: 'flower', x: 10, z: 10 });
+                    const castleGroup = new THREE.Group();
+                    castleGroup.add(castleBase, tower1, tower2, tower3);
+                    objects.push({ mesh: castleGroup, type: 'building', x: 40, z: 40 });
 
-                        const flower2 = new THREE.Mesh(flowerGeometry, flowerMaterial);
-                        flower2.position.set(-10, 0.5, 0);
-                        flower2.castShadow = true;
-                        objects.push({ mesh: flower2, type: 'flower', x: -10, z: 0 });
+                    // House (cozy, detailed structure with roof)
+                    const houseBaseGeometry = new THREE.BoxGeometry(6, 6, 6);
+                    const houseBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7 }); // Wood brown
+                    const houseBase = new THREE.Mesh(houseBaseGeometry, houseBaseMaterial);
+                    houseBase.position.set(-40, 3, -40);
+                    houseBase.castShadow = true;
+                    houseBase.receiveShadow = true;
 
-                        // Coins (small spheres, gold)
-                        const coinGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-                        const coinMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
-                        const coin1 = new THREE.Mesh(coinGeometry, coinMaterial);
-                        coin1.position.set(0, 0.5, 10);
-                        coin1.castShadow = true;
-                        objects.push({ mesh: coin1, type: 'coin', x: 0, z: 10 });
+                    const houseRoofGeometry = new THREE.ConeGeometry(4, 4, 32);
+                    const houseRoofMaterial = new THREE.MeshStandardMaterial({ color: 0x800000, metalness: 0.2, roughness: 0.7 }); // Red roof
+                    const houseRoof = new THREE.Mesh(houseRoofGeometry, houseRoofMaterial);
+                    houseRoof.position.set(-40, 7, -40);
+                    houseRoof.castShadow = true;
+                    houseRoof.receiveShadow = true;
 
-                        const coin2 = new THREE.Mesh(coinGeometry, coinMaterial);
-                        coin2.position.set(10, 0.5, -10);
-                        coin2.castShadow = true;
-                        objects.push({ mesh: coin2, type: 'coin', x: 10, z: -10 });
+                    const houseGroup = new THREE.Group();
+                    houseGroup.add(houseBase, houseRoof);
+                    objects.push({ mesh: houseGroup, type: 'building', x: -40, z: -40 });
 
-                        // Gems (small octahedrons, cyan)
-                        const gemGeometry = new THREE.OctahedronGeometry(0.5, 0);
-                        const gemMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.5, roughness: 0.5 });
-                        const gem = new THREE.Mesh(gemGeometry, gemMaterial);
-                        gem.position.set(-10, 0.5, 10);
-                        gem.castShadow = true;
-                        objects.push({ mesh: gem, type: 'gem', x: -10, z: 10 });
+                    // Castle door (ornate golden door)
+                    const doorGeometry = new THREE.PlaneGeometry(2, 4);
+                    const doorMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2, side: THREE.DoubleSide }); // Gold
+                    const castleDoor = new THREE.Mesh(doorGeometry, doorMaterial);
+                    castleDoor.position.set(35, 2, 40); // Front-left of castle
+                    castleDoor.rotation.y = Math.PI / 2;
+                    objects.push({ mesh: castleDoor, type: 'door', x: 35, z: 40, building: 'castle' });
 
-                        // Potions (small cylinders, orange)
-                        const potionGeometry = new THREE.CylinderGeometry(0.3, 0.3, 1, 32);
-                        const potionMaterial = new THREE.MeshStandardMaterial({ color: 0xff4500, metalness: 0.1, roughness: 0.7 });
-                        const potion = new THREE.Mesh(potionGeometry, potionMaterial);
-                        potion.position.set(0, 0.5, -10);
-                        potion.castShadow = true;
-                        objects.push({ mesh: potion, type: 'potion', x: 0, z: -10 });
+                    // House door (wooden door)
+                    const houseDoor = new THREE.Mesh(doorGeometry, new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7, side: THREE.DoubleSide }));
+                    houseDoor.position.set(-42, 2, -40); // Front-left of house
+                    houseDoor.rotation.y = Math.PI / 2;
+                    objects.push({ mesh: houseDoor, type: 'door', x: -42, z: -40, building: 'house' });
 
-                        // Keys (small keys, gold)
-                        const keyGeometry = new THREE.CylinderGeometry(0.2, 0.2, 0.8, 8);
-                        const keyMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
-                        const key = new THREE.Mesh(keyGeometry, keyMaterial);
-                        key.position.set(20, 0.5, 20);
-                        key.rotation.x = Math.PI / 2;
-                        key.castShadow = true;
-                        objects.push({ mesh: key, type: 'key', x: 20, z: 20 });
+                    // Flowers (detailed blossoms)
+                    const flowerStemGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.5, 8);
+                    const flowerStemMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 });
+                    const flowerPetalsGeometry = new THREE.TorusGeometry(0.3, 0.1, 16, 32);
+                    const flowerPetalsMaterial = new THREE.MeshStandardMaterial({ color: 0xff00ff, metalness: 0.1, roughness: 0.8 });
 
-                        // Artifacts (small orbs, purple)
-                        const artifactGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-                        const artifactMaterial = new THREE.MeshStandardMaterial({ color: 0x9400d3, metalness: 0.5, roughness: 0.5 });
-                        const artifact = new THREE.Mesh(artifactGeometry, artifactMaterial);
-                        artifact.position.set(-20, 0.5, -20);
-                        artifact.castShadow = true;
-                        objects.push({ mesh: artifact, type: 'artifact', x: -20, z: -20 });
+                    const flower1Group = new THREE.Group();
+                    const stem1 = new THREE.Mesh(flowerStemGeometry, flowerStemMaterial);
+                    stem1.position.y = 0.25;
+                    const petals1 = new THREE.Mesh(flowerPetalsGeometry, flowerPetalsMaterial);
+                    petals1.position.y = 0.75;
+                    petals1.rotation.x = Math.PI / 2;
+                    flower1Group.add(stem1, petals1);
+                    flower1Group.position.set(10, 0, 10);
+                    flower1Group.castShadow = true;
+                    objects.push({ mesh: flower1Group, type: 'flower', x: 10, z: 10 });
 
-                        // Shop (small building, yellow)
-                        const shopGeometry = new THREE.BoxGeometry(4, 4, 4);
-                        const shopMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00, metalness: 0.2, roughness: 0.6 });
-                        const shop = new THREE.Mesh(shopGeometry, shopMaterial);
-                        shop.position.set(0, 2, 0);
-                        shop.castShadow = true;
-                        shop.receiveShadow = true;
-                        objects.push({ mesh: shop, type: 'shop', x: 0, z: 0 });
-                    } else if (scene === 'castle') {
-                        // Castle interior (multi-room design)
+                    const flower2Group = new THREE.Group();
+                    const stem2 = new THREE.Mesh(flowerStemGeometry, flowerStemMaterial);
+                    stem2.position.y = 0.25;
+                    const petals2 = new THREE.Mesh(flowerPetalsGeometry, flowerPetalsMaterial);
+                    petals2.position.y = 0.75;
+                    petals2.rotation.x = Math.PI / 2;
+                    flower2Group.add(stem2, petals2);
+                    flower2Group.position.set(-10, 0, 0);
+                    flower2Group.castShadow = true;
+                    objects.push({ mesh: flower2Group, type: 'flower', x: -10, z: 0 });
+
+                    // Coins (shiny gold coins)
+                    const coinGeometry = new THREE.CircleGeometry(0.5, 32);
+                    const coinMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
+                    const coin1 = new THREE.Mesh(coinGeometry, coinMaterial);
+                    coin1.position.set(0, 0.5, 10);
+                    coin1.rotation.x = Math.PI / 2;
+                    coin1.castShadow = true;
+                    objects.push({ mesh: coin1, type: 'coin', x: 0, z: 10 });
+
+                    const coin2 = new THREE.Mesh(coinGeometry, coinMaterial.clone());
+                    coin2.position.set(10, 0.5, -10);
+                    coin2.rotation.x = Math.PI / 2;
+                    coin2.castShadow = true;
+                    objects.push({ mesh: coin2, type: 'coin', x: 10, z: -10 });
+
+                    // Gems (prismatic crystals)
+                    const gemGeometry = new THREE.OctahedronGeometry(0.5, 0);
+                    const gemMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.5, roughness: 0.5 });
+                    const gem = new THREE.Mesh(gemGeometry, gemMaterial);
+                    gem.position.set(-10, 0.5, 10);
+                    gem.castShadow = true;
+                    objects.push({ mesh: gem, type: 'gem', x: -10, z: 10 });
+
+                    // Potions (glass bottles with glowing liquid)
+                    const potionBaseGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 32);
+                    const potionBaseMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.8, roughness: 0.2 }); // Glass
+                    const potionLiquidGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.6, 32);
+                    const potionLiquidMaterial = new THREE.MeshStandardMaterial({ color: 0xff4500, metalness: 0.1, roughness: 0.7 }); // Orange liquid
+                    const potionBase = new THREE.Mesh(potionBaseGeometry, potionBaseMaterial);
+                    const potionLiquid = new THREE.Mesh(potionLiquidGeometry, potionLiquidMaterial);
+                    potionLiquid.position.y = 0.1;
+                    const potionGroup = new THREE.Group();
+                    potionGroup.add(potionBase, potionLiquid);
+                    potionGroup.position.set(0, 0.4, -10);
+                    potionGroup.castShadow = true;
+                    objects.push({ mesh: potionGroup, type: 'potion', x: 0, z: -10 });
+
+                    // Keys (ornate golden keys)
+                    const keyHandleGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+                    const keyShaftGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
+                    const keyMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
+                    const keyHandle = new THREE.Mesh(keyHandleGeometry, keyMaterial);
+                    const keyShaft = new THREE.Mesh(keyShaftGeometry, keyMaterial);
+                    keyShaft.position.y = -0.4;
+                    const keyGroup = new THREE.Group();
+                    keyGroup.add(keyHandle, keyShaft);
+                    keyGroup.position.set(20, 0.5, 20);
+                    keyGroup.rotation.x = Math.PI / 2;
+                    keyGroup.castShadow = true;
+                    objects.push({ mesh: keyGroup, type: 'key', x: 20, z: 20 });
+
+                    // Artifacts (mystical orbs with glow)
+                    const artifactGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+                    const artifactMaterial = new THREE.MeshStandardMaterial({ color: 0x9400d3, metalness: 0.5, roughness: 0.5 });
+                    const artifact = new THREE.Mesh(artifactGeometry, artifactMaterial);
+                    artifact.position.set(-20, 0.5, -20);
+                    artifact.castShadow = true;
+
+                    const glowGeometry = new THREE.SphereGeometry(0.6, 16, 16);
+                    const glowMaterial = new THREE.MeshBasicMaterial({ 
+                        color: 0xffeb3b, 
+                        transparent: true, 
+                        opacity: 0.5,
+                        side: THREE.BackSide 
+                    });
+                    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+                    glow.position.copy(artifact.position);
+                    const artifactGroup = new THREE.Group();
+                    artifactGroup.add(artifact, glow);
+                    objects.push({ mesh: artifactGroup, type: 'artifact', x: -20, z: -20 });
+
+                    // Shop (small shop with sign)
+                    const shopBaseGeometry = new THREE.BoxGeometry(4, 4, 4);
+                    const shopBaseMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00, metalness: 0.2, roughness: 0.6 });
+                    const shopBase = new THREE.Mesh(shopBaseGeometry, shopBaseMaterial);
+                    shopBase.position.set(0, 2, 0);
+                    shopBase.castShadow = true;
+                    shopBase.receiveShadow = true;
+
+                    const signGeometry = new THREE.PlaneGeometry(2, 1);
+                    const signMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+                    const sign = new THREE.Mesh(signGeometry, signMaterial);
+                    sign.position.set(0, 4.5, 2);
+                    sign.rotation.y = Math.PI / 2;
+                    const shopGroup = new THREE.Group();
+                    shopGroup.add(shopBase, sign);
+                    objects.push({ mesh: shopGroup, type: 'shop', x: 0, z: 0 });
+
+                    // Castle interior objects
+                    if (scene === 'castle') {
                         const roomGeometry = new THREE.BoxGeometry(40, 10, 40);
                         const roomMaterial = new THREE.MeshStandardMaterial({ color: 0xdeb887, metalness: 0.1, roughness: 0.8 });
                         const room = new THREE.Mesh(roomGeometry, roomMaterial);
@@ -314,7 +433,6 @@
                         room.receiveShadow = true;
                         objects.push({ mesh: room, type: 'room', x: 0, z: 0 });
 
-                        // Walls (to create rooms)
                         const wallGeometry = new THREE.BoxGeometry(2, 8, 40);
                         const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.2, roughness: 0.7 });
                         const wall1 = new THREE.Mesh(wallGeometry, wallMaterial);
@@ -323,45 +441,55 @@
                         wall1.receiveShadow = true;
                         objects.push({ mesh: wall1, type: 'wall', x: 10, z: 0 });
 
-                        const wall2 = new THREE.Mesh(wallGeometry, wallMaterial);
+                        const wall2 = new THREE.Mesh(wallGeometry, wallMaterial.clone());
                         wall2.position.set(-10, 4, 0);
                         wall2.castShadow = true;
                         wall2.receiveShadow = true;
                         objects.push({ mesh: wall2, type: 'wall', x: -10, z: 0 });
 
-                        // King NPC (blue cube with crown)
-                        const npcGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 32);
-                        const npcMaterial = new THREE.MeshStandardMaterial({ color: 0x00008b, metalness: 0.3, roughness: 0.6 });
-                        const king = new THREE.Mesh(npcGeometry, npcMaterial);
-                        king.position.set(15, 1, 15);
-                        king.castShadow = true;
-                        objects.push({ mesh: king, type: 'npc', x: 15, z: 15, role: 'king' });
+                        const kingBodyGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 32);
+                        const kingBodyMaterial = new THREE.MeshStandardMaterial({ color: 0x00008b, metalness: 0.3, roughness: 0.6 });
+                        const kingBody = new THREE.Mesh(kingBodyGeometry, kingBodyMaterial);
+                        kingBody.position.set(15, 1, 15);
+                        kingBody.castShadow = true;
+                        objects.push({ mesh: kingBody, type: 'npc', x: 15, z: 15, role: 'king' });
 
-                        // Crown (gold sphere on king)
-                        const crownGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+                        const crownGeometry = new THREE.TorusGeometry(0.5, 0.05, 16, 32);
                         const crownMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
                         const crown = new THREE.Mesh(crownGeometry, crownMaterial);
                         crown.position.set(15, 2.5, 15);
+                        crown.rotation.x = Math.PI / 2;
                         crown.castShadow = true;
                         objects.push({ mesh: crown, type: 'crown', x: 15, z: 15 });
 
-                        // Door (red plane to exit)
                         const doorGeometry = new THREE.PlaneGeometry(2, 4);
-                        const doorMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+                        const doorMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, side: THREE.DoubleSide });
                         const door = new THREE.Mesh(doorGeometry, doorMaterial);
                         door.position.set(-19, 2, -19); // Bottom-left exit
                         door.rotation.y = Math.PI / 2;
                         objects.push({ mesh: door, type: 'door', x: -19, z: -19, building: 'town' });
 
-                        // Hidden artifact (purple orb)
                         const artifactGeometry = new THREE.SphereGeometry(0.5, 16, 16);
                         const artifactMaterial = new THREE.MeshStandardMaterial({ color: 0x9400d3, metalness: 0.5, roughness: 0.5 });
                         const artifact = new THREE.Mesh(artifactGeometry, artifactMaterial);
                         artifact.position.set(0, 0.5, 0);
                         artifact.castShadow = true;
-                        objects.push({ mesh: artifact, type: 'artifact', x: 0, z: 0 });
-                    } else if (scene === 'house') {
-                        // House interior (multi-room design)
+                        const glowGeometry = new THREE.SphereGeometry(0.6, 16, 16);
+                        const glowMaterial = new THREE.MeshBasicMaterial({ 
+                            color: 0xffeb3b, 
+                            transparent: true, 
+                            opacity: 0.5,
+                            side: THREE.BackSide 
+                        });
+                        const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+                        glow.position.copy(artifact.position);
+                        const artifactGroup = new THREE.Group();
+                        artifactGroup.add(artifact, glow);
+                        objects.push({ mesh: artifactGroup, type: 'artifact', x: 0, z: 0 });
+                    }
+
+                    // House interior objects
+                    if (scene === 'house') {
                         const roomGeometry = new THREE.BoxGeometry(20, 6, 20);
                         const roomMaterial = new THREE.MeshStandardMaterial({ color: 0xdeb887, metalness: 0.1, roughness: 0.8 });
                         const room = new THREE.Mesh(roomGeometry, roomMaterial);
@@ -370,7 +498,6 @@
                         room.receiveShadow = true;
                         objects.push({ mesh: room, type: 'room', x: 0, z: 0 });
 
-                        // Walls (to create rooms)
                         const wallGeometry = new THREE.BoxGeometry(2, 5, 20);
                         const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.2, roughness: 0.7 });
                         const wall1 = new THREE.Mesh(wallGeometry, wallMaterial);
@@ -379,23 +506,20 @@
                         wall1.receiveShadow = true;
                         objects.push({ mesh: wall1, type: 'wall', x: 5, z: 0 });
 
-                        // Villager NPC (blue cube)
-                        const npcGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 32);
-                        const npcMaterial = new THREE.MeshStandardMaterial({ color: 0x00008b, metalness: 0.3, roughness: 0.6 });
-                        const villager = new THREE.Mesh(npcGeometry, npcMaterial);
-                        villager.position.set(8, 1, 8);
-                        villager.castShadow = true;
-                        objects.push({ mesh: villager, type: 'npc', x: 8, z: 8, role: 'villager' });
+                        const villagerBodyGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 32);
+                        const villagerBodyMaterial = new THREE.MeshStandardMaterial({ color: 0x00008b, metalness: 0.3, roughness: 0.6 });
+                        const villagerBody = new THREE.Mesh(villagerBodyGeometry, villagerBodyMaterial);
+                        villagerBody.position.set(8, 1, 8);
+                        villagerBody.castShadow = true;
+                        objects.push({ mesh: villagerBody, type: 'npc', x: 8, z: 8, role: 'villager' });
 
-                        // Door (red plane to exit)
                         const doorGeometry = new THREE.PlaneGeometry(2, 4);
-                        const doorMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+                        const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, side: THREE.DoubleSide });
                         const door = new THREE.Mesh(doorGeometry, doorMaterial);
                         door.position.set(-9, 2, -9); // Bottom-left exit
                         door.rotation.y = Math.PI / 2;
                         objects.push({ mesh: door, type: 'door', x: -9, z: -9, building: 'town' });
 
-                        // Hidden gem (cyan octahedron)
                         const gemGeometry = new THREE.OctahedronGeometry(0.5, 0);
                         const gemMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.5, roughness: 0.5 });
                         const gem = new THREE.Mesh(gemGeometry, gemMaterial);
@@ -403,19 +527,8 @@
                         gem.castShadow = true;
                         objects.push({ mesh: gem, type: 'gem', x: 0, z: 0 });
                     }
+
                     return objects;
-                }
-                createEnemies(scene) {
-                    const enemies = [];
-                    if (scene === 'town') {
-                        const enemyGeometry = new THREE.SphereGeometry(0.8, 32, 32);
-                        const enemyMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, metalness: 0.5, roughness: 0.5 });
-                        const enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
-                        enemy.position.set(15, 0.8, 15);
-                        enemy.castShadow = true;
-                        enemies.push({ mesh: enemy, x: 15, z: 15, speed: 0.2, health: 20 });
-                    }
-                    return enemies;
                 }
                 createNPCs(scene) {
                     const npcs = [];
@@ -431,13 +544,10 @@
                 }
                 updateObjects() {
                     scene.remove(...this.objects.map(obj => obj.mesh));
-                    scene.remove(...this.enemies.map(enemy => enemy.mesh));
                     scene.remove(...this.npcs.map(npc => npc.mesh));
                     this.objects = this.createObjects(this.scene);
-                    this.enemies = this.createEnemies(this.scene);
                     this.npcs = this.createNPCs(this.scene);
                     this.objects.forEach(obj => scene.add(obj.mesh));
-                    this.enemies.forEach(enemy => scene.add(enemy.mesh));
                     this.npcs.forEach(npc => scene.add(npc.mesh));
                 }
             }
@@ -484,10 +594,6 @@
                     const distX = Math.abs(obj.x - newX);
                     const distZ = Math.abs(obj.z - newZ);
                     return (obj.type === 'building' || obj.type === 'wall') && distX < 5 && distZ < 5;
-                }) && !game.enemies.some(enemy => {
-                    const distX = Math.abs(enemy.x - newX);
-                    const distZ = Math.abs(enemy.z - newZ);
-                    return distX < 2 && distZ < 2;
                 })) {
                     game.player.x = newX;
                     game.player.z = newZ;
@@ -498,42 +604,11 @@
 
                 // Camera follows player with pitch control
                 camera.position.set(
-                    game.player.x + 10 * Math.sin(game.player.yaw) * Math.cos(game.player.pitch),
-                    10 + 10 * Math.sin(game.player.pitch),
-                    game.player.z + 10 * Math.cos(game.player.yaw) * Math.cos(game.player.pitch)
+                    game.player.x + 15 * Math.sin(game.player.yaw) * Math.cos(game.player.pitch),
+                    15 + 15 * Math.sin(game.player.pitch),
+                    game.player.z + 15 * Math.cos(game.player.yaw) * Math.cos(game.player.pitch)
                 );
                 camera.lookAt(game.player.x, 1, game.player.z);
-
-                // Enemy AI (simple pursuit)
-                game.enemies.forEach(enemy => {
-                    const dx = game.player.x - enemy.x;
-                    const dz = game.player.z - enemy.z;
-                    const distance = Math.sqrt(dx * dx + dz * dz);
-                    if (distance < 20) {
-                        enemy.x += dx / distance * enemy.speed;
-                        enemy.z += dz / distance * enemy.speed;
-                        enemy.mesh.position.set(enemy.x, 0.8, enemy.z);
-                    }
-
-                    // Check for combat
-                    if (distance < 2) {
-                        if (keys['Space']) {
-                            if (game.mana >= 10) {
-                                enemy.health -= 5;
-                                game.mana -= 10;
-                                game.showDialogue(`Attacked enemy! Enemy health: ${enemy.health}`);
-                                if (enemy.health <= 0) {
-                                    scene.remove(enemy.mesh);
-                                    game.enemies = game.enemies.filter(e => e !== enemy);
-                                    game.artifacts++;
-                                    game.showDialogue('Enemy defeated! Gained an artifact!');
-                                }
-                            } else {
-                                game.showDialogue('Not enough mana to attack!');
-                            }
-                        }
-                    }
-                });
 
                 // NPC interactions
                 game.npcs.forEach(npc => {
@@ -542,39 +617,15 @@
                     if (distX < 2 && distZ < 2) {
                         if (npc.role === 'guard' && !game.quests.townGuard.completed) {
                             if (!game.quests.townGuard.active) {
-                                game.showDialogue('Town Guard: Princess, a monster roams the town! Defeat it with your magic (press Space) and bring me an artifact.');
+                                game.showDialogue('Town Guard: Princess, the king needs a flower for his crown. Bring one to the castle!');
                                 game.quests.townGuard.active = true;
-                            } else if (game.artifacts > 0) {
+                            } else if (game.flowers > 0) {
                                 game.showDialogue('Town Guard: Thank you! Here’s a key.');
                                 game.keys++;
-                                game.artifacts--;
+                                game.flowers--;
                                 game.quests.townGuard.completed = true;
                             } else {
-                                game.showDialogue('Town Guard: Did you defeat the monster yet?');
-                            }
-                        } else if (npc.role === 'king' && !game.quests.castleKing.completed) {
-                            if (!game.quests.castleKing.active && game.flowers > 0) {
-                                game.showDialogue('King: Please, bring me a flower for the royal garden.');
-                                game.quests.castleKing.active = true;
-                            } else if (game.quests.castleKing.active && game.flowers > 0) {
-                                game.showDialogue('King: Thank you! Here’s a gem.');
-                                game.gems++;
-                                game.flowers--;
-                                game.quests.castleKing.completed = true;
-                            } else {
-                                game.showDialogue('King: I need a flower for the garden.');
-                            }
-                        } else if (npc.role === 'villager' && !game.quests.villager.completed) {
-                            if (!game.quests.villager.active) {
-                                game.showDialogue('Villager: I lost my gem in the house. Find it, and I’ll give you a potion!');
-                                game.quests.villager.active = true;
-                            } else if (game.gems > 0) {
-                                game.showDialogue('Villager: Thank you! Here’s a potion.');
-                                game.potions++;
-                                game.gems--;
-                                game.quests.villager.completed = true;
-                            } else {
-                                game.showDialogue('Villager: Did you find my gem?');
+                                game.showDialogue('Town Guard: Do you have a flower for the king?');
                             }
                         }
                     }
@@ -589,17 +640,17 @@
                             game.flowers++;
                             scene.remove(obj.mesh);
                             game.objects = game.objects.filter(o => o !== obj);
-                            game.showDialogue('You picked a flower! *Sparkle*');
+                            game.showDialogue('You picked a radiant flower! *Sparkle*');
                         } else if (obj.type === 'coin') {
                             game.coins++;
                             scene.remove(obj.mesh);
                             game.objects = game.objects.filter(o => o !== obj);
-                            game.showDialogue('You found a coin!');
+                            game.showDialogue('You found a glittering coin!');
                         } else if (obj.type === 'gem') {
                             game.gems++;
                             scene.remove(obj.mesh);
                             game.objects = game.objects.filter(o => o !== obj);
-                            game.showDialogue('You found a gem!');
+                            game.showDialogue('A dazzling gem shines in your hand!');
                         } else if (obj.type === 'potion') {
                             game.potions++;
                             game.health = Math.min(100, game.health + 20);
@@ -610,12 +661,12 @@
                             game.keys++;
                             scene.remove(obj.mesh);
                             game.objects = game.objects.filter(o => o !== obj);
-                            game.showDialogue('You found a key!');
+                            game.showDialogue('You found a golden key!');
                         } else if (obj.type === 'artifact') {
                             game.artifacts++;
                             scene.remove(obj.mesh);
                             game.objects = game.objects.filter(o => o !== obj);
-                            game.showDialogue('You found an artifact!');
+                            game.showDialogue('You discovered a mystical artifact!');
                         } else if (obj.type === 'door') {
                             if (game.scene === 'town') {
                                 if (obj.building === 'castle' && game.keys > 0) {
@@ -625,14 +676,14 @@
                                     game.player.z = 0;
                                     game.player.yaw = 0;
                                     game.updateObjects();
-                                    game.showDialogue('Entered the castle!');
+                                    game.showDialogue('Entered the majestic castle!');
                                 } else if (obj.building === 'house') {
                                     game.scene = 'house';
                                     game.player.x = 0;
                                     game.player.z = 0;
                                     game.player.yaw = 0;
                                     game.updateObjects();
-                                    game.showDialogue('Entered the house!');
+                                    game.showDialogue('Entered the cozy house!');
                                 } else {
                                     game.showDialogue('Need a key to enter the castle!');
                                 }
@@ -674,7 +725,8 @@
                 // Update sky color for day/night
                 const sky = scene.getObjectByName('sky');
                 if (sky) {
-                    sky.material.color.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
+                    sky.material.uniforms.topColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
+                    sky.material.uniforms.bottomColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
                 }
             }
 
