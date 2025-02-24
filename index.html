@@ -904,7 +904,7 @@
                     }
                 });
 
-                // Object interactions
+                // Object interactions (with correct 'game' context)
                 game.objects.forEach(obj => {
                     const distX = Math.abs(obj.x - game.player.x);
                     const distZ = Math.abs(obj.z - game.player.z);
@@ -941,67 +941,67 @@
                             game.objects = game.objects.filter(o => o !== obj);
                             game.showDialogue('You discovered a mystical artifact!');
                         } else if (obj.type === 'door') {
-                            if (this.scene === 'town') {
-                                if (obj.building === 'castle' && this.keys > 0) {
-                                    this.scene = 'castle';
-                                    this.keys--;
-                                    this.player.x = 0;
-                                    this.player.z = 0;
-                                    this.player.yaw = 0;
-                                    this.updateObjects();
-                                    this.showDialogue('Entered the majestic castle!');
+                            if (game.scene === 'town') {
+                                if (obj.building === 'castle' && game.keys > 0) {
+                                    game.scene = 'castle';
+                                    game.keys--;
+                                    game.player.x = 0;
+                                    game.player.z = 0;
+                                    game.player.yaw = 0;
+                                    game.updateObjects();
+                                    game.showDialogue('Entered the majestic castle!');
                                 } else if (obj.building === 'house') {
-                                    this.scene = 'house';
-                                    this.player.x = 0;
-                                    this.player.z = 0;
-                                    this.player.yaw = 0;
-                                    this.updateObjects();
-                                    this.showDialogue('Entered the cozy house!');
+                                    game.scene = 'house';
+                                    game.player.x = 0;
+                                    game.player.z = 0;
+                                    game.player.yaw = 0;
+                                    game.updateObjects();
+                                    game.showDialogue('Entered the cozy house!');
                                 } else {
-                                    this.showDialogue('Need a key to enter the castle!');
+                                    game.showDialogue('Need a key to enter the castle!');
                                 }
-                            } else if (this.scene !== 'town' && obj.building === 'town') {
-                                this.scene = 'town';
-                                this.player.x = obj.x;
-                                this.player.z = obj.z;
-                                this.player.yaw = 0;
-                                this.updateObjects();
-                                this.showDialogue('Returned to the town!');
+                            } else if (game.scene !== 'town' && obj.building === 'town') {
+                                game.scene = 'town';
+                                game.player.x = obj.x;
+                                game.player.z = obj.z;
+                                game.player.yaw = 0;
+                                game.updateObjects();
+                                game.showDialogue('Returned to the town!');
                             }
                         } else if (obj.type === 'shop') {
-                            if (this.coins >= 5) {
-                                this.coins -= 5;
-                                this.potions++;
-                                this.health = Math.min(100, this.health + 20);
-                                this.showDialogue('Shopkeeper: Bought a potion! Health restored.');
+                            if (game.coins >= 5) {
+                                game.coins -= 5;
+                                game.potions++;
+                                game.health = Math.min(100, game.health + 20);
+                                game.showDialogue('Shopkeeper: Bought a potion! Health restored.');
                             } else {
-                                this.showDialogue('Shopkeeper: Need 5 coins for a potion!');
+                                game.showDialogue('Shopkeeper: Need 5 coins for a potion!');
                             }
                         } else if (obj.type === 'decoration') {
-                            this.showDialogue('A beautiful decoration!');
+                            game.showDialogue('A beautiful decoration!');
                         }
                     }
                 });
 
-                if (this.health <= 0) {
-                    this.showDialogue('Game Over! You were defeated.');
-                    this.health = 100;
-                    this.mana = 50;
-                    this.player.x = 0;
-                    this.player.z = 0;
-                    this.scene = 'town';
-                    this.updateObjects();
+                if (game.health <= 0) {
+                    game.showDialogue('Game Over! You were defeated.');
+                    game.health = 100;
+                    game.mana = 50;
+                    game.player.x = 0;
+                    game.player.z = 0;
+                    game.scene = 'town';
+                    game.updateObjects();
                 }
 
                 if (Object.values(keys).some(k => k)) {
-                    this.player.frame = (this.player.frame + 1) % 30;
+                    game.player.frame = (game.player.frame + 1) % 30;
                 }
 
                 // Update sky color for day/night
                 const sky = scene.getObjectByName('sky');
                 if (sky) {
-                    sky.material.uniforms.topColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
-                    sky.material.uniforms.bottomColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
+                    sky.material.uniforms.topColor.value.set(game.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
+                    sky.material.uniforms.bottomColor.value.set(game.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
                 }
             }
 
