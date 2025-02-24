@@ -166,7 +166,7 @@
         // Show game canvas
         gameCanvas.style.display = 'block';
 
-        // Game state
+        // Main game object
         let game;
 
         class Game {
@@ -182,14 +182,17 @@
             this.mana = 50;
             this.time = 'Day';
             this.dayNightCycle = 0;
+
+            // Slower speed to avoid "wild" joystick movement
             this.player = {
               x: 0,
               z: 0,
-              speed: 0.5,
+              speed: 0.2, // reduced from 0.5
               yaw: 0,
               pitch: 0,
               object: null
             };
+
             this.dialogue = '';
             this.dialogueTimer = 0;
             this.objects = [];
@@ -225,14 +228,12 @@
           }
 
           updateDayNight() {
-            // Simple day/night cycle
-            this.dayNightCycle = (this.dayNightCycle + 1) % 1200; // 1200 frames
+            this.dayNightCycle = (this.dayNightCycle + 1) % 1200;
             this.time = this.dayNightCycle < 600 ? 'Day' : 'Night';
             document.getElementById('time').textContent = this.time;
           }
 
           throwBall() {
-            // Throw a ball if under limit and have enough mana
             if (this.ballCount < this.ballLimit && this.mana >= 5) {
               this.mana -= 5;
               const ballGeometry = new THREE.SphereGeometry(0.3, 16, 16);
@@ -294,7 +295,6 @@
           }
 
           startAnimation() {
-            // Main render loop
             const animate = () => {
               requestAnimationFrame(animate);
               if (game && game.renderer && game.sceneObj && game.camera) {
@@ -339,12 +339,14 @@
               dx * Math.sin(this.player.yaw) +
               dz * Math.cos(this.player.yaw);
 
-            // Check collisions with buildings or boundaries
+            // Check collisions (buildings, walls, boundaries)
             const blocked = this.objects.some(obj => {
               const distX = Math.abs(obj.x - newX);
               const distZ = Math.abs(obj.z - newZ);
               return (
-                (obj.type === 'building' || obj.type === 'wall' || obj.type === 'boundary') &&
+                (obj.type === 'building' ||
+                  obj.type === 'wall' ||
+                  obj.type === 'boundary') &&
                 distX < 5 &&
                 distZ < 5
               );
@@ -391,7 +393,7 @@
             );
             this.camera.lookAt(this.player.x, 0.5, this.player.z);
 
-            // Update thrown balls
+            // Update thrown balls (gravity + removal)
             this.thrownBalls.forEach((ball, index) => {
               ball.position.add(ball.userData.velocity);
               ball.userData.velocity.y -= 0.01; // gravity
@@ -401,8 +403,29 @@
               }
             });
 
-            // Here you would check collisions with items/NPCs, handle quests, etc.
-            // ...
+            // Check for picking up items
+            this.objects.forEach(obj => {
+              const distX = Math.abs(obj.x - this.player.x);
+              const distZ = Math.abs(obj.z - this.player.z);
+              // If close enough, "pick up" certain objects
+              if (distX < 1 && distZ < 1) {
+                if (obj.type === 'flower') {
+                  this.flowers++;
+                  document.getElementById('flowers').textContent = this.flowers;
+                  this.sceneObj.remove(obj.mesh);
+                  this.objects = this.objects.filter(o => o !== obj);
+                  this.showDialogue('You picked a flower!');
+                  this.startCollectionGlow();
+                } else if (obj.type === 'coin') {
+                  this.coins++;
+                  document.getElementById('coins').textContent = this.coins;
+                  this.sceneObj.remove(obj.mesh);
+                  this.objects = this.objects.filter(o => o !== obj);
+                  this.showDialogue('You picked up a coin!');
+                  this.startCollectionGlow();
+                }
+              }
+            });
           }
 
           initScene() {
@@ -420,7 +443,7 @@
             ground.receiveShadow = true;
             this.sceneObj.add(ground);
 
-            // Skybox (fixed shader to handle offset as a vec3)
+            // Skybox (with offset as vec3 fix)
             const skyGeometry = new THREE.SphereGeometry(500, 60, 40);
             const skyMaterial = new THREE.ShaderMaterial({
               uniforms: {
@@ -444,7 +467,6 @@
                 uniform float exponent;
                 varying vec3 vWorldPosition;
                 void main() {
-                  // IMPORTANT: add offset as a vec3
                   float h = normalize(vWorldPosition + vec3(0.0, offset, 0.0)).y;
                   gl_FragColor = vec4(
                     mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)),
@@ -478,8 +500,112 @@
             // Create the princess (player character)
             this.createPlayerModel();
 
-            // Add any additional scene objects (buildings, flowers, items, etc.) below
-            // ...
+            // Add boundary shrubs/trees around edges
+            this.createBoundary();
+
+            // Add a simple castle with collision
+            this.createCastle();
+
+            // Add a simple house with collision
+            this.createHouse();
+
+            // Add some flowers and coins to pick up
+            this.createPickups();
+          }
+
+          createBoundary() {
+            // Large square boundary at +/- 50
+            const boundaryGroup = new THREE.Group();
+            const boundarySize = 50;
+
+            // Helper function to create a single shrub or small tree
+            const createShrub = () => {
+              const geometry = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 8);
+              const material = new THREE.MeshStandardMaterial({ color: 0x228b22 });
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.castShadow = true;
+              mesh.receiveShadow = true;
+              return mesh;
+            };
+
+            // Top & bottom edges
+            for (let x = -boundarySize; x <= boundarySize; x += 2) {
+              const shrubTop = createShrub();
+              shrubTop.position.set(x, 0.75, -boundarySize);
+              boundaryGroup.add(shrubTop);
+
+              const shrubBottom = createShrub();
+              shrubBottom.position.set(x, 0.75, boundarySize);
+              boundaryGroup.add(shrubBottom);
+            }
+
+            // Left & right edges
+            for (let z = -boundarySize; z <= boundarySize; z += 2) {
+              const shrubLeft = createShrub();
+              shrubLeft.position.set(-boundarySize, 0.75, z);
+              boundaryGroup.add(shrubLeft);
+
+              const shrubRight = createShrub();
+              shrubRight.position.set(boundarySize, 0.75, z);
+              boundaryGroup.add(shrubRight);
+            }
+
+            boundaryGroup.position.set(0, 0, 0);
+
+            // Push into objects with type 'boundary' so collisions block movement
+            this.objects.push({ mesh: boundaryGroup, type: 'boundary', x: 0, z: 0 });
+            this.sceneObj.add(boundaryGroup);
+          }
+
+          createCastle() {
+            // Simple big box as a "castle" with collision
+            const castleGeometry = new THREE.BoxGeometry(10, 10, 10);
+            const castleMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
+            const castleMesh = new THREE.Mesh(castleGeometry, castleMaterial);
+            // Center is at y=5 because box is 10 high
+            castleMesh.position.set(20, 5, 20);
+            castleMesh.castShadow = true;
+            castleMesh.receiveShadow = true;
+
+            // Add to objects with type 'building'
+            this.objects.push({ mesh: castleMesh, type: 'building', x: 20, z: 20 });
+            this.sceneObj.add(castleMesh);
+          }
+
+          createHouse() {
+            // Simple box as a "house" with collision
+            const houseGeometry = new THREE.BoxGeometry(6, 6, 6);
+            const houseMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+            const houseMesh = new THREE.Mesh(houseGeometry, houseMaterial);
+            // Center is y=3 because box is 6 high
+            houseMesh.position.set(-20, 3, -20);
+            houseMesh.castShadow = true;
+            houseMesh.receiveShadow = true;
+
+            // Add to objects with type 'building'
+            this.objects.push({ mesh: houseMesh, type: 'building', x: -20, z: -20 });
+            this.sceneObj.add(houseMesh);
+          }
+
+          createPickups() {
+            // Flower pickup
+            const flowerGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.3, 8);
+            const flowerMaterial = new THREE.MeshStandardMaterial({ color: 0xff00ff });
+            const flowerMesh = new THREE.Mesh(flowerGeometry, flowerMaterial);
+            // Put it near origin
+            flowerMesh.position.set(0, 0.15, 0);
+            this.objects.push({ mesh: flowerMesh, type: 'flower', x: 0, z: 0 });
+            this.sceneObj.add(flowerMesh);
+
+            // Coin pickup
+            const coinGeometry = new THREE.CircleGeometry(0.2, 16);
+            const coinMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00 });
+            const coinMesh = new THREE.Mesh(coinGeometry, coinMaterial);
+            coinMesh.position.set(5, 0.01, 5);
+            // Lay flat
+            coinMesh.rotation.x = -Math.PI / 2;
+            this.objects.push({ mesh: coinMesh, type: 'coin', x: 5, z: 5 });
+            this.sceneObj.add(coinMesh);
           }
 
           createPlayerModel() {
@@ -548,7 +674,6 @@
             head.add(leftEye, rightEye, mouth, leftBlush, rightBlush);
 
             // Arms
-            const armSize = 0.2;
             const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.5, 0.2), bodyMaterial);
             leftArm.position.set(-0.5, 1.0, 0);
             const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.5, 0.2), bodyMaterial);
@@ -614,13 +739,14 @@
             this.joystickLeft.on('move', (evt, data) => {
               if (data && data.force > 0) {
                 const angle = data.angle.radian;
+                // Slower speed based on player.speed
                 const speed = data.force * this.player.speed;
                 const dx = Math.cos(angle) * speed;
                 const dz = Math.sin(angle) * speed;
                 const newX = this.player.x + dx;
                 const newZ = this.player.z - dz;
 
-                // Check collision
+                // Collision check
                 const blocked = this.objects.some(obj => {
                   const distX = Math.abs(obj.x - newX);
                   const distZ = Math.abs(obj.z - newZ);
@@ -749,12 +875,11 @@
             // Always push the player so they remain in the scene
             objects.push({ mesh: this.player.object, type: 'player', x: this.player.x, z: this.player.z });
 
+            // If we wanted to conditionally add objects based on scene:
             if (scene === 'town') {
-              // Add your town buildings, items, etc.
-              // ...
+              // Town objects (castle, house, pickups) are already created in initScene for now
             } else if (scene === 'castle') {
-              // Add your castle interior, items, etc.
-              // ...
+              // Possibly add interior objects
             }
             return objects;
           }
