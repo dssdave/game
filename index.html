@@ -24,7 +24,7 @@
         left: 10px;
         color: #fff;
         font-size: 16px;
-        background: rgba(0, 0, 0, 0.7);
+        background: rgba(0,0,0,0.7);
         padding: 10px;
         border-radius: 5px;
         z-index: 10;
@@ -35,7 +35,7 @@
         right: 10px;
         color: #fff;
         font-size: 16px;
-        background: rgba(0, 0, 0, 0.7);
+        background: rgba(0,0,0,0.7);
         padding: 5px;
         border-radius: 5px;
         z-index: 10;
@@ -46,7 +46,7 @@
         left: 10px;
         color: #fff;
         font-size: 14px;
-        background: rgba(0, 0, 0, 0.7);
+        background: rgba(0,0,0,0.7);
         padding: 10px;
         border-radius: 5px;
         max-width: 600px;
@@ -58,7 +58,7 @@
         right: 10px;
         color: #fff;
         font-size: 14px;
-        background: rgba(0, 0, 0, 0.7);
+        background: rgba(0,0,0,0.7);
         padding: 10px;
         border-radius: 5px;
         z-index: 10;
@@ -70,13 +70,13 @@
         transform: translate(-50%, -50%);
         color: #fff;
         font-size: 20px;
-        background: rgba(0, 0, 0, 0.8);
+        background: rgba(0,0,0,0.8);
         padding: 20px;
         border-radius: 5px;
         z-index: 20;
         display: none;
       }
-      /* Joystick containers: using viewport units so they remain at the bottom on mobile */
+      /* Joystick containers using viewport units so they stay at the bottom on mobile */
       #joystickLeft,
       #joystickRight {
         position: absolute;
@@ -98,7 +98,7 @@
         right: 2vw;
       }
     </style>
-    <!-- Include Three.js and NippleJS from CDNs -->
+    <!-- Include Three.js and NippleJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
   </head>
@@ -129,10 +129,9 @@
       <div id="joystickLeft"></div>
       <div id="joystickRight"></div>
       <div id="errorMessage">
-        WebGL is not supported in your browser. Please use a modern browser like Chrome, Firefox, or Edge.
+        WebGL is not supported in your browser. Please use a modern browser.
       </div>
     </div>
-
     <script>
       try {
         const errorMessage = document.getElementById('errorMessage');
@@ -140,23 +139,11 @@
         if (!window.WebGLRenderingContext) {
           errorMessage.style.display = 'block';
           gameCanvas.style.display = 'none';
-          document.getElementById('ui').style.display = 'none';
-          document.getElementById('ballCount').style.display = 'none';
-          document.getElementById('dialogue').style.display = 'none';
-          document.getElementById('controls').style.display = 'none';
-          document.getElementById('joystickLeft').style.display = 'none';
-          document.getElementById('joystickRight').style.display = 'none';
           throw new Error('WebGL not supported');
         }
-
         // Set up scene, camera, and renderer.
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(
-          75,
-          window.innerWidth / window.innerHeight,
-          0.1,
-          1000
-        );
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -164,7 +151,7 @@
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         gameCanvas.style.display = 'block';
 
-        // Global variable for our blue NPC's data.
+        // Global NPC data for blue character.
         let npcData = { angle: 0, speed: 0.001, radius: 85, object: null };
 
         class Game {
@@ -179,23 +166,20 @@
             this.health = 100;
             this.time = 'Day';
             this.dayNightCycle = 0;
-
-            // Define separate speeds: keyboard vs. joystick.
+            // Separate speeds: keyboard vs. joystick.
             this.player = {
               x: 0,
               z: 0,
               speedKeyboard: 0.1,
               speedJoystick: 0.05,
               yaw: 0,
-              pitch: -0.2, // slight downward pitch
+              pitch: -0.2,
               object: null
             };
-
             this.dialogue = '';
             this.dialogueTimer = 0;
             this.objects = [];
             this.npcs = [];
-            // Unlimited ball throws.
             this.ballCount = 0;
             this.thrownBalls = [];
             this.collectionGlow = null;
@@ -205,29 +189,26 @@
             this.sceneObj = scene;
             this.camera = camera;
             this.renderer = renderer;
-
-            // Spread items over a larger range.
             this.itemRange = 80;
-
             this.initScene();
             this.initJoysticks();
             this.initKeyboardMouse();
             this.startAnimation();
             console.log('Game initialized successfully:', this);
           }
-
+          
           showDialogue(text) {
             this.dialogue = text;
             this.dialogueTimer = 120;
             document.getElementById('dialogue').textContent = this.dialogue;
           }
-
+          
           updateDayNight() {
             this.dayNightCycle = (this.dayNightCycle + 1) % 1200;
             this.time = this.dayNightCycle < 600 ? 'Day' : 'Night';
             document.getElementById('time').textContent = this.time;
           }
-
+          
           throwBall() {
             const ballGeometry = new THREE.SphereGeometry(0.3, 16, 16);
             const ballMaterial = new THREE.MeshStandardMaterial({
@@ -252,7 +233,7 @@
             document.getElementById('ballCountValue').textContent = this.ballCount;
             this.showDialogue('Threw a magic ball!');
           }
-
+          
           startCollectionGlow() {
             if (this.collectionGlow) this.sceneObj.remove(this.collectionGlow);
             const glowGeometry = new THREE.SphereGeometry(1, 16, 16);
@@ -273,7 +254,7 @@
               }
             }, 1000);
           }
-
+          
           startAnimation() {
             const animate = () => {
               requestAnimationFrame(animate);
@@ -282,11 +263,9 @@
             };
             animate();
           }
-
+          
           update() {
             this.updateDayNight();
-
-            // Handle player movement.
             let dx = 0, dz = 0;
             let currentSpeed = 0;
             if (
@@ -303,11 +282,8 @@
             if (this.keysPressed['ArrowDown']) dz += currentSpeed;
             if (this.keysPressed['ArrowLeft']) dx -= currentSpeed;
             if (this.keysPressed['ArrowRight']) dx += currentSpeed;
-
             const newX = this.player.x + dx * Math.cos(this.player.yaw) + dz * Math.sin(this.player.yaw);
             const newZ = this.player.z - dx * Math.sin(this.player.yaw) + dz * Math.cos(this.player.yaw);
-
-            // Check collisions with obstacles.
             let blocked = false;
             for (const obj of this.objects) {
               if (
@@ -330,11 +306,8 @@
               this.player.x = newX;
               this.player.z = newZ;
             }
-
             this.player.object.position.set(this.player.x, 0.5, this.player.z);
             this.player.object.rotation.y = -this.player.yaw;
-
-            // Simple walking sway.
             const isMoving = dx !== 0 || dz !== 0 || (this.joystickLeft && this.joystickLeft.active);
             if (isMoving) {
               this.player.object.traverse(child => {
@@ -349,8 +322,7 @@
                 }
               });
             }
-
-            // Update blue NPC: move in a circle near the boundary.
+            // Update blue NPC along a circle.
             npcData.angle += npcData.speed;
             const nx = npcData.radius * Math.cos(npcData.angle);
             const nz = npcData.radius * Math.sin(npcData.angle);
@@ -358,21 +330,14 @@
               npcData.object.position.set(nx, 0.5, nz);
               npcData.object.rotation.y = -npcData.angle;
             }
-
-            // Position the camera so that the player appears near the bottom of the screen.
+            // Camera positioning: offset the lookAt so the player appears near the bottom.
             const dist = 15;
             const offsetX = dist * Math.sin(this.player.yaw) * Math.cos(this.player.pitch);
             const offsetZ = dist * Math.cos(this.player.yaw) * Math.cos(this.player.pitch);
             const offsetY = dist * Math.sin(this.player.pitch) + 15;
-            this.camera.position.set(
-              this.player.x + offsetX,
-              offsetY,
-              this.player.z + offsetZ
-            );
-            // Look at a point with an upward offset so the character appears lower.
+            this.camera.position.set(this.player.x + offsetX, offsetY, this.player.z + offsetZ);
             this.camera.lookAt(new THREE.Vector3(this.player.x, 0.5 + 3, this.player.z));
-
-            // Update thrown balls (apply gravity).
+            // Update thrown balls.
             this.thrownBalls.forEach((ball, index) => {
               ball.position.add(ball.userData.velocity);
               ball.userData.velocity.y -= 0.01;
@@ -381,7 +346,6 @@
                 this.thrownBalls.splice(index, 1);
               }
             });
-
             // Check for item pickups.
             for (const obj of this.objects) {
               if (obj.isPickup) {
@@ -389,7 +353,6 @@
                 const dzObj = this.player.z - obj.z;
                 const distSq = dxObj * dxObj + dzObj * dzObj;
                 if (distSq < 4) {
-                  // Increase counters based on type.
                   switch (obj.type) {
                     case 'flower':
                       this.flowers++;
@@ -431,9 +394,8 @@
               }
             }
           }
-
+          
           initScene() {
-            // Ground
             const groundGeo = new THREE.PlaneGeometry(200, 200, 50, 50);
             const groundMat = new THREE.MeshStandardMaterial({
               color: 0x6bb26b,
@@ -445,8 +407,6 @@
             ground.rotation.x = Math.PI / 2;
             ground.receiveShadow = true;
             this.sceneObj.add(ground);
-
-            // Sky
             const skyGeo = new THREE.SphereGeometry(500, 60, 40);
             const skyMat = new THREE.ShaderMaterial({
               uniforms: {
@@ -482,8 +442,6 @@
             const sky = new THREE.Mesh(skyGeo, skyMat);
             sky.name = 'sky';
             this.sceneObj.add(sky);
-
-            // Lighting
             const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
             this.sceneObj.add(ambientLight);
             const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -492,18 +450,12 @@
             dirLight.shadow.mapSize.width = 2048;
             dirLight.shadow.mapSize.height = 2048;
             this.sceneObj.add(dirLight);
-
-            // Create player
             this.createPlayerModel();
-            // Create blue NPC that patrols.
             this.createBlueNPC();
-            // Create boundary shrubs.
             this.createBoundary();
-            // Create castle, house, fountain.
             this.createCastle();
             this.createHouse();
             this.createFountain();
-            // Create items.
             this.createFlowers(10);
             this.createCoins(8);
             this.createGems(4);
@@ -511,9 +463,8 @@
             this.createKeys(2);
             this.createArtifacts(2);
           }
-
+          
           createBlueNPC() {
-            // Create a blue version of the princess model.
             const npcGroup = new THREE.Group();
             const bodyGeo = new THREE.CylinderGeometry(0.4, 0.5, 1.2, 16);
             const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0000ff });
@@ -527,7 +478,7 @@
             head.position.set(0, 1.4, 0);
             head.userData.isBodyPart = true;
             npcGroup.add(head);
-            const hairGeo = new THREE.SphereGeometry(0.31, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+            const hairGeo = new THREE.SphereGeometry(0.31, 16, 16, 0, Math.PI * 2, 0, Math.PI/2);
             const hairMat = new THREE.MeshStandardMaterial({ color: 0x553322 });
             const hair = new THREE.Mesh(hairGeo, hairMat);
             hair.position.set(0, 1.4, 0);
@@ -552,12 +503,39 @@
             rightLeg.position.set(0.2, 0.2, 0);
             rightLeg.userData.isBodyPart = true;
             npcGroup.add(rightLeg);
-            // Initially position NPC at the right boundary.
             npcGroup.position.set(85, 0.5, 0);
             this.sceneObj.add(npcGroup);
             npcData.object = npcGroup;
           }
-
+          
+          createBoundary() {
+            for (let x = -90; x <= 90; x += 4) {
+              this.addShrub(x, -90);
+              this.addShrub(x, 90);
+            }
+            for (let z = -90; z <= 90; z += 4) {
+              this.addShrub(-90, z);
+              this.addShrub(90, z);
+            }
+          }
+          
+          addShrub(x, z) {
+            const shrubGeo = new THREE.CylinderGeometry(1, 1, 2, 8);
+            const shrubMat = new THREE.MeshStandardMaterial({ color: 0x228b22 });
+            const shrubMesh = new THREE.Mesh(shrubGeo, shrubMat);
+            shrubMesh.position.set(x, 1, z);
+            shrubMesh.castShadow = true;
+            shrubMesh.receiveShadow = true;
+            this.sceneObj.add(shrubMesh);
+            this.objects.push({
+              mesh: shrubMesh,
+              type: 'boundary',
+              x: x,
+              z: z,
+              boundingRadius: 2
+            });
+          }
+          
           createCastle() {
             const castleGroup = new THREE.Group();
             const keepGeo = new THREE.BoxGeometry(20, 10, 20);
@@ -587,7 +565,6 @@
             const door = new THREE.Mesh(doorGeo, doorMat);
             door.position.set(0, 3, 10.01);
             castleGroup.add(door);
-            // Add "Daddy's Castle" text using a canvas texture.
             const textCanvas = document.createElement('canvas');
             textCanvas.width = 512;
             textCanvas.height = 128;
@@ -604,7 +581,6 @@
             const textMesh = new THREE.Mesh(textGeo, textMat);
             textMesh.position.set(0, 8, 10.1);
             castleGroup.add(textMesh);
-
             castleGroup.position.set(40, 0, 40);
             this.sceneObj.add(castleGroup);
             this.objects.push({
@@ -615,7 +591,7 @@
               boundingRadius: 15
             });
           }
-
+          
           createHouse() {
             const houseGroup = new THREE.Group();
             const baseGeo = new THREE.BoxGeometry(10, 6, 8);
@@ -648,7 +624,7 @@
               boundingRadius: 10
             });
           }
-
+          
           createFountain() {
             const fountainGroup = new THREE.Group();
             const baseGeo = new THREE.CylinderGeometry(3, 3, 1, 16);
@@ -679,7 +655,7 @@
               boundingRadius: 5
             });
           }
-
+          
           createFlowers(count) {
             for (let i = 0; i < count; i++) {
               const fx = Math.random() * this.itemRange * 2 - this.itemRange;
@@ -707,7 +683,7 @@
               });
             }
           }
-
+          
           createCoins(count) {
             for (let i = 0; i < count; i++) {
               const cx = Math.random() * this.itemRange * 2 - this.itemRange;
@@ -729,7 +705,7 @@
               });
             }
           }
-
+          
           createGems(count) {
             for (let i = 0; i < count; i++) {
               const gx = Math.random() * this.itemRange * 2 - this.itemRange;
@@ -750,7 +726,7 @@
               });
             }
           }
-
+          
           createPotions(count) {
             for (let i = 0; i < count; i++) {
               const px = Math.random() * this.itemRange * 2 - this.itemRange;
@@ -778,7 +754,7 @@
               });
             }
           }
-
+          
           createKeys(count) {
             for (let i = 0; i < count; i++) {
               const kx = Math.random() * this.itemRange * 2 - this.itemRange;
@@ -805,7 +781,7 @@
               });
             }
           }
-
+          
           createArtifacts(count) {
             for (let i = 0; i < count; i++) {
               const ax = Math.random() * this.itemRange * 2 - this.itemRange;
@@ -836,7 +812,7 @@
               });
             }
           }
-
+          
           createPlayerModel() {
             const playerGroup = new THREE.Group();
             const bodyGeo = new THREE.CylinderGeometry(0.4, 0.5, 1.2, 16);
@@ -851,7 +827,7 @@
             head.position.set(0, 1.4, 0);
             head.userData.isBodyPart = true;
             playerGroup.add(head);
-            const hairGeo = new THREE.SphereGeometry(0.31, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+            const hairGeo = new THREE.SphereGeometry(0.31, 16, 16, 0, Math.PI * 2, 0, Math.PI/2);
             const hairMat = new THREE.MeshStandardMaterial({ color: 0x553322 });
             const hair = new THREE.Mesh(hairGeo, hairMat);
             hair.position.set(0, 1.4, 0);
@@ -876,12 +852,11 @@
             rightLeg.position.set(0.2, 0.2, 0);
             rightLeg.userData.isBodyPart = true;
             playerGroup.add(rightLeg);
-            // Start the player at the center.
             playerGroup.position.set(0, 0.5, 0);
             this.player.object = playerGroup;
             this.sceneObj.add(playerGroup);
           }
-
+          
           initJoysticks() {
             this.joystickLeft = nipplejs.create({
               zone: document.getElementById('joystickLeft'),
@@ -938,8 +913,8 @@
                 const sensitivity = 0.001;
                 this.player.yaw += data.vector.x * sensitivity * data.force;
                 this.player.pitch = Math.max(
-                  -Math.PI / 2,
-                  Math.min(Math.PI / 2, this.player.pitch + data.vector.y * sensitivity * data.force)
+                  -Math.PI/2,
+                  Math.min(Math.PI/2, this.player.pitch + data.vector.y * sensitivity * data.force)
                 );
               }
             });
@@ -948,17 +923,12 @@
               const rect = document.getElementById('gameContainer').getBoundingClientRect();
               const x = e.clientX - rect.left;
               const y = e.clientY - rect.top;
-              if (
-                x > rect.width / 4 &&
-                x < (rect.width * 3) / 4 &&
-                y > rect.height / 4 &&
-                y < (rect.height * 3) / 4
-              ) {
+              if (x > rect.width/4 && x < (rect.width*3)/4 && y > rect.height/4 && y < (rect.height*3)/4) {
                 this.throwBall();
               }
             });
           }
-
+          
           initKeyboardMouse() {
             document.addEventListener('keydown', e => {
               this.keysPressed[e.key] = true;
@@ -977,14 +947,14 @@
                 const sensitivity = 0.001;
                 this.player.yaw += movementX * sensitivity;
                 this.player.pitch = Math.max(
-                  -Math.PI / 2,
-                  Math.min(Math.PI / 2, this.player.pitch + movementY * sensitivity)
+                  -Math.PI/2,
+                  Math.min(Math.PI/2, this.player.pitch + movementY * sensitivity)
                 );
               }
             });
           }
         }
-
+        
         const game = new Game();
       } catch (error) {
         console.error('Error initializing the game:', error);
