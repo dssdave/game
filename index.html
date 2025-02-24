@@ -1,1533 +1,604 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Princess Donia’s Town - Enhanced 3D RPG</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: 'Arial', sans-serif;
-            background: #000;
-        }
-        #gameContainer {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-        }
-        canvas {
-            display: block;
-        }
-        #ui {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: #fff;
-            font-size: 16px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 5px;
-            z-index: 10;
-        }
-        #ballCount {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            color: #fff;
-            font-size: 16px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 5px;
-            border-radius: 5px;
-            z-index: 10;
-        }
-        #dialogue {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            color: #fff;
-            font-size: 14px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 5px;
-            max-width: 600px;
-            z-index: 10;
-        }
-        #controls {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            color: #fff;
-            font-size: 14px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 5px;
-            z-index: 10;
-        }
-        #errorMessage {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #fff;
-            font-size: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 5px;
-            z-index: 20;
-            display: none;
-        }
-        #joystickLeft, #joystickRight {
-            position: absolute;
-            width: 150px;
-            height: 150px;
-            opacity: 0.5;
-            z-index: 15;
-        }
-        #joystickLeft { bottom: 20px; left: 20px; }
-        #joystickRight { bottom: 20px; right: 20px; }
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: 'Arial', sans-serif;
+        background: #000;
+      }
+      #gameContainer {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+      }
+      canvas {
+        display: block;
+      }
+      #ui {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: #fff;
+        font-size: 16px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 10;
+      }
+      #ballCount {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: #fff;
+        font-size: 16px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 5px;
+        border-radius: 5px;
+        z-index: 10;
+      }
+      #dialogue {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        color: #fff;
+        font-size: 14px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+        max-width: 600px;
+        z-index: 10;
+      }
+      #controls {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        color: #fff;
+        font-size: 14px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 10;
+      }
+      #errorMessage {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #fff;
+        font-size: 20px;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 20px;
+        border-radius: 5px;
+        z-index: 20;
+        display: none;
+      }
+      #joystickLeft,
+      #joystickRight {
+        position: absolute;
+        width: 150px;
+        height: 150px;
+        opacity: 0.5;
+        z-index: 15;
+      }
+      #joystickLeft {
+        bottom: 20px;
+        left: 20px;
+      }
+      #joystickRight {
+        bottom: 20px;
+        right: 20px;
+      }
     </style>
     <!-- Include Three.js and NippleJS from CDNs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
-</head>
-<body>
+  </head>
+  <body>
     <div id="gameContainer">
-        <canvas id="gameCanvas"></canvas>
-        <div id="ui">
-            Flowers: <span id="flowers">0</span> | 
-            Coins: <span id="coins">0</span> | 
-            Gems: <span id="gems">0</span> | 
-            Potions: <span id="potions">0</span> | 
-            Keys: <span id="keys">0</span> | 
-            Artifacts: <span id="artifacts">0</span> | 
-            Health: <span id="health">100</span> | 
-            Mana: <span id="mana">50</span> | 
-            Time: <span id="time">Day</span> | 
-            Location: <span id="location">Town</span>
-        </div>
-        <div id="ballCount">Balls Thrown: <span id="ballCountValue">0</span></div>
-        <div id="dialogue"></div>
-        <div id="controls">
-            Controls:<br>
-            Joysticks/Arrow Keys: Move<br>
-            Joysticks/Mouse: Look Around<br>
-            Tap Center/Space: Throw Ball
-        </div>
-        <div id="joystickLeft"></div>
-        <div id="joystickRight"></div>
-        <div id="errorMessage">WebGL is not supported in your browser. Please use a modern browser like Chrome, Firefox, or Edge.</div>
+      <canvas id="gameCanvas"></canvas>
+      <div id="ui">
+        Flowers: <span id="flowers">0</span> |
+        Coins: <span id="coins">0</span> |
+        Gems: <span id="gems">0</span> |
+        Potions: <span id="potions">0</span> |
+        Keys: <span id="keys">0</span> |
+        Artifacts: <span id="artifacts">0</span> |
+        Health: <span id="health">100</span> |
+        Mana: <span id="mana">50</span> |
+        Time: <span id="time">Day</span> |
+        Location: <span id="location">Town</span>
+      </div>
+      <div id="ballCount">
+        Balls Thrown: <span id="ballCountValue">0</span>
+      </div>
+      <div id="dialogue"></div>
+      <div id="controls">
+        Controls:<br>
+        Joysticks/Arrow Keys: Move<br>
+        Joysticks/Mouse: Look Around<br>
+        Tap Center/Space: Throw Ball
+      </div>
+      <div id="joystickLeft"></div>
+      <div id="joystickRight"></div>
+      <div id="errorMessage">
+        WebGL is not supported in your browser. Please use a modern browser like Chrome, Firefox, or Edge.
+      </div>
     </div>
 
     <script>
-        // Error handling for WebGL
-        try {
-            const errorMessage = document.getElementById('errorMessage');
-            const gameCanvas = document.getElementById('gameCanvas');
-
-            if (!window.WebGLRenderingContext) {
-                errorMessage.style.display = 'block';
-                gameCanvas.style.display = 'none';
-                document.getElementById('ui').style.display = 'none';
-                document.getElementById('ballCount').style.display = 'none';
-                document.getElementById('dialogue').style.display = 'none';
-                document.getElementById('controls').style.display = 'none';
-                document.getElementById('joystickLeft').style.display = 'none';
-                document.getElementById('joystickRight').style.display = 'none';
-                throw new Error('WebGL not supported');
-            }
-
-            // Scene setup
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-            // Ensure renderer is properly initialized
-            if (!renderer.domElement) {
-                throw new Error('Renderer initialization failed');
-            }
-
-            // Show game canvas immediately
-            gameCanvas.style.display = 'block';
-
-            // Game state
-            let game;
-
-            class Game {
-                constructor() {
-                    this.scene = 'town';
-                    this.flowers = 0;
-                    this.coins = 0;
-                    this.gems = 0;
-                    this.potions = 0;
-                    this.keys = 0;
-                    this.artifacts = 0;
-                    this.health = 100;
-                    this.mana = 50;
-                    this.time = 'Day';
-                    this.dayNightCycle = 0;
-                    this.player = {
-                        x: 0,
-                        z: 0,
-                        speed: 0.5,
-                        yaw: 0,
-                        pitch: 0,
-                        object: null
-                    };
-                    this.dialogue = '';
-                    this.dialogueTimer = 0;
-                    this.objects = [];
-                    this.npcs = [];
-                    this.quests = {
-                        townGuard: { active: false, completed: false },
-                        castleKing: { active: false, completed: false },
-                        villager: { active: false, completed: false },
-                        storyteller: { active: false, completed: false }
-                    };
-                    this.ballCount = 0;
-                    this.ballLimit = 1000000;
-                    this.thrownBalls = [];
-                    this.collectionGlow = null;
-                    this.joystickLeft = null;
-                    this.joystickRight = null;
-                    this.keys = {};
-                    this.sceneObj = scene;
-                    this.camera = camera;
-                    this.renderer = renderer;
-                    this.initScene();
-                    this.initJoysticks();
-                    this.initKeyboardMouse();
-                    this.startAnimation(); // Start the animation loop immediately
-                    console.log('Game initialized successfully:', this);
-                }
-                showDialogue(text) {
-                    this.dialogue = text;
-                    this.dialogueTimer = 120;
-                    document.getElementById('dialogue').textContent = this.dialogue;
-                }
-                updateDayNight() {
-                    this.dayNightCycle = (this.dayNightCycle + 1) % 1200;
-                    this.time = this.dayNightCycle < 600 ? 'Day' : 'Night';
-                    document.getElementById('time').textContent = this.time;
-                }
-                throwBall() {
-                    if (this.ballCount < this.ballLimit && this.mana >= 5) {
-                        this.mana -= 5;
-                        const ballGeometry = new THREE.SphereGeometry(0.3, 16, 16);
-                        const ballMaterial = new THREE.MeshStandardMaterial({ color: 0xff4500, metalness: 0.1, roughness: 0.7 });
-                        const ball = new THREE.Mesh(ballGeometry, ballMaterial);
-                        ball.position.copy(this.player.object.position);
-                        ball.position.y += 1;
-                        const direction = new THREE.Vector3(Math.cos(this.player.yaw), 0, Math.sin(this.player.yaw)).normalize();
-                        ball.userData = { velocity: direction.multiplyScalar(0.5).add(new THREE.Vector3(0, 0.3, 0)) };
-                        this.sceneObj.add(ball);
-                        this.thrownBalls.push(ball);
-                        this.ballCount++;
-                        document.getElementById('ballCountValue').textContent = this.ballCount;
-                        this.showDialogue('Threw a magic ball!');
-                        document.getElementById('mana').textContent = this.mana;
-                    } else if (this.ballCount >= this.ballLimit) {
-                        this.showDialogue('Reached maximum ball throws (1,000,000)!');
-                    } else {
-                        this.showDialogue('Not enough mana to throw a ball!');
-                    }
-                }
-                startCollectionGlow() {
-                    if (this.collectionGlow) this.sceneObj.remove(this.collectionGlow);
-                    const glowGeometry = new THREE.SphereGeometry(1, 16, 16);
-                    const glowMaterial = new THREE.MeshBasicMaterial({ 
-                        color: 0xffff00, 
-                        transparent: true, 
-                        opacity: 0.5,
-                        side: THREE.BackSide 
-                    });
-                    this.collectionGlow = new THREE.Mesh(glowGeometry, glowMaterial);
-                    this.collectionGlow.position.copy(this.player.object.position);
-                    this.collectionGlow.position.y += 0.5;
-                    this.sceneObj.add(this.collectionGlow);
-                    setTimeout(() => {
-                        if (this.collectionGlow) {
-                            this.sceneObj.remove(this.collectionGlow);
-                            this.collectionGlow = null;
-                        }
-                    }, 1000);
-                }
-                startAnimation() {
-                    function animate() {
-                        requestAnimationFrame(animate);
-                        if (game && game.renderer && game.sceneObj && game.camera) {
-                            game.update(); // Update game state
-                            game.renderer.render(game.sceneObj, game.camera);
-                        } else {
-                            console.error('Game, renderer, scene, or camera is not properly initialized:', { game, renderer, scene, camera });
-                        }
-                    }
-                    animate();
-                }
-                update() {
-                    this.updateDayNight();
-
-                    let dx = 0, dz = 0;
-                    if (this.keys['ArrowUp'] || (this.joystickLeft && this.joystickLeft.active)) {
-                        dz -= this.player.speed;
-                    }
-                    if (this.keys['ArrowDown']) {
-                        dz += this.player.speed;
-                    }
-                    if (this.keys['ArrowLeft']) {
-                        dx -= this.player.speed;
-                    }
-                    if (this.keys['ArrowRight']) {
-                        dx += this.player.speed;
-                    }
-
-                    const newX = this.player.x + dx * Math.cos(this.player.yaw) + dz * Math.sin(this.player.yaw);
-                    const newZ = this.player.z - dx * Math.sin(this.player.yaw) + dz * Math.cos(this.player.yaw);
-
-                    if (!this.objects.some(obj => {
-                        const distX = Math.abs(obj.x - newX);
-                        const distZ = Math.abs(obj.z - newZ);
-                        return (obj.type === 'building' || obj.type === 'wall' || obj.type === 'boundary') && distX < 5 && distZ < 5;
-                    })) {
-                        this.player.x = newX;
-                        this.player.z = newZ;
-                    }
-
-                    this.player.object.position.set(this.player.x, 0.5, this.player.z);
-                    this.player.object.rotation.y = -this.player.yaw;
-
-                    if (Object.values(this.keys).some(k => k) || (this.joystickLeft && this.joystickLeft.active)) {
-                        this.player.object.traverse(child => {
-                            if (child.isMesh && child.material.color.equals(new THREE.Color(0xff69b4))) {
-                                child.rotation.z = Math.sin(Date.now() * 0.005) * 0.1;
-                            }
-                        });
-                    } else {
-                        this.player.object.traverse(child => {
-                            if (child.isMesh && child.material.color.equals(new THREE.Color(0xff69b4))) {
-                                child.rotation.copy(child.userData.originalRotation || new THREE.Euler());
-                            }
-                        });
-                    }
-
-                    this.camera.position.set(
-                        this.player.x + 15 * Math.sin(this.player.yaw) * Math.cos(this.player.pitch),
-                        15 + 15 * Math.sin(this.player.pitch),
-                        this.player.z + 15 * Math.cos(this.player.yaw) * Math.cos(this.player.pitch)
-                    );
-                    this.camera.lookAt(this.player.x, 0.5, this.player.z);
-
-                    this.thrownBalls.forEach((ball, index) => {
-                        ball.position.add(ball.userData.velocity);
-                        ball.userData.velocity.y -= 0.01;
-                        if (ball.position.y < 0) {
-                            this.sceneObj.remove(ball);
-                            this.thrownBalls.splice(index, 1);
-                        }
-                    });
-
-                    this.npcs.forEach(npc => {
-                        const distX = Math.abs(npc.x - this.player.x);
-                        const distZ = Math.abs(npc.z - this.player.z);
-                        if (distX < 2 && distZ < 2) {
-                            if (npc.role === 'guard' && !this.quests.townGuard.completed) {
-                                if (!this.quests.townGuard.active) {
-                                    this.showDialogue('Town Guard: Princess, the king needs a flower for his crown. Bring one to the castle!');
-                                    this.quests.townGuard.active = true;
-                                } else if (this.flowers > 0) {
-                                    this.showDialogue('Town Guard: Thank you! Here’s a key.');
-                                    this.keys++;
-                                    this.flowers--;
-                                    this.quests.townGuard.completed = true;
-                                } else {
-                                    this.showDialogue('Town Guard: Do you have a flower for the king?');
-                                }
-                            }
-                        }
-                    });
-
-                    this.objects.forEach(obj => {
-                        const distX = Math.abs(obj.x - this.player.x);
-                        const distZ = Math.abs(obj.z - this.player.z);
-                        if (distX < 1 && distZ < 1) {
-                            if (obj.type === 'flower') {
-                                this.flowers++;
-                                this.sceneObj.remove(obj.mesh);
-                                this.objects = this.objects.filter(o => o !== obj);
-                                this.showDialogue('You picked a radiant flower! *Sparkle*');
-                                this.startCollectionGlow();
-                                document.getElementById('flowers').textContent = this.flowers;
-                            } else if (obj.type === 'coin') {
-                                this.coins++;
-                                this.sceneObj.remove(obj.mesh);
-                                this.objects = this.objects.filter(o => o !== obj);
-                                this.showDialogue('You found a glittering coin!');
-                                this.startCollectionGlow();
-                                document.getElementById('coins').textContent = this.coins;
-                            } else if (obj.type === 'gem') {
-                                this.gems++;
-                                this.sceneObj.remove(obj.mesh);
-                                this.objects = this.objects.filter(o => o !== obj);
-                                this.showDialogue('A dazzling gem shines in your hand!');
-                                this.startCollectionGlow();
-                                document.getElementById('gems').textContent = this.gems;
-                            } else if (obj.type === 'potion') {
-                                this.potions++;
-                                this.health = Math.min(100, this.health + 20);
-                                this.sceneObj.remove(obj.mesh);
-                                this.objects = this.objects.filter(o => o !== obj);
-                                this.showDialogue('You drank a potion! Health restored.');
-                                this.startCollectionGlow();
-                                document.getElementById('health').textContent = this.health;
-                                document.getElementById('potions').textContent = this.potions;
-                            } else if (obj.type === 'key') {
-                                this.keys++;
-                                this.sceneObj.remove(obj.mesh);
-                                this.objects = this.objects.filter(o => o !== obj);
-                                this.showDialogue('You found a golden key!');
-                                this.startCollectionGlow();
-                                document.getElementById('keys').textContent = this.keys;
-                            } else if (obj.type === 'artifact') {
-                                this.artifacts++;
-                                this.sceneObj.remove(obj.mesh);
-                                this.objects = this.objects.filter(o => o !== obj);
-                                this.showDialogue('You discovered a mystical artifact!');
-                                this.startCollectionGlow();
-                                document.getElementById('artifacts').textContent = this.artifacts;
-                            } else if (obj.type === 'door') {
-                                if (this.scene === 'town') {
-                                    if (obj.building === 'castle' && this.keys > 0) {
-                                        this.scene = 'castle';
-                                        this.keys--;
-                                        this.player.x = 0;
-                                        this.player.z = 0;
-                                        this.player.yaw = 0;
-                                        this.updateObjects();
-                                        this.showDialogue('Entered the majestic castle!');
-                                        document.getElementById('location').textContent = 'Castle';
-                                        document.getElementById('keys').textContent = this.keys;
-                                    } else if (obj.building === 'house') {
-                                        this.scene = 'house';
-                                        this.player.x = 0;
-                                        this.player.z = 0;
-                                        this.player.yaw = 0;
-                                        this.updateObjects();
-                                        this.showDialogue('Entered the cozy house!');
-                                        document.getElementById('location').textContent = 'House';
-                                    } else if (obj.building === 'storybook') {
-                                        this.scene = 'storybook';
-                                        this.player.x = 0;
-                                        this.player.z = 0;
-                                        this.player.yaw = 0;
-                                        this.updateObjects();
-                                        this.showDialogue('Entered the storybook house!');
-                                        document.getElementById('location').textContent = 'Storybook House';
-                                    } else {
-                                        this.showDialogue('Need a key to enter the castle!');
-                                    }
-                                } else if (this.scene !== 'town' && obj.building === 'town') {
-                                    this.scene = 'town';
-                                    this.player.x = obj.x;
-                                    this.player.z = obj.z;
-                                    this.player.yaw = 0;
-                                    this.updateObjects();
-                                    this.showDialogue('Returned to the town!');
-                                    document.getElementById('location').textContent = 'Town';
-                                }
-                            } else if (obj.type === 'shop') {
-                                if (this.coins >= 5) {
-                                    this.coins -= 5;
-                                    this.potions++;
-                                    this.health = Math.min(100, this.health + 20);
-                                    this.showDialogue('Shopkeeper: Bought a potion! Health restored.');
-                                    document.getElementById('coins').textContent = this.coins;
-                                    document.getElementById('potions').textContent = this.potions;
-                                    document.getElementById('health').textContent = this.health;
-                                } else {
-                                    this.showDialogue('Shopkeeper: Need 5 coins for a potion!');
-                                }
-                            }
-                        }
-                    });
-
-                    const sky = this.sceneObj.getObjectByName('sky');
-                    if (sky) {
-                        sky.material.uniforms.topColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
-                        sky.material.uniforms.bottomColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
-                    }
-                }
-                initScene() {
-                    // Ground (detailed terrain with grass texture)
-                    const groundGeometry = new THREE.PlaneGeometry(100, 100, 50, 50);
-                    const groundMaterial = new THREE.MeshStandardMaterial({ 
-                        color: 0x6bb26b, 
-                        side: THREE.DoubleSide,
-                        roughness: 0.8,
-                        metalness: 0.1 
-                    });
-                    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-                    ground.rotation.x = Math.PI / 2;
-                    ground.castShadow = true;
-                    ground.receiveShadow = true;
-                    this.sceneObj.add(ground);
-
-                    // Skybox (day/night effect with gradient)
-                    const skyGeometry = new THREE.SphereGeometry(500, 60, 40);
-                    const skyMaterial = new THREE.ShaderMaterial({
-                        uniforms: {
-                            topColor: { value: new THREE.Color(0x87ceeb) },
-                            bottomColor: { value: new THREE.Color(0x2f4f4f) },
-                            offset: { value: 0.5 },
-                            exponent: { value: 0.6 }
-                        },
-                        vertexShader: `
-                            varying vec3 vWorldPosition;
-                            void main() {
-                                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-                                vWorldPosition = worldPosition.xyz;
-                                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                            }
-                        `,
-                        fragmentShader: `
-                            uniform vec3 topColor;
-                            uniform vec3 bottomColor;
-                            uniform float offset;
-                            uniform float exponent;
-                            varying vec3 vWorldPosition;
-                            void main() {
-                                float h = normalize(vWorldPosition + offset).y;
-                                gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
-                            }
-                        `,
-                        side: THREE.BackSide
-                    });
-                    const sky = new THREE.Mesh(skyGeometry, skyMaterial);
-                    sky.material.uniforms.topColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
-                    sky.material.uniforms.bottomColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
-                    sky.name = 'sky';
-                    this.sceneObj.add(sky);
-
-                    // Princess (Nintendo 64-style low-poly, princess-like design)
-                    const princessGroup = new THREE.Group();
-                    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xff69b4, metalness: 0.1, roughness: 0.5 }); // Pink dress/body
-                    const skinMaterial = new THREE.MeshStandardMaterial({ color: 0xffe4c4, metalness: 0.1, roughness: 0.5 }); // Skin tone
-                    const goldMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 }); // Gold for crown/jewelry
-
-                    // Torso (small cubes for blocky dress)
-                    for (let i = 0; i < 3; i++) {
-                        const torsoSegment = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 0.5), bodyMaterial);
-                        torsoSegment.position.y = 0.6 + i * 0.4;
-                        princessGroup.add(torsoSegment);
-                    }
-
-                    // Head (small sphere for low-poly head)
-                    const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), skinMaterial); // Low-poly sphere
-                    head.position.y = 1.5;
-                    princessGroup.add(head);
-
-                    // Facial features (small cubes for eyes, mouth, blush)
-                    const eyeSize = 0.05;
-                    const leftEye = new THREE.Mesh(new THREE.BoxGeometry(eyeSize, eyeSize, eyeSize), new THREE.MeshStandardMaterial({ color: 0x000000 }));
-                    leftEye.position.set(-0.15, 1.6, 0.3);
-                    const rightEye = new THREE.Mesh(new THREE.BoxGeometry(eyeSize, eyeSize, eyeSize), new THREE.MeshStandardMaterial({ color: 0x000000 }));
-                    rightEye.position.set(0.15, 1.6, 0.3);
-                    const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.05), new THREE.MeshStandardMaterial({ color: 0xff0000 }));
-                    mouth.position.set(0, 1.45, 0.3);
-                    const leftBlush = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.05), new THREE.MeshStandardMaterial({ color: 0xff8c8c }));
-                    leftBlush.position.set(-0.15, 1.5, 0.3);
-                    const rightBlush = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.05), new THREE.MeshStandardMaterial({ color: 0xff8c8c }));
-                    rightBlush.position.set(0.15, 1.5, 0.3);
-                    head.add(leftEye, rightEye, mouth, leftBlush, rightBlush);
-
-                    // Arms (small cubes for low-poly arms, slightly longer for elegance)
-                    const armSize = 0.2;
-                    const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.5, 0.2), bodyMaterial);
-                    leftArm.position.set(-0.5, 1.0, 0);
-                    const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.5, 0.2), bodyMaterial);
-                    rightArm.position.set(0.5, 1.0, 0);
-                    princessGroup.add(leftArm, rightArm);
-
-                    // Legs (small cubes for low-poly legs, slightly narrower)
-                    const legSize = 0.2;
-                    const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.4, 0.15), bodyMaterial);
-                    leftLeg.position.set(-0.2, 0.3, 0);
-                    const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.4, 0.15), bodyMaterial);
-                    rightLeg.position.set(0.2, 0.3, 0);
-                    princessGroup.add(leftLeg, rightLeg);
-
-                    // Crown (detailed with small cubes for low-poly, regal design)
-                    const crownSize = 0.05;
-                    const crownBase = new THREE.Mesh(new THREE.BoxGeometry(0.5, crownSize, 0.5), goldMaterial);
-                    crownBase.position.y = 1.9;
-                    const crownSpike1 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.3, crownSize), goldMaterial);
-                    crownSpike1.position.set(0, 2.05, 0.25);
-                    const crownSpike2 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.3, crownSize), goldMaterial);
-                    crownSpike2.position.set(0, 2.05, -0.25);
-                    const crownSpike3 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.3, crownSize), goldMaterial);
-                    crownSpike3.position.set(0.25, 2.05, 0);
-                    const crownSpike4 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.3, crownSize), goldMaterial);
-                    crownSpike4.position.set(-0.25, 2.05, 0);
-                    princessGroup.add(crownBase, crownSpike1, crownSpike2, crownSpike3, crownSpike4);
-
-                    // Jewelry (necklace and earrings, small cubes for low-poly)
-                    const necklaceCube = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, 0.05), goldMaterial);
-                    necklaceCube.position.set(0, 1.0, 0.3);
-                    const leftEarring = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.1, 0.05), goldMaterial);
-                    leftEarring.position.set(-0.5, 1.5, 0.3);
-                    const rightEarring = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.1, 0.05), goldMaterial);
-                    rightEarring.position.set(0.5, 1.5, 0.3);
-                    princessGroup.add(necklaceCube, leftEarring, rightEarring);
-
-                    princessGroup.position.set(this.player.x, 0.5, this.player.z);
-                    this.player.object = princessGroup;
-                    this.sceneObj.add(princessGroup);
-
-                    // Walking animation (simple rotation for legs)
-                    this.player.object.traverse(child => {
-                        if (child.isMesh && child.material.color.equals(new THREE.Color(0xff69b4))) {
-                            child.userData.originalRotation = child.rotation.clone();
-                        }
-                    });
-
-                    // Lighting (advanced setup with soft shadows)
-                    const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-                    this.sceneObj.add(ambientLight);
-                    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                    directionalLight.position.set(10, 20, 10);
-                    directionalLight.castShadow = true;
-                    directionalLight.shadow.mapSize.width = 4096;
-                    directionalLight.shadow.mapSize.height = 4096;
-                    directionalLight.shadow.camera.near = 0.5;
-                    directionalLight.shadow.camera.far = 100;
-                    directionalLight.shadow.camera.left = -50;
-                    directionalLight.shadow.camera.right = 50;
-                    directionalLight.shadow.camera.top = 50;
-                    directionalLight.shadow.camera.bottom = -50;
-                    this.sceneObj.add(directionalLight);
-
-                    // Castle (majestic, multi-towered structure with details)
-                    const castleBaseGeometry = new THREE.BoxGeometry(20, 10, 20);
-                    const castleBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                    const castleBase = new THREE.Mesh(castleBaseGeometry, castleBaseMaterial);
-                    castleBase.position.set(40, 5, 40);
-                    castleBase.castShadow = true;
-                    castleBase.receiveShadow = true;
-
-                    const castleTowerGeometry = new THREE.CylinderGeometry(3, 3, 15, 32);
-                    const castleTowerMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                    const tower1 = new THREE.Mesh(castleTowerGeometry, castleTowerMaterial);
-                    tower1.position.set(40, 12.5, 40);
-                    tower1.castShadow = true;
-                    tower1.receiveShadow = true;
-
-                    const tower2 = new THREE.Mesh(castleTowerGeometry, castleTowerMaterial.clone());
-                    tower2.position.set(50, 12.5, 40);
-                    tower2.castShadow = true;
-                    tower2.receiveShadow = true;
-
-                    const tower3 = new THREE.Mesh(castleTowerGeometry, castleTowerMaterial.clone());
-                    tower3.position.set(30, 12.5, 40);
-                    tower3.castShadow = true;
-                    tower3.receiveShadow = true;
-
-                    const battlementsGeometry = new THREE.BoxGeometry(1, 2, 1);
-                    const battlementsMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                    for (let i = -9; i <= 9; i += 2) {
-                        const battlement1 = new THREE.Mesh(battlementsGeometry, battlementsMaterial);
-                        battlement1.position.set(40 + i, 12, 41);
-                        battlement1.castShadow = true;
-                        battlement1.receiveShadow = true;
-                        castleBase.add(battlement1);
-
-                        const battlement2 = new THREE.Mesh(battlementsGeometry, battlementsMaterial.clone());
-                        battlement2.position.set(40 + i, 12, 39);
-                        battlement2.castShadow = true;
-                        battlement2.receiveShadow = true;
-                        castleBase.add(battlement2);
-                    }
-
-                    const castleGroup = new THREE.Group();
-                    castleGroup.add(castleBase, tower1, tower2, tower3);
-                    this.objects.push({ mesh: castleGroup, type: 'building', x: 40, z: 40 });
-
-                    // House (cozy, detailed structure with roof and windows)
-                    const houseBaseGeometry = new THREE.BoxGeometry(6, 6, 6);
-                    const houseBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7 }); // Wood brown
-                    const houseBase = new THREE.Mesh(houseBaseGeometry, houseBaseMaterial);
-                    houseBase.position.set(-40, 3, -40);
-                    houseBase.castShadow = true;
-                    houseBase.receiveShadow = true;
-
-                    const houseRoafGeometry = new THREE.ConeGeometry(4, 4, 32);
-                    const houseRoafMaterial = new THREE.MeshStandardMaterial({ color: 0x800000, metalness: 0.2, roughness: 0.7 }); // Red roof
-                    const houseRoaf = new THREE.Mesh(houseRoafGeometry, houseRoafMaterial);
-                    houseRoaf.position.set(-40, 7, -40);
-                    houseRoaf.castShadow = true;
-                    houseRoaf.receiveShadow = true;
-
-                    const windowGeometry = new THREE.PlaneGeometry(1, 1.5);
-                    const windowMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 }); // Blue glass
-                    const window1 = new THREE.Mesh(windowGeometry, windowMaterial);
-                    window1.position.set(-37, 4, -40.5);
-                    window1.rotation.y = Math.PI / 2;
-                    const window2 = new THREE.Mesh(windowGeometry, windowMaterial.clone());
-                    window2.position.set(-43, 4, -40.5);
-                    window2.rotation.y = Math.PI / 2;
-                    houseBase.add(window1, window2);
-
-                    const houseGroup = new THREE.Group();
-                    houseGroup.add(houseBase, houseRoaf);
-                    this.objects.push({ mesh: houseGroup, type: 'building', x: -40, z: -40 });
-
-                    // Storybook-Style House (quaint cottage with stone walls, steep roof, chimney)
-                    const storybookBaseGeometry = new THREE.BoxGeometry(5, 4, 5);
-                    const storybookBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 }); // Stone gray
-                    const storybookBase = new THREE.Mesh(storybookBaseGeometry, storybookBaseMaterial);
-                    storybookBase.position.set(20, 2, 20); // Position in town
-                    storybookBase.castShadow = true;
-                    storybookBase.receiveShadow = true;
-
-                    const storybookRoofGeometry = new THREE.ConeGeometry(3, 4, 32);
-                    const storybookRoofMaterial = new THREE.MeshStandardMaterial({ color: 0x800000, metalness: 0.2, roughness: 0.7 }); // Red roof
-                    const storybookRoof = new THREE.Mesh(storybookRoofGeometry, storybookRoofMaterial);
-                    storybookRoof.position.set(20, 6, 20);
-                    storybookRoof.castShadow = true;
-                    storybookRoof.receiveShadow = true;
-
-                    const chimneyGeometry = new THREE.BoxGeometry(1, 2, 1);
-                    const chimneyMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 }); // Stone gray
-                    const chimney = new THREE.Mesh(chimneyGeometry, chimneyMaterial);
-                    chimney.position.set(22, 7, 20); // Position on roof
-                    chimney.castShadow = true;
-                    chimney.receiveShadow = true;
-
-                    const windowStoryGeometry = new THREE.PlaneGeometry(1, 1.5);
-                    const windowStoryMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 }); // Blue glass
-                    const windowStory1 = new THREE.Mesh(windowStoryGeometry, windowStoryMaterial);
-                    windowStory1.position.set(18, 3.5, 22.5);
-                    windowStory1.rotation.y = Math.PI / 2;
-                    const windowStory2 = new THREE.Mesh(windowStoryGeometry, windowStoryMaterial.clone());
-                    windowStory2.position.set(22, 3.5, 22.5);
-                    windowStory2.rotation.y = Math.PI / 2;
-                    storybookBase.add(windowStory1, windowStory2);
-
-                    const doorStoryGeometry = new THREE.PlaneGeometry(1.5, 3);
-                    const doorStoryMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7, side: THREE.DoubleSide }); // Wood brown
-                    const doorStory = new THREE.Mesh(doorStoryGeometry, doorStoryMaterial);
-                    doorStory.position.set(20, 1.5, 17.5); // Front of house
-                    doorStory.rotation.y = Math.PI / 2;
-                    const handleStoryGeometry = new THREE.SphereGeometry(0.05, 16, 16);
-                    const handleStoryMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 0.9, roughness: 0.2 });
-                    const handleStory = new THREE.Mesh(handleStoryGeometry, handleStoryMaterial);
-                    handleStory.position.set(0, 0, -0.7);
-                    doorStory.add(handleStory);
-
-                    const storybookGroup = new THREE.Group();
-                    storybookGroup.add(storybookBase, storybookRoof, chimney, doorStory);
-                    this.objects.push({ mesh: storybookGroup, type: 'building', x: 20, z: 20 });
-
-                    // Castle door (ornate golden door with handle)
-                    const doorGeometry = new THREE.PlaneGeometry(2, 4);
-                    const doorMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2, side: THREE.DoubleSide }); // Gold
-                    const castleDoor = new THREE.Mesh(doorGeometry, doorMaterial);
-                    castleDoor.position.set(35, 2, 40); // Front-left of castle
-                    castleDoor.rotation.y = Math.PI / 2;
-                    const handleGeometry = new THREE.SphereGeometry(0.1, 16, 16);
-                    const handleMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 0.9, roughness: 0.2 });
-                    const handle = new THREE.Mesh(handleGeometry, handleMaterial);
-                    handle.position.set(0, 0, -0.9);
-                    castleDoor.add(handle);
-                    this.objects.push({ mesh: castleDoor, type: 'door', x: 35, z: 40, building: 'castle' });
-
-                    // House door (wooden door with handle)
-                    const houseDoor = new THREE.Mesh(doorGeometry, new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7, side: THREE.DoubleSide }));
-                    houseDoor.position.set(-42, 2, -40); // Front-left of house
-                    houseDoor.rotation.y = Math.PI / 2;
-                    const woodHandle = new THREE.Mesh(handleGeometry, handleMaterial.clone());
-                    woodHandle.position.set(0, 0, -0.9);
-                    houseDoor.add(woodHandle);
-                    this.objects.push({ mesh: houseDoor, type: 'door', x: -42, z: -40, building: 'house' });
-
-                    // Storybook house door (wooden door with handle)
-                    this.objects.push({ mesh: doorStory, type: 'door', x: 20, z: 20, building: 'storybook' });
-
-                    // Flowers (detailed blossoms, more variety)
-                    const flowerStemGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.5, 8);
-                    const flowerStemMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 });
-                    const flowerPetalsGeometry = new THREE.TorusGeometry(0.3, 0.1, 16, 32);
-                    const flowerPetalsMaterial = new THREE.MeshStandardMaterial({ color: 0xff00ff, metalness: 0.1, roughness: 0.8 });
-
-                    const flower1Group = new THREE.Group();
-                    const stem1 = new THREE.Mesh(flowerStemGeometry, flowerStemMaterial);
-                    stem1.position.y = 0.25;
-                    const petals1 = new THREE.Mesh(flowerPetalsGeometry, flowerPetalsMaterial);
-                    petals1.position.y = 0.75;
-                    petals1.rotation.x = Math.PI / 2;
-                    flower1Group.add(stem1, petals1);
-                    flower1Group.position.set(10, 0, 10);
-                    flower1Group.castShadow = true;
-                    this.objects.push({ mesh: flower1Group, type: 'flower', x: 10, z: 10 });
-
-                    const flower2Group = new THREE.Group();
-                    const stem2 = new THREE.Mesh(flowerStemGeometry, flowerStemMaterial);
-                    stem2.position.y = 0.25;
-                    const petals2 = new THREE.Mesh(flowerPetalsGeometry, flowerPetalsMaterial);
-                    petals2.position.y = 0.75;
-                    petals2.rotation.x = Math.PI / 2;
-                    flower2Group.add(stem2, petals2);
-                    flower2Group.position.set(-10, 0, 0);
-                    flower2Group.castShadow = true;
-                    this.objects.push({ mesh: flower2Group, type: 'flower', x: -10, z: 0 });
-
-                    const flower3Group = new THREE.Group();
-                    const stem3 = new THREE.Mesh(flowerStemGeometry, flowerStemMaterial.clone());
-                    stem3.position.y = 0.25;
-                    const petals3 = new THREE.Mesh(flowerPetalsGeometry, flowerPetalsMaterial.clone());
-                    petals3.position.y = 0.75;
-                    petals3.rotation.x = Math.PI / 2;
-                    flower3Group.add(stem3, petals3);
-                    flower3Group.position.set(15, 0, 5);
-                    flower3Group.castShadow = true;
-                    this.objects.push({ mesh: flower3Group, type: 'flower', x: 15, z: 5 });
-
-                    // Coins (shiny gold coins, more scattered)
-                    const coinGeometry = new THREE.CircleGeometry(0.5, 32);
-                    const coinMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
-                    const coin1 = new THREE.Mesh(coinGeometry, coinMaterial);
-                    coin1.position.set(0, 0.5, 10);
-                    coin1.rotation.x = Math.PI / 2;
-                    coin1.castShadow = true;
-                    this.objects.push({ mesh: coin1, type: 'coin', x: 0, z: 10 });
-
-                    const coin2 = new THREE.Mesh(coinGeometry, coinMaterial.clone());
-                    coin2.position.set(10, 0.5, -10);
-                    coin2.rotation.x = Math.PI / 2;
-                    coin2.castShadow = true;
-                    this.objects.push({ mesh: coin2, type: 'coin', x: 10, z: -10 });
-
-                    const coin3 = new THREE.Mesh(coinGeometry, coinMaterial.clone());
-                    coin3.position.set(-5, 0.5, 15);
-                    coin3.rotation.x = Math.PI / 2;
-                    coin3.castShadow = true;
-                    this.objects.push({ mesh: coin3, type: 'coin', x: -5, z: 15 });
-
-                    // Gems (prismatic crystals, more variety)
-                    const gemGeometry = new THREE.OctahedronGeometry(0.5, 0);
-                    const gemMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.5, roughness: 0.5 });
-                    const gem1 = new THREE.Mesh(gemGeometry, gemMaterial);
-                    gem1.position.set(-10, 0.5, 10);
-                    gem1.castShadow = true;
-                    this.objects.push({ mesh: gem1, type: 'gem', x: -10, z: 10 });
-
-                    const gem2 = new THREE.Mesh(gemGeometry, gemMaterial.clone());
-                    gem2.position.set(5, 0.5, -5);
-                    gem2.castShadow = true;
-                    this.objects.push({ mesh: gem2, type: 'gem', x: 5, z: -5 });
-
-                    // Potions (glass bottles with glowing liquid, more scattered)
-                    const potionBaseGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 32);
-                    const potionBaseMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.8, roughness: 0.2 }); // Glass
-                    const potionLiquidGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.6, 32);
-                    const potionLiquidMaterial = new THREE.MeshStandardMaterial({ color: 0xff4500, metalness: 0.1, roughness: 0.7 }); // Orange liquid
-                    const potionBase1 = new THREE.Mesh(potionBaseGeometry, potionBaseMaterial);
-                    const potionLiquid1 = new THREE.Mesh(potionLiquidGeometry, potionLiquidMaterial);
-                    potionLiquid1.position.y = 0.1;
-                    const potionGroup1 = new THREE.Group();
-                    potionGroup1.add(potionBase1, potionLiquid1);
-                    potionGroup1.position.set(0, 0.4, -10);
-                    potionGroup1.castShadow = true;
-                    this.objects.push({ mesh: potionGroup1, type: 'potion', x: 0, z: -10 });
-
-                    const potionBase2 = new THREE.Mesh(potionBaseGeometry, potionBaseMaterial.clone());
-                    const potionLiquid2 = new THREE.Mesh(potionLiquidGeometry, potionLiquidMaterial.clone());
-                    potionLiquid2.position.y = 0.1;
-                    const potionGroup2 = new THREE.Group();
-                    potionGroup2.add(potionBase2, potionLiquid2);
-                    potionGroup2.position.set(20, 0.4, 0);
-                    potionGroup2.castShadow = true;
-                    this.objects.push({ mesh: potionGroup2, type: 'potion', x: 20, z: 0 });
-
-                    // Keys (ornate golden keys, more scattered)
-                    const keyHandleGeometry = new THREE.SphereGeometry(0.2, 16, 16);
-                    const keyShaftGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
-                    const keyMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
-                    const keyHandle1 = new THREE.Mesh(keyHandleGeometry, keyMaterial);
-                    const keyShaft1 = new THREE.Mesh(keyShaftGeometry, keyMaterial);
-                    keyShaft1.position.y = -0.4;
-                    const keyGroup1 = new THREE.Group();
-                    keyGroup1.add(keyHandle1, keyShaft1);
-                    keyGroup1.position.set(20, 0.5, 20);
-                    keyGroup1.rotation.x = Math.PI / 2;
-                    keyGroup1.castShadow = true;
-                    this.objects.push({ mesh: keyGroup1, type: 'key', x: 20, z: 20 });
-
-                    const keyHandle2 = new THREE.Mesh(keyHandleGeometry, keyMaterial.clone());
-                    const keyShaft2 = new THREE.Mesh(keyShaftGeometry, keyMaterial.clone());
-                    keyShaft2.position.y = -0.4;
-                    const keyGroup2 = new THREE.Group();
-                    keyGroup2.add(keyHandle2, keyShaft2);
-                    keyGroup2.position.set(-15, 0.5, -15);
-                    keyGroup2.rotation.x = Math.PI / 2;
-                    keyGroup2.castShadow = true;
-                    this.objects.push({ mesh: keyGroup2, type: 'key', x: -15, z: -15 });
-
-                    // Artifacts (mystical orbs with glow, more scattered)
-                    const artifactGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-                    const artifactMaterial = new THREE.MeshStandardMaterial({ color: 0x9400d3, metalness: 0.5, roughness: 0.5 });
-                    const artifact1 = new THREE.Mesh(artifactGeometry, artifactMaterial);
-                    artifact1.position.set(-20, 0.5, -20);
-                    artifact1.castShadow = true;
-
-                    const glowGeometry = new THREE.SphereGeometry(0.6, 16, 16);
-                    const glowMaterial = new THREE.MeshBasicMaterial({ 
-                        color: 0xffeb3b, 
-                        transparent: true, 
-                        opacity: 0.5,
-                        side: THREE.BackSide 
-                    });
-                    const glow1 = new THREE.Mesh(glowGeometry, glowMaterial);
-                    glow1.position.copy(artifact1.position);
-                    const artifactGroup1 = new THREE.Group();
-                    artifactGroup1.add(artifact1, glow1);
-                    this.objects.push({ mesh: artifactGroup1, type: 'artifact', x: -20, z: -20 });
-
-                    const artifact2 = new THREE.Mesh(artifactGeometry, artifactMaterial.clone());
-                    artifact2.position.set(25, 0.5, 5);
-                    artifact2.castShadow = true;
-                    const glow2 = new THREE.Mesh(glowGeometry, glowMaterial.clone());
-                    glow2.position.copy(artifact2.position);
-                    const artifactGroup2 = new THREE.Group();
-                    artifactGroup2.add(artifact2, glow2);
-                    this.objects.push({ mesh: artifactGroup2, type: 'artifact', x: 25, z: 5 });
-
-                    // Decorative Elements (trees, fountains)
-                    const treeTrunkGeometry = new THREE.CylinderGeometry(0.5, 0.5, 3, 32);
-                    const treeTrunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7 });
-                    const treeLeavesGeometry = new THREE.SphereGeometry(1.5, 32, 32);
-                    const treeLeavesMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 });
-                    const tree1Group = new THREE.Group();
-                    const trunk1 = new THREE.Mesh(treeTrunkGeometry, treeTrunkMaterial);
-                    const leaves1 = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial);
-                    leaves1.position.y = 2.5;
-                    tree1Group.add(trunk1, leaves1);
-                    tree1Group.position.set(5, 0, 5);
-                    tree1Group.castShadow = true;
-                    this.objects.push({ mesh: tree1Group, type: 'decoration', x: 5, z: 5 });
-
-                    const tree2Group = new THREE.Group();
-                    const trunk2 = new THREE.Mesh(treeTrunkGeometry, treeTrunkMaterial.clone());
-                    const leaves2 = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial.clone());
-                    leaves2.position.y = 2.5;
-                    tree2Group.add(trunk2, leaves2);
-                    tree2Group.position.set(-5, 0, -5);
-                    tree2Group.castShadow = true;
-                    this.objects.push({ mesh: tree2Group, type: 'decoration', x: -5, z: -5 });
-
-                    const fountainBaseGeometry = new THREE.CylinderGeometry(2, 2, 1, 32);
-                    const fountainBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                    const fountainBowlGeometry = new THREE.TorusGeometry(2, 0.5, 32, 32);
-                    const fountainBowlMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                    const fountainWaterGeometry = new THREE.CylinderGeometry(1, 1, 0.1, 32);
-                    const fountainWaterMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.1, roughness: 0.7, transparent: true, opacity: 0.7 });
-                    const fountainBase = new THREE.Mesh(fountainBaseGeometry, fountainBaseMaterial);
-                    const fountainBowl = new THREE.Mesh(fountainBowlGeometry, fountainBowlMaterial);
-                    fountainBowl.position.y = 1;
-                    fountainBowl.rotation.x = Math.PI / 2;
-                    const fountainWater = new THREE.Mesh(fountainWaterGeometry, fountainWaterMaterial);
-                    fountainWater.position.y = 1.1;
-                    const fountainGroup = new THREE.Group();
-                    fountainGroup.add(fountainBase, fountainBowl, fountainWater);
-                    fountainGroup.position.set(0, 0, 10);
-                    fountainGroup.castShadow = true;
-                    this.objects.push({ mesh: fountainGroup, type: 'decoration', x: 0, z: 10 });
-
-                    // Town Boundary (dense shrubs and trees, hard boundary)
-                    const shrubGeometry = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 32);
-                    const shrubMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 }); // Green shrubs
-                    const treeTrunkBoundaryGeometry = new THREE.CylinderGeometry(0.3, 0.3, 3, 32);
-                    const treeTrunkBoundaryMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7 }); // Brown tree trunks
-                    const treeLeavesBoundaryGeometry = new THREE.SphereGeometry(1, 32, 32);
-                    const treeLeavesBoundaryMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 }); // Green leaves
-
-                    const boundaryGroup = new THREE.Group();
-                    const boundaryWidth = 50; // Width of the town area (25 units from center in each direction)
-                    const boundarySpacing = 2; // Spacing between shrubs/trees
-
-                    // Create boundary around the town (square shape, 50x50 units)
-                    for (let x = -boundaryWidth; x <= boundaryWidth; x += boundarySpacing) {
-                        for (let z = -boundaryWidth; z <= boundaryWidth; z += boundarySpacing) {
-                            if (Math.abs(x) === boundaryWidth || Math.abs(z) === boundaryWidth) { // Only on the edges
-                                if (Math.random() < 0.7) { // 70% chance for shrubs, 30% for trees
-                                    const shrub = new THREE.Mesh(shrubGeometry, shrubMaterial);
-                                    shrub.position.set(x, 0.75, z);
-                                    shrub.castShadow = true;
-                                    shrub.receiveShadow = true;
-                                    boundaryGroup.add(shrub);
-                                } else {
-                                    const trunk = new THREE.Mesh(treeTrunkBoundaryGeometry, treeTrunkBoundaryMaterial);
-                                    const leaves = new THREE.Mesh(treeLeavesBoundaryGeometry, treeLeavesBoundaryMaterial);
-                                    trunk.position.set(x, 1.5, z);
-                                    leaves.position.set(x, 3.5, z);
-                                    leaves.castShadow = true;
-                                    leaves.receiveShadow = true;
-                                    trunk.castShadow = true;
-                                    trunk.receiveShadow = true;
-                                    boundaryGroup.add(trunk, leaves);
-                                }
-                            }
-                        }
-                    }
-
-                    boundaryGroup.position.set(0, 0, 0);
-                    this.objects.push({ mesh: boundaryGroup, type: 'boundary', x: 0, z: 0 });
-                    this.sceneObj.add(boundaryGroup);
-
-                    // Shop (small shop with sign, moved away from starting position)
-                    const shopBaseGeometry = new THREE.BoxGeometry(4, 4, 4);
-                    const shopBaseMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00, metalness: 0.2, roughness: 0.6 });
-                    const shopBase = new THREE.Mesh(shopBaseGeometry, shopBaseMaterial);
-                    shopBase.position.set(10, 2, 0);
-                    shopBase.castShadow = true;
-                    shopBase.receiveShadow = true;
-
-                    const signGeometry = new THREE.PlaneGeometry(2, 1);
-                    const signMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, side: THREE.DoubleSide });
-                    const sign = new THREE.Mesh(signGeometry, signMaterial);
-                    sign.position.set(0, 4.5, 2);
-                    sign.rotation.y = Math.PI / 2;
-                    const shopGroup = new THREE.Group();
-                    shopGroup.add(shopBase, sign);
-                    this.objects.push({ mesh: shopGroup, type: 'shop', x: 10, z: 0 });
-
-                    this.objects.forEach(obj => this.sceneObj.add(obj.mesh));
-                    this.npcs = this.createNPCs(this.scene);
-                    this.npcs.forEach(npc => this.sceneObj.add(npc.mesh));
-                }
-                initJoysticks() {
-                    this.joystickLeft = nipplejs.create({
-                        zone: document.getElementById('joystickLeft'),
-                        mode: 'static',
-                        position: { left: '50px', bottom: '50px' },
-                        color: 'white',
-                        size: 100
-                    });
-
-                    this.joystickLeft.on('move', (evt, data) => {
-                        if (data && data.force > 0) {
-                            const angle = data.angle.radian;
-                            const speed = data.force * this.player.speed;
-                            const dx = Math.cos(angle) * speed;
-                            const dz = Math.sin(angle) * speed;
-                            const newX = this.player.x + dx;
-                            const newZ = this.player.z - dz;
-
-                            if (!this.objects.some(obj => {
-                                const distX = Math.abs(obj.x - newX);
-                                const distZ = Math.abs(obj.z - newZ);
-                                return (obj.type === 'building' || obj.type === 'wall' || obj.type === 'boundary') && distX < 5 && distZ < 5;
-                            })) {
-                                this.player.x = newX;
-                                this.player.z = newZ;
-                            }
-                        }
-                    });
-
-                    this.joystickLeft.on('end', () => {
-                        this.joystickLeft.active = false; // Reset active state
-                    });
-                    this.joystickLeft.on('start', () => {
-                        this.joystickLeft.active = true; // Set active state when touched
-                    });
-
-                    this.joystickRight = nipplejs.create({
-                        zone: document.getElementById('joystickRight'),
-                        mode: 'static',
-                        position: { right: '50px', bottom: '50px' },
-                        color: 'white',
-                        size: 100
-                    });
-
-                    this.joystickRight.on('move', (evt, data) => {
-                        if (data && data.force > 0) {
-                            const sensitivity = 0.002;
-                            this.player.yaw += data.vector.x * sensitivity * data.force;
-                            this.player.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.player.pitch + data.vector.y * sensitivity * data.force));
-                        }
-                    });
-
-                    this.joystickRight.on('end', () => {});
-                    this.joystickRight.on('start', () => {});
-
-                    document.getElementById('gameContainer').addEventListener('click', (e) => {
-                        const rect = document.getElementById('gameContainer').getBoundingClientRect();
-                        const x = e.clientX - rect.left;
-                        const y = e.clientY - rect.top;
-                        if (x > rect.width / 4 && x < rect.width * 3 / 4 && y > rect.height / 4 && y < rect.height * 3 / 4) {
-                            this.throwBall();
-                        }
-                    });
-                }
-                initKeyboardMouse() {
-                    document.addEventListener('keydown', (e) => {
-                        this.keys[e.key] = true;
-                        if (e.key === ' ') this.throwBall();
-                    });
-                    document.addEventListener('keyup', (e) => {
-                        this.keys[e.key] = false;
-                    });
-
-                    document.addEventListener('mousedown', () => {
-                        document.body.requestPointerLock();
-                    });
-
-                    document.addEventListener('mousemove', (event) => {
-                        if (document.pointerLockElement === document.body) {
-                            const movementX = event.movementX || 0;
-                            const movementY = event.movementY || 0;
-                            this.player.yaw += movementX * 0.002;
-                            this.player.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.player.pitch + movementY * 0.002));
-                        }
-                    });
-                }
-                createNPCs(scene) {
-                    const npcs = [];
-                    if (scene === 'town') {
-                        const npcGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 32);
-                        const npcMaterial = new THREE.MeshStandardMaterial({ color: 0x00008b, metalness: 0.3, roughness: 0.6 });
-                        const guard = new THREE.Mesh(npcGeometry, npcMaterial);
-                        guard.position.set(0, 1, 0);
-                        guard.castShadow = true;
-                        npcs.push({ mesh: guard, x: 0, z: 0, role: 'guard' });
-                    }
-                    return npcs;
-                }
-                updateObjects() {
-                    this.sceneObj.remove(...this.objects.map(obj => obj.mesh));
-                    this.sceneObj.remove(...this.npcs.map(npc => npc.mesh));
-                    this.objects = this.createObjects(this.scene);
-                    this.npcs = this.createNPCs(this.scene);
-                    this.objects.forEach(obj => this.sceneObj.add(obj.mesh));
-                    this.npcs.forEach(npc => this.sceneObj.add(npc.mesh));
-                }
-                createObjects(scene) {
-                    const objects = [];
-                    objects.push({ mesh: this.player.object, type: 'player', x: this.player.x, z: this.player.z });
-
-                    if (scene === 'town') {
-                        const castleBaseGeometry = new THREE.BoxGeometry(20, 10, 20);
-                        const castleBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                        const castleBase = new THREE.Mesh(castleBaseGeometry, castleBaseMaterial);
-                        castleBase.position.set(40, 5, 40);
-                        castleBase.castShadow = true;
-                        castleBase.receiveShadow = true;
-
-                        const castleTowerGeometry = new THREE.CylinderGeometry(3, 3, 15, 32);
-                        const castleTowerMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                        const tower1 = new THREE.Mesh(castleTowerGeometry, castleTowerMaterial);
-                        tower1.position.set(40, 12.5, 40);
-                        tower1.castShadow = true;
-                        tower1.receiveShadow = true;
-
-                        const tower2 = new THREE.Mesh(castleTowerGeometry, castleTowerMaterial.clone());
-                        tower2.position.set(50, 12.5, 40);
-                        tower2.castShadow = true;
-                        tower2.receiveShadow = true;
-
-                        const tower3 = new THREE.Mesh(castleTowerGeometry, castleTowerMaterial.clone());
-                        tower3.position.set(30, 12.5, 40);
-                        tower3.castShadow = true;
-                        tower3.receiveShadow = true;
-
-                        const battlementsGeometry = new THREE.BoxGeometry(1, 2, 1);
-                        const battlementsMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                        for (let i = -9; i <= 9; i += 2) {
-                            const battlement1 = new THREE.Mesh(battlementsGeometry, battlementsMaterial);
-                            battlement1.position.set(40 + i, 12, 41);
-                            battlement1.castShadow = true;
-                            battlement1.receiveShadow = true;
-                            castleBase.add(battlement1);
-
-                            const battlement2 = new THREE.Mesh(battlementsGeometry, battlementsMaterial.clone());
-                            battlement2.position.set(40 + i, 12, 39);
-                            battlement2.castShadow = true;
-                            battlement2.receiveShadow = true;
-                            castleBase.add(battlement2);
-                        }
-
-                        const castleGroup = new THREE.Group();
-                        castleGroup.add(castleBase, tower1, tower2, tower3);
-                        objects.push({ mesh: castleGroup, type: 'building', x: 40, z: 40 });
-
-                        const houseBaseGeometry = new THREE.BoxGeometry(6, 6, 6);
-                        const houseBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7 });
-                        const houseBase = new THREE.Mesh(houseBaseGeometry, houseBaseMaterial);
-                        houseBase.position.set(-40, 3, -40);
-                        houseBase.castShadow = true;
-                        houseBase.receiveShadow = true;
-
-                        const houseRoafGeometry = new THREE.ConeGeometry(4, 4, 32);
-                        const houseRoafMaterial = new THREE.MeshStandardMaterial({ color: 0x800000, metalness: 0.2, roughness: 0.7 });
-                        const houseRoaf = new THREE.Mesh(houseRoafGeometry, houseRoafMaterial);
-                        houseRoaf.position.set(-40, 7, -40);
-                        houseRoaf.castShadow = true;
-                        houseRoaf.receiveShadow = true;
-
-                        const windowGeometry = new THREE.PlaneGeometry(1, 1.5);
-                        const windowMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
-                        const window1 = new THREE.Mesh(windowGeometry, windowMaterial);
-                        window1.position.set(-37, 4, -40.5);
-                        window1.rotation.y = Math.PI / 2;
-                        const window2 = new THREE.Mesh(windowGeometry, windowMaterial.clone());
-                        window2.position.set(-43, 4, -40.5);
-                        window2.rotation.y = Math.PI / 2;
-                        houseBase.add(window1, window2);
-
-                        const houseGroup = new THREE.Group();
-                        houseGroup.add(houseBase, houseRoaf);
-                        objects.push({ mesh: houseGroup, type: 'building', x: -40, z: -40 });
-
-                        const storybookBaseGeometry = new THREE.BoxGeometry(5, 4, 5);
-                        const storybookBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                        const storybookBase = new THREE.Mesh(storybookBaseGeometry, storybookBaseMaterial);
-                        storybookBase.position.set(20, 2, 20);
-                        storybookBase.castShadow = true;
-                        storybookBase.receiveShadow = true;
-
-                        const storybookRoofGeometry = new THREE.ConeGeometry(3, 4, 32);
-                        const storybookRoofMaterial = new THREE.MeshStandardMaterial({ color: 0x800000, metalness: 0.2, roughness: 0.7 });
-                        const storybookRoof = new THREE.Mesh(storybookRoofGeometry, storybookRoofMaterial);
-                        storybookRoof.position.set(20, 6, 20);
-                        storybookRoof.castShadow = true;
-                        storybookRoof.receiveShadow = true;
-
-                        const chimneyGeometry = new THREE.BoxGeometry(1, 2, 1);
-                        const chimneyMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                        const chimney = new THREE.Mesh(chimneyGeometry, chimneyMaterial);
-                        chimney.position.set(22, 7, 20);
-                        chimney.castShadow = true;
-                        chimney.receiveShadow = true;
-
-                        const windowStoryGeometry = new THREE.PlaneGeometry(1, 1.5);
-                        const windowStoryMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
-                        const windowStory1 = new THREE.Mesh(windowStoryGeometry, windowStoryMaterial);
-                        windowStory1.position.set(18, 3.5, 22.5);
-                        windowStory1.rotation.y = Math.PI / 2;
-                        const windowStory2 = new THREE.Mesh(windowStoryGeometry, windowStoryMaterial.clone());
-                        windowStory2.position.set(22, 3.5, 22.5);
-                        windowStory2.rotation.y = Math.PI / 2;
-                        storybookBase.add(windowStory1, windowStory2);
-
-                        const doorStoryGeometry = new THREE.PlaneGeometry(1.5, 3);
-                        const doorStoryMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7, side: THREE.DoubleSide });
-                        const doorStory = new THREE.Mesh(doorStoryGeometry, doorStoryMaterial);
-                        doorStory.position.set(20, 1.5, 17.5);
-                        doorStory.rotation.y = Math.PI / 2;
-                        const handleStoryGeometry = new THREE.SphereGeometry(0.05, 16, 16);
-                        const handleStoryMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 0.9, roughness: 0.2 });
-                        const handleStory = new THREE.Mesh(handleStoryGeometry, handleStoryMaterial);
-                        handleStory.position.set(0, 0, -0.7);
-                        doorStory.add(handleStory);
-
-                        const storybookGroup = new THREE.Group();
-                        storybookGroup.add(storybookBase, storybookRoof, chimney, doorStory);
-                        objects.push({ mesh: storybookGroup, type: 'building', x: 20, z: 20 });
-
-                        const doorGeometry = new THREE.PlaneGeometry(2, 4);
-                        const doorMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2, side: THREE.DoubleSide });
-                        const castleDoor = new THREE.Mesh(doorGeometry, doorMaterial);
-                        castleDoor.position.set(35, 2, 40);
-                        castleDoor.rotation.y = Math.PI / 2;
-                        const handleGeometry = new THREE.SphereGeometry(0.1, 16, 16);
-                        const handleMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 0.9, roughness: 0.2 });
-                        const handle = new THREE.Mesh(handleGeometry, handleMaterial);
-                        handle.position.set(0, 0, -0.9);
-                        castleDoor.add(handle);
-                        objects.push({ mesh: castleDoor, type: 'door', x: 35, z: 40, building: 'castle' });
-
-                        const houseDoor = new THREE.Mesh(doorGeometry, new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7, side: THREE.DoubleSide }));
-                        houseDoor.position.set(-42, 2, -40);
-                        houseDoor.rotation.y = Math.PI / 2;
-                        const woodHandle = new THREE.Mesh(handleGeometry, handleMaterial.clone());
-                        woodHandle.position.set(0, 0, -0.9);
-                        houseDoor.add(woodHandle);
-                        objects.push({ mesh: houseDoor, type: 'door', x: -42, z: -40, building: 'house' });
-
-                        objects.push({ mesh: doorStory, type: 'door', x: 20, z: 20, building: 'storybook' });
-
-                        const flowerStemGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.5, 8);
-                        const flowerStemMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 });
-                        const flowerPetalsGeometry = new THREE.TorusGeometry(0.3, 0.1, 16, 32);
-                        const flowerPetalsMaterial = new THREE.MeshStandardMaterial({ color: 0xff00ff, metalness: 0.1, roughness: 0.8 });
-
-                        const flower1Group = new THREE.Group();
-                        const stem1 = new THREE.Mesh(flowerStemGeometry, flowerStemMaterial);
-                        stem1.position.y = 0.25;
-                        const petals1 = new THREE.Mesh(flowerPetalsGeometry, flowerPetalsMaterial);
-                        petals1.position.y = 0.75;
-                        petals1.rotation.x = Math.PI / 2;
-                        flower1Group.add(stem1, petals1);
-                        flower1Group.position.set(10, 0, 10);
-                        flower1Group.castShadow = true;
-                        objects.push({ mesh: flower1Group, type: 'flower', x: 10, z: 10 });
-
-                        const flower2Group = new THREE.Group();
-                        const stem2 = new THREE.Mesh(flowerStemGeometry, flowerStemMaterial);
-                        stem2.position.y = 0.25;
-                        const petals2 = new THREE.Mesh(flowerPetalsGeometry, flowerPetalsMaterial);
-                        petals2.position.y = 0.75;
-                        petals2.rotation.x = Math.PI / 2;
-                        flower2Group.add(stem2, petals2);
-                        flower2Group.position.set(-10, 0, 0);
-                        flower2Group.castShadow = true;
-                        objects.push({ mesh: flower2Group, type: 'flower', x: -10, z: 0 });
-
-                        const flower3Group = new THREE.Group();
-                        const stem3 = new THREE.Mesh(flowerStemGeometry, flowerStemMaterial.clone());
-                        stem3.position.y = 0.25;
-                        const petals3 = new THREE.Mesh(flowerPetalsGeometry, flowerPetalsMaterial.clone());
-                        petals3.position.y = 0.75;
-                        petals3.rotation.x = Math.PI / 2;
-                        flower3Group.add(stem3, petals3);
-                        flower3Group.position.set(15, 0, 5);
-                        flower3Group.castShadow = true;
-                        objects.push({ mesh: flower3Group, type: 'flower', x: 15, z: 5 });
-
-                        const coinGeometry = new THREE.CircleGeometry(0.5, 32);
-                        const coinMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
-                    const coin1 = new THREE.Mesh(coinGeometry, coinMaterial);
-                    coin1.position.set(0, 0.5, 10);
-                    coin1.rotation.x = Math.PI / 2;
-                    coin1.castShadow = true;
-                    objects.push({ mesh: coin1, type: 'coin', x: 0, z: 10 });
-
-                    const coin2 = new THREE.Mesh(coinGeometry, coinMaterial.clone());
-                    coin2.position.set(10, 0.5, -10);
-                    coin2.rotation.x = Math.PI / 2;
-                    coin2.castShadow = true;
-                    objects.push({ mesh: coin2, type: 'coin', x: 10, z: -10 });
-
-                    const coin3 = new THREE.Mesh(coinGeometry, coinMaterial.clone());
-                    coin3.position.set(-5, 0.5, 15);
-                    coin3.rotation.x = Math.PI / 2;
-                    coin3.castShadow = true;
-                    objects.push({ mesh: coin3, type: 'coin', x: -5, z: 15 });
-
-                    // Gems (prismatic crystals, more variety)
-                    const gemGeometry = new THREE.OctahedronGeometry(0.5, 0);
-                    const gemMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.5, roughness: 0.5 });
-                    const gem1 = new THREE.Mesh(gemGeometry, gemMaterial);
-                    gem1.position.set(-10, 0.5, 10);
-                    gem1.castShadow = true;
-                    objects.push({ mesh: gem1, type: 'gem', x: -10, z: 10 });
-
-                    const gem2 = new THREE.Mesh(gemGeometry, gemMaterial.clone());
-                    gem2.position.set(5, 0.5, -5);
-                    gem2.castShadow = true;
-                    objects.push({ mesh: gem2, type: 'gem', x: 5, z: -5 });
-
-                    // Potions (glass bottles with glowing liquid, more scattered)
-                    const potionBaseGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 32);
-                    const potionBaseMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.8, roughness: 0.2 }); // Glass
-                    const potionLiquidGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.6, 32);
-                    const potionLiquidMaterial = new THREE.MeshStandardMaterial({ color: 0xff4500, metalness: 0.1, roughness: 0.7 }); // Orange liquid
-                    const potionBase1 = new THREE.Mesh(potionBaseGeometry, potionBaseMaterial);
-                    const potionLiquid1 = new THREE.Mesh(potionLiquidGeometry, potionLiquidMaterial);
-                    potionLiquid1.position.y = 0.1;
-                    const potionGroup1 = new THREE.Group();
-                    potionGroup1.add(potionBase1, potionLiquid1);
-                    potionGroup1.position.set(0, 0.4, -10);
-                    potionGroup1.castShadow = true;
-                    objects.push({ mesh: potionGroup1, type: 'potion', x: 0, z: -10 });
-
-                    const potionBase2 = new THREE.Mesh(potionBaseGeometry, potionBaseMaterial.clone());
-                    const potionLiquid2 = new THREE.Mesh(potionLiquidGeometry, potionLiquidMaterial.clone());
-                    potionLiquid2.position.y = 0.1;
-                    const potionGroup2 = new THREE.Group();
-                    potionGroup2.add(potionBase2, potionLiquid2);
-                    potionGroup2.position.set(20, 0.4, 0);
-                    potionGroup2.castShadow = true;
-                    objects.push({ mesh: potionGroup2, type: 'potion', x: 20, z: 0 });
-
-                    // Keys (ornate golden keys, more scattered)
-                    const keyHandleGeometry = new THREE.SphereGeometry(0.2, 16, 16);
-                    const keyShaftGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
-                    const keyMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
-                    const keyHandle1 = new THREE.Mesh(keyHandleGeometry, keyMaterial);
-                    const keyShaft1 = new THREE.Mesh(keyShaftGeometry, keyMaterial);
-                    keyShaft1.position.y = -0.4;
-                    const keyGroup1 = new THREE.Group();
-                    keyGroup1.add(keyHandle1, keyShaft1);
-                    keyGroup1.position.set(20, 0.5, 20);
-                    keyGroup1.rotation.x = Math.PI / 2;
-                    keyGroup1.castShadow = true;
-                    objects.push({ mesh: keyGroup1, type: 'key', x: 20, z: 20 });
-
-                    const keyHandle2 = new THREE.Mesh(keyHandleGeometry, keyMaterial.clone());
-                    const keyShaft2 = new THREE.Mesh(keyShaftGeometry, keyMaterial.clone());
-                    keyShaft2.position.y = -0.4;
-                    const keyGroup2 = new THREE.Group();
-                    keyGroup2.add(keyHandle2, keyShaft2);
-                    keyGroup2.position.set(-15, 0.5, -15);
-                    keyGroup2.rotation.x = Math.PI / 2;
-                    keyGroup2.castShadow = true;
-                    objects.push({ mesh: keyGroup2, type: 'key', x: -15, z: -15 });
-
-                    // Artifacts (mystical orbs with glow, more scattered)
-                    const artifactGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-                    const artifactMaterial = new THREE.MeshStandardMaterial({ color: 0x9400d3, metalness: 0.5, roughness: 0.5 });
-                    const artifact1 = new THREE.Mesh(artifactGeometry, artifactMaterial);
-                    artifact1.position.set(-20, 0.5, -20);
-                    artifact1.castShadow = true;
-
-                    const glowGeometry = new THREE.SphereGeometry(0.6, 16, 16);
-                    const glowMaterial = new THREE.MeshBasicMaterial({ 
-                        color: 0xffeb3b, 
-                        transparent: true, 
-                        opacity: 0.5,
-                        side: THREE.BackSide 
-                    });
-                    const glow1 = new THREE.Mesh(glowGeometry, glowMaterial);
-                    glow1.position.copy(artifact1.position);
-                    const artifactGroup1 = new THREE.Group();
-                    artifactGroup1.add(artifact1, glow1);
-                    objects.push({ mesh: artifactGroup1, type: 'artifact', x: -20, z: -20 });
-
-                    const artifact2 = new THREE.Mesh(artifactGeometry, artifactMaterial.clone());
-                    artifact2.position.set(25, 0.5, 5);
-                    artifact2.castShadow = true;
-                    const glow2 = new THREE.Mesh(glowGeometry, glowMaterial.clone());
-                    glow2.position.copy(artifact2.position);
-                    const artifactGroup2 = new THREE.Group();
-                    artifactGroup2.add(artifact2, glow2);
-                    objects.push({ mesh: artifactGroup2, type: 'artifact', x: 25, z: 5 });
-
-                    // Decorative Elements (trees, fountains)
-                    const treeTrunkGeometry = new THREE.CylinderGeometry(0.5, 0.5, 3, 32);
-                    const treeTrunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7 });
-                    const treeLeavesGeometry = new THREE.SphereGeometry(1.5, 32, 32);
-                    const treeLeavesMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 });
-                    const tree1Group = new THREE.Group();
-                    const trunk1 = new THREE.Mesh(treeTrunkGeometry, treeTrunkMaterial);
-                    const leaves1 = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial);
-                    leaves1.position.y = 2.5;
-                    tree1Group.add(trunk1, leaves1);
-                    tree1Group.position.set(5, 0, 5);
-                    tree1Group.castShadow = true;
-                    objects.push({ mesh: tree1Group, type: 'decoration', x: 5, z: 5 });
-
-                    const tree2Group = new THREE.Group();
-                    const trunk2 = new THREE.Mesh(treeTrunkGeometry, treeTrunkMaterial.clone());
-                    const leaves2 = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial.clone());
-                    leaves2.position.y = 2.5;
-                    tree2Group.add(trunk2, leaves2);
-                    tree2Group.position.set(-5, 0, -5);
-                    tree2Group.castShadow = true;
-                    objects.push({ mesh: tree2Group, type: 'decoration', x: -5, z: -5 });
-
-                    const fountainBaseGeometry = new THREE.CylinderGeometry(2, 2, 1, 32);
-                    const fountainBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                    const fountainBowlGeometry = new THREE.TorusGeometry(2, 0.5, 32, 32);
-                    const fountainBowlMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                    const fountainWaterGeometry = new THREE.CylinderGeometry(1, 1, 0.1, 32);
-                    const fountainWaterMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.1, roughness: 0.7, transparent: true, opacity: 0.7 });
-                    const fountainBase = new THREE.Mesh(fountainBaseGeometry, fountainBaseMaterial);
-                    const fountainBowl = new THREE.Mesh(fountainBowlGeometry, fountainBowlMaterial);
-                    fountainBowl.position.y = 1;
-                    fountainBowl.rotation.x = Math.PI / 2;
-                    const fountainWater = new THREE.Mesh(fountainWaterGeometry, fountainWaterMaterial);
-                    fountainWater.position.y = 1.1;
-                    const fountainGroup = new THREE.Group();
-                    fountainGroup.add(fountainBase, fountainBowl, fountainWater);
-                    fountainGroup.position.set(0, 0, 10);
-                    fountainGroup.castShadow = true;
-                    objects.push({ mesh: fountainGroup, type: 'decoration', x: 0, z: 10 });
-
-                    // Town Boundary (dense shrubs and trees, hard boundary)
-                    const shrubGeometry = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 32);
-                    const shrubMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 }); // Green shrubs
-                    const treeTrunkBoundaryGeometry = new THREE.CylinderGeometry(0.3, 0.3, 3, 32);
-                    const treeTrunkBoundaryMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7 }); // Brown tree trunks
-                    const treeLeavesBoundaryGeometry = new THREE.SphereGeometry(1, 32, 32);
-                    const treeLeavesBoundaryMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 }); // Green leaves
-
-                    const boundaryGroup = new THREE.Group();
-                    const boundaryWidth = 50; // Width of the town area (25 units from center in each direction)
-                    const boundarySpacing = 2; // Spacing between shrubs/trees
-
-                    // Create boundary around the town (square shape, 50x50 units)
-                    for (let x = -boundaryWidth; x <= boundaryWidth; x += boundarySpacing) {
-                        for (let z = -boundaryWidth; z <= boundaryWidth; z += boundarySpacing) {
-                            if (Math.abs(x) === boundaryWidth || Math.abs(z) === boundaryWidth) { // Only on the edges
-                                if (Math.random() < 0.7) { // 70% chance for shrubs, 30% for trees
-                                    const shrub = new THREE.Mesh(shrubGeometry, shrubMaterial);
-                                    shrub.position.set(x, 0.75, z);
-                                    shrub.castShadow = true;
-                                    shrub.receiveShadow = true;
-                                    boundaryGroup.add(shrub);
-                                } else {
-                                    const trunk = new THREE.Mesh(treeTrunkBoundaryGeometry, treeTrunkBoundaryMaterial);
-                                    const leaves = new THREE.Mesh(treeLeavesBoundaryGeometry, treeLeavesBoundaryMaterial);
-                                    trunk.position.set(x, 1.5, z);
-                                    leaves.position.set(x, 3.5, z);
-                                    leaves.castShadow = true;
-                                    leaves.receiveShadow = true;
-                                    trunk.castShadow = true;
-                                    trunk.receiveShadow = true;
-                                    boundaryGroup.add(trunk, leaves);
-                                }
-                            }
-                        }
-                    }
-
-                    boundaryGroup.position.set(0, 0, 0);
-                    objects.push({ mesh: boundaryGroup, type: 'boundary', x: 0, z: 0 });
-
-                    // Shop (small shop with sign, moved away from starting position)
-                    const shopBaseGeometry = new THREE.BoxGeometry(4, 4, 4);
-                    const shopBaseMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00, metalness: 0.2, roughness: 0.6 });
-                    const shopBase = new THREE.Mesh(shopBaseGeometry, shopBaseMaterial);
-                    shopBase.position.set(10, 2, 0);
-                    shopBase.castShadow = true;
-                    shopBase.receiveShadow = true;
-
-                    const signGeometry = new THREE.PlaneGeometry(2, 1);
-                    const signMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, side: THREE.DoubleSide });
-                    const sign = new THREE.Mesh(signGeometry, signMaterial);
-                    sign.position.set(0, 4.5, 2);
-                    sign.rotation.y = Math.PI / 2;
-                    const shopGroup = new THREE.Group();
-                    shopGroup.add(shopBase, sign);
-                    objects.push({ mesh: shopGroup, type: 'shop', x: 10, z: 0 });
-
-                    return objects;
-                }
-            }
-
-            // Initialize game and start immediately
-            game = new Game();
-
-            // Handle window resize
-            window.addEventListener('resize', () => {
-                if (game && game.camera) {
-                    game.camera.aspect = window.innerWidth / window.innerHeight;
-                    game.camera.updateProjectionMatrix();
-                    if (game.renderer) {
-                        game.renderer.setSize(window.innerWidth, window.innerHeight);
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('An error occurred:', error);
-            document.getElementById('errorMessage').style.display = 'block';
-            document.getElementById('gameCanvas').style.display = 'none';
-            document.getElementById('ui').style.display = 'none';
-            document.getElementById('ballCount').style.display = 'none';
-            document.getElementById('dialogue').style.display = 'none';
-            document.getElementById('controls').style.display = 'none';
-            document.getElementById('joystickLeft').style.display = 'none';
-            document.getElementById('joystickRight').style.display = 'none';
+      // Error handling for WebGL
+      try {
+        const errorMessage = document.getElementById('errorMessage');
+        const gameCanvas = document.getElementById('gameCanvas');
+
+        if (!window.WebGLRenderingContext) {
+          errorMessage.style.display = 'block';
+          gameCanvas.style.display = 'none';
+          document.getElementById('ui').style.display = 'none';
+          document.getElementById('ballCount').style.display = 'none';
+          document.getElementById('dialogue').style.display = 'none';
+          document.getElementById('controls').style.display = 'none';
+          document.getElementById('joystickLeft').style.display = 'none';
+          document.getElementById('joystickRight').style.display = 'none';
+          throw new Error('WebGL not supported');
         }
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(
+          75,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          1000
+        );
+        const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        if (!renderer.domElement) {
+          throw new Error('Renderer initialization failed');
+        }
+
+        gameCanvas.style.display = 'block';
+
+        // Game state
+        let game;
+
+        class Game {
+          constructor() {
+            this.scene = 'town';
+            this.flowers = 0;
+            this.coins = 0;
+            this.gems = 0;
+            this.potions = 0;
+            this.keys = 0;
+            this.artifacts = 0;
+            this.health = 100;
+            this.mana = 50;
+            this.time = 'Day';
+            this.dayNightCycle = 0;
+            this.player = {
+              x: 0,
+              z: 0,
+              speed: 0.5,
+              yaw: 0,
+              pitch: 0,
+              object: null
+            };
+            this.dialogue = '';
+            this.dialogueTimer = 0;
+            this.objects = [];
+            this.npcs = [];
+            this.quests = {
+              townGuard: { active: false, completed: false },
+              castleKing: { active: false, completed: false },
+              villager: { active: false, completed: false },
+              storyteller: { active: false, completed: false }
+            };
+            this.ballCount = 0;
+            this.ballLimit = 1000000;
+            this.thrownBalls = [];
+            this.collectionGlow = null;
+            this.joystickLeft = null;
+            this.joystickRight = null;
+            this.keys = {};
+            this.sceneObj = scene;
+            this.camera = camera;
+            this.renderer = renderer;
+            this.initScene();
+            this.initJoysticks();
+            this.initKeyboardMouse();
+            this.startAnimation();
+            console.log('Game initialized successfully:', this);
+          }
+
+          showDialogue(text) {
+            this.dialogue = text;
+            this.dialogueTimer = 120;
+            document.getElementById('dialogue').textContent = this.dialogue;
+          }
+
+          updateDayNight() {
+            this.dayNightCycle = (this.dayNightCycle + 1) % 1200;
+            this.time = this.dayNightCycle < 600 ? 'Day' : 'Night';
+            document.getElementById('time').textContent = this.time;
+          }
+
+          throwBall() {
+            if (this.ballCount < this.ballLimit && this.mana >= 5) {
+              this.mana -= 5;
+              const ballGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+              const ballMaterial = new THREE.MeshStandardMaterial({
+                color: 0xff4500,
+                metalness: 0.1,
+                roughness: 0.7
+              });
+              const ball = new THREE.Mesh(ballGeometry, ballMaterial);
+              ball.position.copy(this.player.object.position);
+              ball.position.y += 1;
+              const direction = new THREE.Vector3(
+                Math.cos(this.player.yaw),
+                0,
+                Math.sin(this.player.yaw)
+              ).normalize();
+              ball.userData = {
+                velocity: direction.multiplyScalar(0.5).add(new THREE.Vector3(0, 0.3, 0))
+              };
+              this.sceneObj.add(ball);
+              this.thrownBalls.push(ball);
+              this.ballCount++;
+              document.getElementById('ballCountValue').textContent = this.ballCount;
+              this.showDialogue('Threw a magic ball!');
+              document.getElementById('mana').textContent = this.mana;
+            } else if (this.ballCount >= this.ballLimit) {
+              this.showDialogue('Reached maximum ball throws (1,000,000)!');
+            } else {
+              this.showDialogue('Not enough mana to throw a ball!');
+            }
+          }
+
+          startCollectionGlow() {
+            if (this.collectionGlow) this.sceneObj.remove(this.collectionGlow);
+            const glowGeometry = new THREE.SphereGeometry(1, 16, 16);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+              color: 0xffff00,
+              transparent: true,
+              opacity: 0.5,
+              side: THREE.BackSide
+            });
+            this.collectionGlow = new THREE.Mesh(glowGeometry, glowMaterial);
+            this.collectionGlow.position.copy(this.player.object.position);
+            this.collectionGlow.position.y += 0.5;
+            this.sceneObj.add(this.collectionGlow);
+            setTimeout(() => {
+              if (this.collectionGlow) {
+                this.sceneObj.remove(this.collectionGlow);
+                this.collectionGlow = null;
+              }
+            }, 1000);
+          }
+
+          startAnimation() {
+            function animate() {
+              requestAnimationFrame(animate);
+              if (game && game.renderer && game.sceneObj && game.camera) {
+                game.update();
+                game.renderer.render(game.sceneObj, game.camera);
+              } else {
+                console.error('Game, renderer, scene, or camera is not properly initialized:', {
+                  game,
+                  renderer,
+                  scene,
+                  camera
+                });
+              }
+            }
+            animate();
+          }
+
+          update() {
+            this.updateDayNight();
+
+            let dx = 0,
+              dz = 0;
+            if (this.keys['ArrowUp'] || (this.joystickLeft && this.joystickLeft.active)) {
+              dz -= this.player.speed;
+            }
+            if (this.keys['ArrowDown']) {
+              dz += this.player.speed;
+            }
+            if (this.keys['ArrowLeft']) {
+              dx -= this.player.speed;
+            }
+            if (this.keys['ArrowRight']) {
+              dx += this.player.speed;
+            }
+
+            const newX =
+              this.player.x +
+              dx * Math.cos(this.player.yaw) +
+              dz * Math.sin(this.player.yaw);
+            const newZ =
+              this.player.z -
+              dx * Math.sin(this.player.yaw) +
+              dz * Math.cos(this.player.yaw);
+
+            if (
+              !this.objects.some(obj => {
+                const distX = Math.abs(obj.x - newX);
+                const distZ = Math.abs(obj.z - newZ);
+                return (
+                  (obj.type === 'building' ||
+                    obj.type === 'wall' ||
+                    obj.type === 'boundary') &&
+                  distX < 5 &&
+                  distZ < 5
+                );
+              })
+            ) {
+              this.player.x = newX;
+              this.player.z = newZ;
+            }
+
+            this.player.object.position.set(this.player.x, 0.5, this.player.z);
+            this.player.object.rotation.y = -this.player.yaw;
+
+            if (
+              Object.values(this.keys).some(k => k) ||
+              (this.joystickLeft && this.joystickLeft.active)
+            ) {
+              this.player.object.traverse(child => {
+                if (
+                  child.isMesh &&
+                  child.material.color.equals(new THREE.Color(0xff69b4))
+                ) {
+                  child.rotation.z = Math.sin(Date.now() * 0.005) * 0.1;
+                }
+              });
+            } else {
+              this.player.object.traverse(child => {
+                if (
+                  child.isMesh &&
+                  child.material.color.equals(new THREE.Color(0xff69b4))
+                ) {
+                  child.rotation.copy(
+                    child.userData.originalRotation || new THREE.Euler()
+                  );
+                }
+              });
+            }
+
+            this.camera.position.set(
+              this.player.x +
+                15 *
+                  Math.sin(this.player.yaw) *
+                  Math.cos(this.player.pitch),
+              15 + 15 * Math.sin(this.player.pitch),
+              this.player.z +
+                15 *
+                  Math.cos(this.player.yaw) *
+                  Math.cos(this.player.pitch)
+            );
+            this.camera.lookAt(this.player.x, 0.5, this.player.z);
+
+            this.thrownBalls.forEach((ball, index) => {
+              ball.position.add(ball.userData.velocity);
+              ball.userData.velocity.y -= 0.01;
+              if (ball.position.y < 0) {
+                this.sceneObj.remove(ball);
+                this.thrownBalls.splice(index, 1);
+              }
+            });
+
+            // NPC and object collision/update logic goes here...
+          }
+
+          initScene() {
+            // Ground
+            const groundGeometry = new THREE.PlaneGeometry(100, 100, 50, 50);
+            const groundMaterial = new THREE.MeshStandardMaterial({
+              color: 0x6bb26b,
+              side: THREE.DoubleSide,
+              roughness: 0.8,
+              metalness: 0.1
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = Math.PI / 2;
+            ground.castShadow = true;
+            ground.receiveShadow = true;
+            this.sceneObj.add(ground);
+
+            // Skybox
+            const skyGeometry = new THREE.SphereGeometry(500, 60, 40);
+            const skyMaterial = new THREE.ShaderMaterial({
+              uniforms: {
+                topColor: { value: new THREE.Color(0x87ceeb) },
+                bottomColor: { value: new THREE.Color(0x2f4f4f) },
+                offset: { value: 0.5 },
+                exponent: { value: 0.6 }
+              },
+              vertexShader: `
+                varying vec3 vWorldPosition;
+                void main() {
+                  vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                  vWorldPosition = worldPosition.xyz;
+                  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+              `,
+              fragmentShader: `
+                uniform vec3 topColor;
+                uniform vec3 bottomColor;
+                uniform float offset;
+                uniform float exponent;
+                varying vec3 vWorldPosition;
+                void main() {
+                  float h = normalize(vWorldPosition + offset).y;
+                  gl_FragColor = vec4(
+                    mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)),
+                    1.0
+                  );
+                }
+              `,
+              side: THREE.BackSide
+            });
+            const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+            sky.material.uniforms.topColor.value.set(
+              this.time === 'Day' ? 0x87ceeb : 0x2f4f4f
+            );
+            sky.material.uniforms.bottomColor.value.set(
+              this.time === 'Day' ? 0x87ceeb : 0x2f4f4f
+            );
+            sky.name = 'sky';
+            this.sceneObj.add(sky);
+
+            // Princess character creation and additional scene objects...
+          }
+
+          initJoysticks() {
+            this.joystickLeft = nipplejs.create({
+              zone: document.getElementById('joystickLeft'),
+              mode: 'static',
+              position: { left: '50px', bottom: '50px' },
+              color: 'white',
+              size: 100
+            });
+
+            this.joystickLeft.on('move', (evt, data) => {
+              if (data && data.force > 0) {
+                const angle = data.angle.radian;
+                const speed = data.force * this.player.speed;
+                const dx = Math.cos(angle) * speed;
+                const dz = Math.sin(angle) * speed;
+                const newX = this.player.x + dx;
+                const newZ = this.player.z - dz;
+
+                if (
+                  !this.objects.some(obj => {
+                    const distX = Math.abs(obj.x - newX);
+                    const distZ = Math.abs(obj.z - newZ);
+                    return (
+                      (obj.type === 'building' ||
+                        obj.type === 'wall' ||
+                        obj.type === 'boundary') &&
+                      distX < 5 &&
+                      distZ < 5
+                    );
+                  })
+                ) {
+                  this.player.x = newX;
+                  this.player.z = newZ;
+                }
+              }
+            });
+
+            this.joystickLeft.on('end', () => {
+              this.joystickLeft.active = false;
+            });
+            this.joystickLeft.on('start', () => {
+              this.joystickLeft.active = true;
+            });
+
+            this.joystickRight = nipplejs.create({
+              zone: document.getElementById('joystickRight'),
+              mode: 'static',
+              position: { right: '50px', bottom: '50px' },
+              color: 'white',
+              size: 100
+            });
+
+            this.joystickRight.on('move', (evt, data) => {
+              if (data && data.force > 0) {
+                const sensitivity = 0.002;
+                this.player.yaw += data.vector.x * sensitivity * data.force;
+                this.player.pitch = Math.max(
+                  -Math.PI / 2,
+                  Math.min(Math.PI / 2, this.player.pitch + data.vector.y * sensitivity * data.force)
+                );
+              }
+            });
+
+            this.joystickRight.on('end', () => {});
+            this.joystickRight.on('start', () => {});
+
+            document.getElementById('gameContainer').addEventListener('click', e => {
+              const rect = document.getElementById('gameContainer').getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const y = e.clientY - rect.top;
+              if (x > rect.width / 4 && x < (rect.width * 3) / 4 && y > rect.height / 4 && y < (rect.height * 3) / 4) {
+                this.throwBall();
+              }
+            });
+          }
+
+          initKeyboardMouse() {
+            document.addEventListener('keydown', e => {
+              this.keys[e.key] = true;
+              if (e.key === ' ') this.throwBall();
+            });
+            document.addEventListener('keyup', e => {
+              this.keys[e.key] = false;
+            });
+
+            document.addEventListener('mousedown', () => {
+              document.body.requestPointerLock();
+            });
+
+            document.addEventListener('mousemove', event => {
+              if (document.pointerLockElement === document.body) {
+                const movementX = event.movementX || 0;
+                const movementY = event.movementY || 0;
+                this.player.yaw += movementX * 0.002;
+                this.player.pitch = Math.max(
+                  -Math.PI / 2,
+                  Math.min(Math.PI / 2, this.player.pitch + movementY * 0.002)
+                );
+              }
+            });
+          }
+
+          createNPCs(scene) {
+            const npcs = [];
+            if (scene === 'town') {
+              const npcGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 32);
+              const npcMaterial = new THREE.MeshStandardMaterial({
+                color: 0x00008b,
+                metalness: 0.3,
+                roughness: 0.6
+              });
+              const guard = new THREE.Mesh(npcGeometry, npcMaterial);
+              guard.position.set(0, 1, 0);
+              guard.castShadow = true;
+              npcs.push({ mesh: guard, x: 0, z: 0, role: 'guard' });
+            }
+            return npcs;
+          }
+
+          updateObjects() {
+            this.sceneObj.remove(...this.objects.map(obj => obj.mesh));
+            this.sceneObj.remove(...this.npcs.map(npc => npc.mesh));
+            this.objects = this.createObjects(this.scene);
+            this.npcs = this.createNPCs(this.scene);
+            this.objects.forEach(obj => this.sceneObj.add(obj.mesh));
+            this.npcs.forEach(npc => this.sceneObj.add(npc.mesh));
+          }
+
+          createObjects(scene) {
+            const objects = [];
+            objects.push({ mesh: this.player.object, type: 'player', x: this.player.x, z: this.player.z });
+            // Additional object creation based on the scene goes here...
+            return objects;
+          }
+        }
+
+        // Initialize the game
+        game = new Game();
+      } catch (error) {
+        console.error('Error initializing the game:', error);
+      }
     </script>
-</body>
+  </body>
 </html>
