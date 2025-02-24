@@ -227,9 +227,18 @@
                 renderer.shadowMap.enabled = true;
                 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
+                // Ensure canvas and renderer are properly initialized
+                if (!renderer.domElement) {
+                    throw new Error('Renderer initialization failed');
+                }
+
                 // Game state
                 game = new Game(scene, camera, renderer);
                 
+                // Camera setup
+                camera.position.set(0, 10, 20);
+                camera.lookAt(0, 0, 0);
+
                 // Update and render loop
                 function update() {
                     if (game) {
@@ -418,31 +427,37 @@
                             }
                         });
 
-                        const sky = scene.getObjectByName('sky');
+                        const sky = this.sceneObj.getObjectByName('sky');
                         if (sky) {
-                            sky.material.uniforms.topColor.value.set(game.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
-                            sky.material.uniforms.bottomColor.value.set(game.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
+                            sky.material.uniforms.topColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
+                            sky.material.uniforms.bottomColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
                         }
                     }
                 }
 
                 function animate() {
                     requestAnimationFrame(animate);
-                    update();
-                    if (renderer && scene && camera) {
-                        renderer.render(scene, camera);
+                    if (game && game.renderer && game.sceneObj && game.camera) {
+                        update();
+                        game.renderer.render(game.sceneObj, game.camera);
+                    } else {
+                        console.error('Game, renderer, scene, or camera is not properly initialized:', { game, renderer, scene, camera });
                     }
                 }
 
-                // Initialize game and start animation loop
+                // Start the game and animation loop immediately, but delay visibility until splash screen is gone
                 gameCanvas.style.display = 'block'; // Ensure canvas is visible
                 animate();
 
                 // Handle window resize
                 window.addEventListener('resize', () => {
-                    camera.aspect = window.innerWidth / window.innerHeight;
-                    camera.updateProjectionMatrix();
-                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    if (game && game.camera) {
+                        game.camera.aspect = window.innerWidth / window.innerHeight;
+                        game.camera.updateProjectionMatrix();
+                        if (game.renderer) {
+                            game.renderer.setSize(window.innerWidth, window.innerHeight);
+                        }
+                    }
                 });
             }
 
@@ -490,6 +505,7 @@
                     this.initScene();
                     this.initJoysticks();
                     this.initKeyboardMouse();
+                    console.log('Game initialized successfully:', this);
                 }
                 showDialogue(text) {
                     this.dialogue = text;
@@ -1325,14 +1341,4 @@
                         const handleGeometry = new THREE.SphereGeometry(0.1, 16, 16);
                         const handleMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 0.9, roughness: 0.2 });
                         const handle = new THREE.Mesh(handleGeometry, handleMaterial);
-                        handle.position.set(0, 0, -0.9);
-                        castleDoor.add(handle);
-                        objects.push({ mesh: castleDoor, type: 'door', x: 35, z: 40, building: 'castle' });
-
-                        const houseDoor = new THREE.Mesh(doorGeometry, new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7, side: THREE.DoubleSide }));
-                        houseDoor.position.set(-42, 2, -40);
-                        houseDoor.rotation.y = Math.PI / 2;
-                        const woodHandle = new THREE.Mesh(handleGeometry, handleMaterial.clone());
-                        woodHandle.position.set(0, 0, -0.9);
-                        houseDoor.add(woodHandle);
-                        objects.push({ mesh: houseDoor, type: 'door', x: -42, z: -40
+                        handle.position.set(0,
