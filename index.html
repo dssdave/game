@@ -1295,241 +1295,240 @@
 
                         const coinGeometry = new THREE.CircleGeometry(0.5, 32);
                         const coinMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness 0.9, roughness: 0.2 });
-                    const coin1 = new THREE.Mesh(coinGeometry, coinMaterial);
-                    coin1.position.set(0, 0.5, 10);
-                    coin1.rotation.x = Math.PI / 2;
-                    coin1.castShadow = true;
-                    objects.push({ mesh: coin1, type: 'coin', x: 0, z: 10 });
+                        const coin1 = new THREE.Mesh(coinGeometry, coinMaterial);
+                        coin1.position.set(0, 0.5, 10);
+                        coin1.rotation.x = Math.PI / 2;
+                        coin1.castShadow = true;
+                        objects.push({ mesh: coin1, type: 'coin', x: 0, z: 10 });
 
-                    const coin2 = new THREE.Mesh(coinGeometry, coinMaterial.clone());
-                    coin2.position.set(10, 0.5, -10);
-                    coin2.rotation.x = Math.PI / 2;
-                    coin2.castShadow = true;
-                    objects.push({ mesh: coin2, type: 'coin', x: 10, z: -10 });
+                        const coin2 = new THREE.Mesh(coinGeometry, coinMaterial.clone());
+                        coin2.position.set(10, 0.5, -10);
+                        coin2.rotation.x = Math.PI / 2;
+                        coin2.castShadow = true;
+                        objects.push({ mesh: coin2, type: 'coin', x: 10, z: -10 });
+    
+                        const coin3 = new THREE.Mesh(coinGeometry, coinMaterial.clone());
+                        coin3.position.set(-5, 0.5, 15);
+                        coin3.rotation.x = Math.PI / 2;
+                        coin3.castShadow = true;
+                        objects.push({ mesh: coin3, type: 'coin', x: -5, z: 15 });
+    
+                        // Gems (prismatic crystals, more variety)
+                        const gemGeometry = new THREE.OctahedronGeometry(0.5, 0);
+                        const gemMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.5, roughness: 0.5 });
+                        const gem1 = new THREE.Mesh(gemGeometry, gemMaterial);
+                        gem1.position.set(-10, 0.5, 10);
+                        gem1.castShadow = true;
+                        objects.push({ mesh: gem1, type: 'gem', x: -10, z: 10 });
+    
+                        const gem2 = new THREE.Mesh(gemGeometry, gemMaterial.clone());
+                        gem2.position.set(5, 0.5, -5);
+                        gem2.castShadow = true;
+                        objects.push({ mesh: gem2, type: 'gem', x: 5, z: -5 });
 
-                    const coin3 = new THREE.Mesh(coinGeometry, coinMaterial.clone());
-                    coin3.position.set(-5, 0.5, 15);
-                    coin3.rotation.x = Math.PI / 2;
-                    coin3.castShadow = true;
-                    objects.push({ mesh: coin3, type: 'coin', x: -5, z: 15 });
+                        // Potions (glass bottles with glowing liquid, more scattered)
+                        const potionBaseGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 32);
+                        const potionBaseMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.8, roughness: 0.2 }); // Glass
+                        const potionLiquidGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.6, 32);
+                        const potionLiquidMaterial = new THREE.MeshStandardMaterial({ color: 0xff4500, metalness: 0.1, roughness: 0.7 }); // Orange liquid
+                        const potionBase1 = new THREE.Mesh(potionBaseGeometry, potionBaseMaterial);
+                        const potionLiquid1 = new THREE.Mesh(potionLiquidGeometry, potionLiquidMaterial);
+                        potionLiquid1.position.y = 0.1;
+                        const potionGroup1 = new THREE.Group();
+                        potionGroup1.add(potionBase1, potionLiquid1);
+                        potionGroup1.position.set(0, 0.4, -10);
+                        potionGroup1.castShadow = true;
+                        objects.push({ mesh: potionGroup1, type: 'potion', x: 0, z: -10 });
+    
+                        const potionBase2 = new THREE.Mesh(potionBaseGeometry, potionBaseMaterial.clone());
+                        const potionLiquid2 = new THREE.Mesh(potionLiquidGeometry, potionLiquidMaterial.clone());
+                        potionLiquid2.position.y = 0.1;
+                        const potionGroup2 = new THREE.Group();
+                        potionGroup2.add(potionBase2, potionLiquid2);
+                        potionGroup2.position.set(20, 0.4, 0);
+                        potionGroup2.castShadow = true;
+                        objects.push({ mesh: potionGroup2, type: 'potion', x: 20, z: 0 });
+    
+                        // Keys (ornate golden keys, more scattered)
+                        const keyHandleGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+                        const keyShaftGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
+                        const keyMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
+                        const keyHandle1 = new THREE.Mesh(keyHandleGeometry, keyMaterial);
+                        const keyShaft1 = new THREE.Mesh(keyShaftGeometry, keyMaterial);
+                        keyShaft1.position.y = -0.4;
+                        const keyGroup1 = new THREE.Group();
+                        keyGroup1.add(keyHandle1, keyShaft1);
+                        keyGroup1.position.set(20, 0.5, 20);
+                        keyGroup1.rotation.x = Math.PI / 2;
+                        keyGroup1.castShadow = true;
+                        objects.push({ mesh: keyGroup1, type: 'key', x: 20, z: 20 });
+    
+                        const keyHandle2 = new THREE.Mesh(keyHandleGeometry, keyMaterial.clone());
+                        const keyShaft2 = new THREE.Mesh(keyShaftGeometry, keyMaterial.clone());
+                        keyShaft2.position.y = -0.4;
+                        const keyGroup2 = new THREE.Group();
+                        keyGroup2.add(keyHandle2, keyShaft2);
+                        keyGroup2.position.set(-15, 0.5, -15);
+                        keyGroup2.rotation.x = Math.PI / 2;
+                        keyGroup2.castShadow = true;
+                        objects.push({ mesh: keyGroup2, type: 'key', x: -15, z: -15 });
 
-                    // Gems (prismatic crystals, more variety)
-                    const gemGeometry = new THREE.OctahedronGeometry(0.5, 0);
-                    const gemMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.5, roughness: 0.5 });
-                    const gem1 = new THREE.Mesh(gemGeometry, gemMaterial);
-                    gem1.position.set(-10, 0.5, 10);
-                    gem1.castShadow = true;
-                    objects.push({ mesh: gem1, type: 'gem', x: -10, z: 10 });
+                        // Artifacts (mystical orbs with glow, more scattered)
+                        const artifactGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+                        const artifactMaterial = new THREE.MeshStandardMaterial({ color: 0x9400d3, metalness: 0.5, roughness: 0.5 });
+                        const artifact1 = new THREE.Mesh(artifactGeometry, artifactMaterial);
+                        artifact1.position.set(-20, 0.5, -20);
+                        artifact1.castShadow = true;
+    
+                        const glowGeometry = new THREE.SphereGeometry(0.6, 16, 16);
+                        const glowMaterial = new THREE.MeshBasicMaterial({ 
+                            color: 0xffeb3b, 
+                            transparent: true, 
+                            opacity: 0.5,
+                            side: THREE.BackSide 
+                        });
+                        const glow1 = new THREE.Mesh(glowGeometry, glowMaterial);
+                        glow1.position.copy(artifact1.position);
+                        const artifactGroup1 = new THREE.Group();
+                        artifactGroup1.add(artifact1, glow1);
+                        objects.push({ mesh: artifactGroup1, type: 'artifact', x: -20, z: -20 });
+    
+                        const artifact2 = new THREE.Mesh(artifactGeometry, artifactMaterial.clone());
+                        artifact2.position.set(25, 0.5, 5);
+                        artifact2.castShadow = true;
+                        const glow2 = new THREE.Mesh(glowGeometry, glowMaterial.clone());
+                        glow2.position.copy(artifact2.position);
+                        const artifactGroup2 = new THREE.Group();
+                        artifactGroup2.add(artifact2, glow2);
+                        objects.push({ mesh: artifactGroup2, type: 'artifact', x: 25, z: 5 });
+    
+                        // Decorative Elements (trees, fountains)
+                        const treeTrunkGeometry = new THREE.CylinderGeometry(0.5, 0.5, 3, 32);
+                        const treeTrunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7 });
+                        const treeLeavesGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+                        const treeLeavesMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 });
+                        const tree1Group = new THREE.Group();
+                        const trunk1 = new THREE.Mesh(treeTrunkGeometry, treeTrunkMaterial);
+                        const leaves1 = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial);
+                        leaves1.position.y = 2.5;
+                        tree1Group.add(trunk1, leaves1);
+                        tree1Group.position.set(5, 0, 5);
+                        tree1Group.castShadow = true;
+                        objects.push({ mesh: tree1Group, type: 'decoration', x: 5, z: 5 });
 
-                    const gem2 = new THREE.Mesh(gemGeometry, gemMaterial.clone());
-                    gem2.position.set(5, 0.5, -5);
-                    gem2.castShadow = true;
-                    objects.push({ mesh: gem2, type: 'gem', x: 5, z: -5 });
+                        const tree2Group = new THREE.Group();
+                        const trunk2 = new THREE.Mesh(treeTrunkGeometry, treeTrunkMaterial.clone());
+                        const leaves2 = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial.clone());
+                        leaves2.position.y = 2.5;
+                        tree2Group.add(trunk2, leaves2);
+                        tree2Group.position.set(-5, 0, -5);
+                        tree2Group.castShadow = true;
+                        objects.push({ mesh: tree2Group, type: 'decoration', x: -5, z: -5 });
+    
+                        const fountainBaseGeometry = new THREE.CylinderGeometry(2, 2, 1, 32);
+                        const fountainBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
+                        const fountainBowlGeometry = new THREE.TorusGeometry(2, 0.5, 32, 32);
+                        const fountainBowlMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
+                        const fountainWaterGeometry = new THREE.CylinderGeometry(1, 1, 0.1, 32);
+                        const fountainWaterMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.1, roughness: 0.7, transparent: true, opacity: 0.7 });
+                        const fountainBase = new THREE.Mesh(fountainBaseGeometry, fountainBaseMaterial);
+                        const fountainBowl = new THREE.Mesh(fountainBowlGeometry, fountainBowlMaterial);
+                        fountainBowl.position.y = 1;
+                        fountainBowl.rotation.x = Math.PI / 2;
+                        const fountainWater = new THREE.Mesh(fountainWaterGeometry, fountainWaterMaterial);
+                        fountainWater.position.y = 1.1;
+                        const fountainGroup = new THREE.Group();
+                        fountainGroup.add(fountainBase, fountainBowl, fountainWater);
+                        fountainGroup.position.set(0, 0, 10);
+                        fountainGroup.castShadow = true;
+                        objects.push({ mesh: fountainGroup, type: 'decoration', x: 0, z: 10 });
+    
+                        // Town Boundary (dense shrubs and trees, hard boundary)
+                        const shrubGeometry = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 32);
+                        const shrubMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 }); // Green shrubs
+                        const treeTrunkBoundaryGeometry = new THREE.CylinderGeometry(0.3, 0.3, 3, 32);
+                        const treeTrunkBoundaryMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7 }); // Brown tree trunks
+                        const treeLeavesBoundaryGeometry = new THREE.SphereGeometry(1, 32, 32);
+                        const treeLeavesBoundaryMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 }); // Green leaves
+    
+                        const boundaryGroup = new THREE.Group();
+                        const boundaryWidth = 50; // Width of the town area (25 units from center in each direction)
+                        const boundarySpacing = 2; // Spacing between shrubs/trees
 
-                    // Potions (glass bottles with glowing liquid, more scattered)
-                    const potionBaseGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 32);
-                    const potionBaseMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.8, roughness: 0.2 }); // Glass
-                    const potionLiquidGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.6, 32);
-                    const potionLiquidMaterial = new THREE.MeshStandardMaterial({ color: 0xff4500, metalness: 0.1, roughness: 0.7 }); // Orange liquid
-                    const potionBase1 = new THREE.Mesh(potionBaseGeometry, potionBaseMaterial);
-                    const potionLiquid1 = new THREE.Mesh(potionLiquidGeometry, potionLiquidMaterial);
-                    potionLiquid1.position.y = 0.1;
-                    const potionGroup1 = new THREE.Group();
-                    potionGroup1.add(potionBase1, potionLiquid1);
-                    potionGroup1.position.set(0, 0.4, -10);
-                    potionGroup1.castShadow = true;
-                    objects.push({ mesh: potionGroup1, type: 'potion', x: 0, z: -10 });
-
-                    const potionBase2 = new THREE.Mesh(potionBaseGeometry, potionBaseMaterial.clone());
-                    const potionLiquid2 = new THREE.Mesh(potionLiquidGeometry, potionLiquidMaterial.clone());
-                    potionLiquid2.position.y = 0.1;
-                    const potionGroup2 = new THREE.Group();
-                    potionGroup2.add(potionBase2, potionLiquid2);
-                    potionGroup2.position.set(20, 0.4, 0);
-                    potionGroup2.castShadow = true;
-                    objects.push({ mesh: potionGroup2, type: 'potion', x: 20, z: 0 });
-
-                    // Keys (ornate golden keys, more scattered)
-                    const keyHandleGeometry = new THREE.SphereGeometry(0.2, 16, 16);
-                    const keyShaftGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
-                    const keyMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
-                    const keyHandle1 = new THREE.Mesh(keyHandleGeometry, keyMaterial);
-                    const keyShaft1 = new THREE.Mesh(keyShaftGeometry, keyMaterial);
-                    keyShaft1.position.y = -0.4;
-                    const keyGroup1 = new THREE.Group();
-                    keyGroup1.add(keyHandle1, keyShaft1);
-                    keyGroup1.position.set(20, 0.5, 20);
-                    keyGroup1.rotation.x = Math.PI / 2;
-                    keyGroup1.castShadow = true;
-                    objects.push({ mesh: keyGroup1, type: 'key', x: 20, z: 20 });
-
-                    const keyHandle2 = new THREE.Mesh(keyHandleGeometry, keyMaterial.clone());
-                    const keyShaft2 = new THREE.Mesh(keyShaftGeometry, keyMaterial.clone());
-                    keyShaft2.position.y = -0.4;
-                    const keyGroup2 = new THREE.Group();
-                    keyGroup2.add(keyHandle2, keyShaft2);
-                    keyGroup2.position.set(-15, 0.5, -15);
-                    keyGroup2.rotation.x = Math.PI / 2;
-                    keyGroup2.castShadow = true;
-                    objects.push({ mesh: keyGroup2, type: 'key', x: -15, z: -15 });
-
-                    // Artifacts (mystical orbs with glow, more scattered)
-                    const artifactGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-                    const artifactMaterial = new THREE.MeshStandardMaterial({ color: 0x9400d3, metalness: 0.5, roughness: 0.5 });
-                    const artifact1 = new THREE.Mesh(artifactGeometry, artifactMaterial);
-                    artifact1.position.set(-20, 0.5, -20);
-                    artifact1.castShadow = true;
-
-                    const glowGeometry = new THREE.SphereGeometry(0.6, 16, 16);
-                    const glowMaterial = new THREE.MeshBasicMaterial({ 
-                        color: 0xffeb3b, 
-                        transparent: true, 
-                        opacity: 0.5,
-                        side: THREE.BackSide 
-                    });
-                    const glow1 = new THREE.Mesh(glowGeometry, glowMaterial);
-                    glow1.position.copy(artifact1.position);
-                    const artifactGroup1 = new THREE.Group();
-                    artifactGroup1.add(artifact1, glow1);
-                    objects.push({ mesh: artifactGroup1, type: 'artifact', x: -20, z: -20 });
-
-                    const artifact2 = new THREE.Mesh(artifactGeometry, artifactMaterial.clone());
-                    artifact2.position.set(25, 0.5, 5);
-                    artifact2.castShadow = true;
-                    const glow2 = new THREE.Mesh(glowGeometry, glowMaterial.clone());
-                    glow2.position.copy(artifact2.position);
-                    const artifactGroup2 = new THREE.Group();
-                    artifactGroup2.add(artifact2, glow2);
-                    objects.push({ mesh: artifactGroup2, type: 'artifact', x: 25, z: 5 });
-
-                    // Decorative Elements (trees, fountains)
-                    const treeTrunkGeometry = new THREE.CylinderGeometry(0.5, 0.5, 3, 32);
-                    const treeTrunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7 });
-                    const treeLeavesGeometry = new THREE.SphereGeometry(1.5, 32, 32);
-                    const treeLeavesMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 });
-                    const tree1Group = new THREE.Group();
-                    const trunk1 = new THREE.Mesh(treeTrunkGeometry, treeTrunkMaterial);
-                    const leaves1 = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial);
-                    leaves1.position.y = 2.5;
-                    tree1Group.add(trunk1, leaves1);
-                    tree1Group.position.set(5, 0, 5);
-                    tree1Group.castShadow = true;
-                    objects.push({ mesh: tree1Group, type: 'decoration', x: 5, z: 5 });
-
-                    const tree2Group = new THREE.Group();
-                    const trunk2 = new THREE.Mesh(treeTrunkGeometry, treeTrunkMaterial.clone());
-                    const leaves2 = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial.clone());
-                    leaves2.position.y = 2.5;
-                    tree2Group.add(trunk2, leaves2);
-                    tree2Group.position.set(-5, 0, -5);
-                    tree2Group.castShadow = true;
-                    objects.push({ mesh: tree2Group, type: 'decoration', x: -5, z: -5 });
-
-                    const fountainBaseGeometry = new THREE.CylinderGeometry(2, 2, 1, 32);
-                    const fountainBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                    const fountainBowlGeometry = new THREE.TorusGeometry(2, 0.5, 32, 32);
-                    const fountainBowlMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                    const fountainWaterGeometry = new THREE.CylinderGeometry(1, 1, 0.1, 32);
-                    const fountainWaterMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.1, roughness: 0.7, transparent: true, opacity: 0.7 });
-                    const fountainBase = new THREE.Mesh(fountainBaseGeometry, fountainBaseMaterial);
-                    const fountainBowl = new THREE.Mesh(fountainBowlGeometry, fountainBowlMaterial);
-                    fountainBowl.position.y = 1;
-                    fountainBowl.rotation.x = Math.PI / 2;
-                    const fountainWater = new THREE.Mesh(fountainWaterGeometry, fountainWaterMaterial);
-                    fountainWater.position.y = 1.1;
-                    const fountainGroup = new THREE.Group();
-                    fountainGroup.add(fountainBase, fountainBowl, fountainWater);
-                    fountainGroup.position.set(0, 0, 10);
-                    fountainGroup.castShadow = true;
-                    objects.push({ mesh: fountainGroup, type: 'decoration', x: 0, z: 10 });
-
-                    // Town Boundary (dense shrubs and trees, hard boundary)
-                    const shrubGeometry = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 32);
-                    const shrubMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 }); // Green shrubs
-                    const treeTrunkBoundaryGeometry = new THREE.CylinderGeometry(0.3, 0.3, 3, 32);
-                    const treeTrunkBoundaryMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7 }); // Brown tree trunks
-                    const treeLeavesBoundaryGeometry = new THREE.SphereGeometry(1, 32, 32);
-                    const treeLeavesBoundaryMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 }); // Green leaves
-
-                    const boundaryGroup = new THREE.Group();
-                    const boundaryWidth = 50; // Width of the town area (25 units from center in each direction)
-                    const boundarySpacing = 2; // Spacing between shrubs/trees
-
-                    // Create boundary around the town (square shape, 50x50 units)
-                    for (let x = -boundaryWidth; x <= boundaryWidth; x += boundarySpacing) {
-                        for (let z = -boundaryWidth; z <= boundaryWidth; z += boundarySpacing) {
-                            if (Math.abs(x) === boundaryWidth || Math.abs(z) === boundaryWidth) { // Only on the edges
-                                if (Math.random() < 0.7) { // 70% chance for shrubs, 30% for trees
-                                    const shrub = new THREE.Mesh(shrubGeometry, shrubMaterial);
-                                    shrub.position.set(x, 0.75, z);
-                                    shrub.castShadow = true;
-                                    shrub.receiveShadow = true;
-                                    boundaryGroup.add(shrub);
-                                } else {
-                                    const trunk = new THREE.Mesh(treeTrunkBoundaryGeometry, treeTrunkBoundaryMaterial);
-                                    const leaves = new THREE.Mesh(treeLeavesBoundaryGeometry, treeLeavesBoundaryMaterial);
-                                    trunk.position.set(x, 1.5, z);
-                                    leaves.position.set(x, 3.5, z);
-                                    leaves.castShadow = true;
-                                    leaves.receiveShadow = true;
-                                    trunk.castShadow = true;
-                                    trunk.receiveShadow = true;
-                                    boundaryGroup.add(trunk, leaves);
+                        // Create boundary around the town (square shape, 50x50 units)
+                        for (let x = -boundaryWidth; x <= boundaryWidth; x += boundarySpacing) {
+                            for (let z = -boundaryWidth; z <= boundaryWidth; z += boundarySpacing) {
+                                if (Math.abs(x) === boundaryWidth || Math.abs(z) === boundaryWidth) { // Only on the edges
+                                    if (Math.random() < 0.7) { // 70% chance for shrubs, 30% for trees
+                                        const shrub = new THREE.Mesh(shrubGeometry, shrubMaterial);
+                                        shrub.position.set(x, 0.75, z);
+                                        shrub.castShadow = true;
+                                        shrub.receiveShadow = true;
+                                        boundaryGroup.add(shrub);
+                                    } else {
+                                        const trunk = new THREE.Mesh(treeTrunkBoundaryGeometry, treeTrunkBoundaryMaterial);
+                                        const leaves = new THREE.Mesh(treeLeavesBoundaryGeometry, treeLeavesBoundaryMaterial);
+                                        trunk.position.set(x, 1.5, z);
+                                        leaves.position.set(x, 3.5, z);
+                                        leaves.castShadow = true;
+                                        leaves.receiveShadow = true;
+                                        trunk.castShadow = true;
+                                        trunk.receiveShadow = true;
+                                        boundaryGroup.add(trunk, leaves);
+                                    }
                                 }
                             }
                         }
+
+                        boundaryGroup.position.set(0, 0, 0);
+                        objects.push({ mesh: boundaryGroup, type: 'boundary', x: 0, z: 0 });
+                        this.sceneObj.add(boundaryGroup);
+    
+                        // Shop (small shop with sign, moved away from starting position)
+                        const shopBaseGeometry = new THREE.BoxGeometry(4, 4, 4);
+                        const shopBaseMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00, metalness: 0.2, roughness: 0.6 });
+                        const shopBase = new THREE.Mesh(shopBaseGeometry, shopBaseMaterial);
+                        shopBase.position.set(10, 2, 0);
+                        shopBase.castShadow = true;
+                        shopBase.receiveShadow = true;
+    
+                        const signGeometry = new THREE.PlaneGeometry(2, 1);
+                        const signMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+                        const sign = new THREE.Mesh(signGeometry, signMaterial);
+                        sign.position.set(0, 4.5, 2);
+                        sign.rotation.y = Math.PI / 2;
+                        const shopGroup = new THREE.Group();
+                        shopGroup.add(shopBase, sign);
+                        objects.push({ mesh: shopGroup, type: 'shop', x: 10, z: 0 });
+    
+                        return objects;
                     }
-
-                    boundaryGroup.position.set(0, 0, 0);
-                    objects.push({ mesh: boundaryGroup, type: 'boundary', x: 0, z: 0 });
-                    this.sceneObj.add(boundaryGroup);
-
-                    // Shop (small shop with sign, moved away from starting position)
-                    const shopBaseGeometry = new THREE.BoxGeometry(4, 4, 4);
-                    const shopBaseMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00, metalness: 0.2, roughness: 0.6 });
-                    const shopBase = new THREE.Mesh(shopBaseGeometry, shopBaseMaterial);
-                    shopBase.position.set(10, 2, 0);
-                    shopBase.castShadow = true;
-                    shopBase.receiveShadow = true;
-
-                    const signGeometry = new THREE.PlaneGeometry(2, 1);
-                    const signMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, side: THREE.DoubleSide });
-                    const sign = new THREE.Mesh(signGeometry, signMaterial);
-                    sign.position.set(0, 4.5, 2);
-                    sign.rotation.y = Math.PI / 2;
-                    const shopGroup = new THREE.Group();
-                    shopGroup.add(shopBase, sign);
-                    objects.push({ mesh: shopGroup, type: 'shop', x: 10, z: 0 });
-
-                    return objects;
                 }
+
+                // Initialize game and start immediately
+                game = new Game();
+    
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                    if (game && game.camera) {
+                        game.camera.aspect = window.innerWidth / window.innerHeight;
+                        game.camera.updateProjectionMatrix();
+                        if (game.renderer) {
+                            game.renderer.setSize(window.innerWidth, window.innerHeight);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('An error occurred:', error);
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('gameCanvas').style.display = 'none';
+                document.getElementById('ui').style.display = 'none';
+                document.getElementById('ballCount').style.display = 'none';
+                document.getElementById('dialogue').style.display = 'none';
+                document.getElementById('controls').style.display = 'none';
+                document.getElementById('joystickLeft').style.display = 'none';
+                document.getElementById('joystickRight').style.display = 'none';
             }
-
-            // Initialize game and start immediately
-            game = new Game();
-
-            // Handle window resize
-            window.addEventListener('resize', () => {
-                if (game && game.camera) {
-                    game.camera.aspect = window.innerWidth / window.innerHeight;
-                    game.camera.updateProjectionMatrix();
-                    if (game.renderer) {
-                        game.renderer.setSize(window.innerWidth, window.innerHeight);
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('An error occurred:', error);
-            document.getElementById('errorMessage').style.display = 'block';
-            document.getElementById('gameCanvas').style.display = 'none';
-            document.getElementById('ui').style.display = 'none';
-            document.getElementById('ballCount').style.display = 'none';
-            document.getElementById('dialogue').style.display = 'none';
-            document.getElementById('controls').style.display = 'none';
-            document.getElementById('joystickLeft').style.display = 'none';
-            document.getElementById('joystickRight').style.display = 'none';
-        }
-    </script>
+        </script>
 </body>
 </html>
-
