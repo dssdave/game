@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Enhanced 3D Princess RPG</title>
+    <title>Enhanced 3D Princess RPG with Boundary and Joysticks</title>
     <style>
         body {
             margin: 0;
@@ -87,9 +87,19 @@
             border-radius: 5px;
             z-index: 20;
         }
+        #joystickLeft, #joystickRight {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            opacity: 0.5;
+            z-index: 15;
+        }
+        #joystickLeft { bottom: 20px; left: 20px; }
+        #joystickRight { bottom: 20px; right: 20px; }
     </style>
-    <!-- Include Three.js from CDN -->
+    <!-- Include Three.js and NippleJS from CDNs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
 </head>
 <body>
     <div id="gameContainer">
@@ -110,10 +120,11 @@
         <div id="dialogue"></div>
         <div id="controls">
             Controls:<br>
-            Arrow Keys: Move<br>
-            Mouse: Look Around<br>
-            Space: Throw Ball
+            Joysticks: Move/Look<br>
+            Tap Center: Throw Ball
         </div>
+        <div id="joystickLeft"></div>
+        <div id="joystickRight"></div>
         <div id="errorMessage">WebGL is not supported in your browser. Please use a modern browser like Chrome, Firefox, or Edge.</div>
         <div id="loading">Loading game... Please wait.</div>
     </div>
@@ -128,6 +139,8 @@
                 document.getElementById('ballCount').style.display = 'none';
                 document.getElementById('dialogue').style.display = 'none';
                 document.getElementById('controls').style.display = 'none';
+                document.getElementById('joystickLeft').style.display = 'none';
+                document.getElementById('joystickRight').style.display = 'none';
                 throw new Error('WebGL not supported');
             }
 
@@ -175,7 +188,10 @@
                     };
                     this.ballCount = 0; // Track ball throws
                     this.thrownBalls = []; // Track thrown balls
+                    this.joystickLeft = null;
+                    this.joystickRight = null;
                     this.initScene();
+                    this.initJoysticks();
                 }
                 showDialogue(text) {
                     this.dialogue = text;
@@ -391,7 +407,7 @@
                     }
 
                     const castleGroup = new THREE.Group();
-                    castleGroup.add(castleBase, tower1, tower2, tower3);
+                    castleGroup.add(castleBase, tower1, townBoundary, tower2, tower3);
                     this.objects.push({ mesh: castleGroup, type: 'building', x: 40, z: 40 });
 
                     // House (cozy, detailed structure with roof and windows)
@@ -635,6 +651,64 @@
                     fountainGroup.castShadow = true;
                     this.objects.push({ mesh: fountainGroup, type: 'decoration', x: 0, z: 0 });
 
+                    // Town Boundary (dense shrubs and trees, hard boundary)
+                    const shrubGeometry = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 32);
+                    const shrubMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 }); // Green shrubs
+                    const treeTrunkBoundaryGeometry = new THREE.CylinderGeometry(0.3, 0.3, 3, 32);
+                    const treeTrunkBoundaryMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7 }); // Brown tree trunks
+                    const treeLeavesBoundaryGeometry = new THREE.SphereGeometry(1, 32, 32);
+                    const treeLeavesBoundaryMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 }); // Green leaves
+
+                    const boundaryGroup = new THREE.Group();
+                    const boundaryWidth = 50; // Width of the town area (25 units from center in each direction)
+                    const boundarySpacing = 2; // Spacing between shrubs/trees
+
+                    // Create boundary around the town (square shape, 50x50 units)
+                    for (let x = -boundaryWidth; x <= boundaryWidth; x += boundarySpacing) {
+                        for (let z = -boundaryWidth; z <= boundaryWidth; z += boundarySpacing) {
+                            if (Math.abs(x) === boundaryWidth || Math.abs(z) === boundaryWidth) { // Only on the edges
+                                if (Math.random() < 0.7) { // 70% chance for shrubs, 30% for trees
+                                    const shrub = new THREE.Mesh(shrubGeometry, shrubMaterial);
+                                    shrub.position.set(x, 0.75, z);
+                                    shrub.castShadow = true;
+                                    shrub.receiveShadow = true;
+                                    boundaryGroup.add(shrub);
+                                } else {
+                                    const trunk = new THREE.Mesh(treeTrunkBoundaryGeometry, treeTrunkBoundaryMaterial);
+                                    const leaves = new THREE.Mesh(treeLeavesBoundaryGeometry, treeLeavesBoundaryMaterial);
+                                    trunk.position.set(x, 1.5, z);
+                                    leaves.position.set(x, 3.5, z);
+                                    leaves.castShadow = true;
+                                    leaves.receiveShadow = true;
+                                    trunk.castShadow = true;
+                                    trunk.receiveShadow = true;
+                                    boundaryGroup.add(trunk, leaves);
+                                }
+                            }
+                        }
+                    }
+
+                    boundaryGroup.position.set(0, 0, 0);
+                    this.objects.push({ mesh: boundaryGroup, type: 'boundary', x: 0, z: 0 });
+                    scene.add(boundaryGroup);
+
+                    // Shop (small shop with sign)
+                    const shopBaseGeometry = new THREE.BoxGeometry(4, 4, 4);
+                    const shopBaseMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00, metalness: 0.2, roughness: 0.6 });
+                    const shopBase = new THREE.Mesh(shopBaseGeometry, shopBaseMaterial);
+                    shopBase.position.set(0, 2, 0);
+                    shopBase.castShadow = true;
+                    shopBase.receiveShadow = true;
+
+                    const signGeometry = new THREE.PlaneGeometry(2, 1);
+                    const signMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+                    const sign = new THREE.Mesh(signGeometry, signMaterial);
+                    sign.position.set(0, 4.5, 2);
+                    sign.rotation.y = Math.PI / 2;
+                    const shopGroup = new THREE.Group();
+                    shopGroup.add(shopBase, sign);
+                    this.objects.push({ mesh: shopGroup, type: 'shop', x: 0, z: 0 });
+
                     // Castle interior objects
                     if (this.scene === 'castle') {
                         const roomGeometry = new THREE.BoxGeometry(40, 10, 40);
@@ -775,6 +849,72 @@
 
                     this.objects.forEach(obj => scene.add(obj.mesh));
                 }
+                initJoysticks() {
+                    // Left joystick for movement
+                    this.joystickLeft = nipplejs.create({
+                        zone: document.getElementById('joystickLeft'),
+                        mode: 'static',
+                        position: { left: '50px', bottom: '50px' },
+                        color: 'white',
+                        size: 100
+                    });
+
+                    this.joystickLeft.on('move', (evt, data) => {
+                        if (data.distance > 0) {
+                            const angle = data.angle.radian;
+                            const speed = data.distance / 50 * this.player.speed; // Normalize speed
+                            const dx = Math.cos(angle) * speed;
+                            const dz = Math.sin(angle) * speed;
+                            const newX = this.player.x + dx;
+                            const newZ = this.player.z - dz;
+
+                            if (!this.objects.some(obj => {
+                                const distX = Math.abs(obj.x - newX);
+                                const distZ = Math.abs(obj.z - newZ);
+                                return (obj.type === 'building' || obj.type === 'wall' || obj.type === 'boundary') && distX < 5 && distZ < 5;
+                            })) {
+                                this.player.x = newX;
+                                this.player.z = newZ;
+                            }
+                        }
+                    });
+
+                    this.joystickLeft.on('end', () => {
+                        // Stop movement when joystick is released
+                    });
+
+                    // Right joystick for looking (camera rotation)
+                    this.joystickRight = nipplejs.create({
+                        zone: document.getElementById('joystickRight'),
+                        mode: 'static',
+                        position: { right: '50px', bottom: '50px' },
+                        color: 'white',
+                        size: 100
+                    });
+
+                    this.joystickRight.on('move', (evt, data) => {
+                        if (data.distance > 0) {
+                            const angle = data.angle.radian;
+                            const sensitivity = 0.002;
+                            this.player.yaw += data.vector.x * sensitivity * data.distance;
+                            this.player.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.player.pitch + data.vector.y * sensitivity * data.distance));
+                        }
+                    });
+
+                    this.joystickRight.on('end', () => {
+                        // Stop rotation when joystick is released
+                    });
+
+                    // Tap center of screen to throw ball
+                    document.getElementById('gameContainer').addEventListener('click', (e) => {
+                        const rect = document.getElementById('gameContainer').getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+                        if (x > rect.width / 4 && x < rect.width * 3 / 4 && y > rect.height / 4 && y < rect.height * 3 / 4) {
+                            this.throwBall();
+                        }
+                    });
+                }
                 createNPCs(scene) {
                     const npcs = [];
                     if (scene === 'town') {
@@ -804,54 +944,15 @@
             camera.position.set(0, 10, 20);
             camera.lookAt(0, 0, 0);
 
-            // Input handling
-            const keys = {};
-            document.addEventListener('keydown', (e) => {
-                keys[e.key] = true;
-                if (e.key === ' ') game.throwBall(); // Throw ball on Space key
-            });
-            document.addEventListener('keyup', (e) => keys[e.key] = false);
-
-            document.addEventListener('mousedown', () => {
-                document.body.requestPointerLock();
-            });
-
-            document.addEventListener('mousemove', (event) => {
-                if (document.pointerLockElement === document.body) {
-                    const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
-                    const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
-                    game.player.yaw += movementX * 0.002;
-                    game.player.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, game.player.pitch + movementY * 0.002));
-                }
-            });
-
             // Update and render loop
             function update() {
                 game.updateDayNight();
-
-                let dx = 0, dz = 0;
-                if (keys['ArrowUp']) dz -= game.player.speed;
-                if (keys['ArrowDown']) dz += game.player.speed;
-                if (keys['ArrowLeft']) dx -= game.player.speed;
-                if (keys['ArrowRight']) dx += game.player.speed;
-
-                const newX = game.player.x + dx * Math.cos(game.player.yaw) + dz * Math.sin(game.player.yaw);
-                const newZ = game.player.z - dx * Math.sin(game.player.yaw) + dz * Math.cos(game.player.yaw);
-
-                if (!game.objects.some(obj => {
-                    const distX = Math.abs(obj.x - newX);
-                    const distZ = Math.abs(obj.z - newZ);
-                    return (obj.type === 'building' || obj.type === 'wall') && distX < 5 && distZ < 5;
-                })) {
-                    game.player.x = newX;
-                    game.player.z = newZ;
-                }
 
                 game.player.object.position.set(game.player.x, 1, game.player.z);
                 game.player.object.rotation.y = -game.player.yaw;
 
                 // Walking animation for princess dress
-                if (Object.values(keys).some(k => k)) {
+                if (game.joystickLeft.active || Object.values(keys).some(k => k)) {
                     game.player.object.traverse(child => {
                         if (child.isMesh && child.material.color.equals(new THREE.Color(0xff69b4))) {
                             child.rotation.z = Math.sin(Date.now() * 0.005) * 0.1;
@@ -904,7 +1005,7 @@
                     }
                 });
 
-                // Object interactions (with correct 'game' context)
+                // Object interactions
                 game.objects.forEach(obj => {
                     const distX = Math.abs(obj.x - game.player.x);
                     const distZ = Math.abs(obj.z - game.player.z);
@@ -979,6 +1080,8 @@
                             }
                         } else if (obj.type === 'decoration') {
                             game.showDialogue('A beautiful decoration!');
+                        } else if (obj.type === 'boundary') {
+                            game.showDialogue('You cannot pass this dense boundary!');
                         }
                     }
                 });
@@ -991,10 +1094,6 @@
                     game.player.z = 0;
                     game.scene = 'town';
                     game.updateObjects();
-                }
-
-                if (Object.values(keys).some(k => k)) {
-                    game.player.frame = (game.player.frame + 1) % 30;
                 }
 
                 // Update sky color for day/night
@@ -1027,6 +1126,8 @@
             document.getElementById('ballCount').style.display = 'none';
             document.getElementById('dialogue').style.display = 'none';
             document.getElementById('controls').style.display = 'none';
+            document.getElementById('joystickLeft').style.display = 'none';
+            document.getElementById('joystickRight').style.display = 'none';
         }
     </script>
 </body>
