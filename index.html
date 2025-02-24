@@ -253,6 +253,210 @@
                         }
                     }, 1000);
                 }
+                startAnimation() {
+                    function animate() {
+                        requestAnimationFrame(animate);
+                        if (game && game.renderer && game.sceneObj && game.camera) {
+                            game.update(); // Update game state
+                            game.renderer.render(game.sceneObj, game.camera);
+                        } else {
+                            console.error('Game, renderer, scene, or camera is not properly initialized:', { game, renderer, scene, camera });
+                        }
+                    }
+                    animate();
+                }
+                update() {
+                    this.updateDayNight();
+
+                    let dx = 0, dz = 0;
+                    if (this.keys['ArrowUp'] || (this.joystickLeft && this.joystickLeft.active)) {
+                        dz -= this.player.speed;
+                    }
+                    if (this.keys['ArrowDown']) {
+                        dz += this.player.speed;
+                    }
+                    if (this.keys['ArrowLeft']) {
+                        dx -= this.player.speed;
+                    }
+                    if (this.keys['ArrowRight']) {
+                        dx += this.player.speed;
+                    }
+
+                    const newX = this.player.x + dx * Math.cos(this.player.yaw) + dz * Math.sin(this.player.yaw);
+                    const newZ = this.player.z - dx * Math.sin(this.player.yaw) + dz * Math.cos(this.player.yaw);
+
+                    if (!this.objects.some(obj => {
+                        const distX = Math.abs(obj.x - newX);
+                        const distZ = Math.abs(obj.z - newZ);
+                        return (obj.type === 'building' || obj.type === 'wall' || obj.type === 'boundary') && distX < 5 && distZ < 5;
+                    })) {
+                        this.player.x = newX;
+                        this.player.z = newZ;
+                    }
+
+                    this.player.object.position.set(this.player.x, 0.5, this.player.z);
+                    this.player.object.rotation.y = -this.player.yaw;
+
+                    if (Object.values(this.keys).some(k => k) || (this.joystickLeft && this.joystickLeft.active)) {
+                        this.player.object.traverse(child => {
+                            if (child.isMesh && child.material.color.equals(new THREE.Color(0xff69b4))) {
+                                child.rotation.z = Math.sin(Date.now() * 0.005) * 0.1;
+                            }
+                        });
+                    } else {
+                        this.player.object.traverse(child => {
+                            if (child.isMesh && child.material.color.equals(new THREE.Color(0xff69b4))) {
+                                child.rotation.copy(child.userData.originalRotation || new THREE.Euler());
+                            }
+                        });
+                    }
+
+                    this.camera.position.set(
+                        this.player.x + 15 * Math.sin(this.player.yaw) * Math.cos(this.player.pitch),
+                        15 + 15 * Math.sin(this.player.pitch),
+                        this.player.z + 15 * Math.cos(this.player.yaw) * Math.cos(this.player.pitch)
+                    );
+                    this.camera.lookAt(this.player.x, 0.5, this.player.z);
+
+                    this.thrownBalls.forEach((ball, index) => {
+                        ball.position.add(ball.userData.velocity);
+                        ball.userData.velocity.y -= 0.01;
+                        if (ball.position.y < 0) {
+                            this.sceneObj.remove(ball);
+                            this.thrownBalls.splice(index, 1);
+                        }
+                    });
+
+                    this.npcs.forEach(npc => {
+                        const distX = Math.abs(npc.x - this.player.x);
+                        const distZ = Math.abs(npc.z - this.player.z);
+                        if (distX < 2 && distZ < 2) {
+                            if (npc.role === 'guard' && !this.quests.townGuard.completed) {
+                                if (!this.quests.townGuard.active) {
+                                    this.showDialogue('Town Guard: Princess, the king needs a flower for his crown. Bring one to the castle!');
+                                    this.quests.townGuard.active = true;
+                                } else if (this.flowers > 0) {
+                                    this.showDialogue('Town Guard: Thank you! Here’s a key.');
+                                    this.keys++;
+                                    this.flowers--;
+                                    this.quests.townGuard.completed = true;
+                                } else {
+                                    this.showDialogue('Town Guard: Do you have a flower for the king?');
+                                }
+                            }
+                        }
+                    });
+
+                    this.objects.forEach(obj => {
+                        const distX = Math.abs(obj.x - this.player.x);
+                        const distZ = Math.abs(obj.z - this.player.z);
+                        if (distX < 1 && distZ < 1) {
+                            if (obj.type === 'flower') {
+                                this.flowers++;
+                                this.sceneObj.remove(obj.mesh);
+                                this.objects = this.objects.filter(o => o !== obj);
+                                this.showDialogue('You picked a radiant flower! *Sparkle*');
+                                this.startCollectionGlow();
+                                document.getElementById('flowers').textContent = this.flowers;
+                            } else if (obj.type === 'coin') {
+                                this.coins++;
+                                this.sceneObj.remove(obj.mesh);
+                                this.objects = this.objects.filter(o => o !== obj);
+                                this.showDialogue('You found a glittering coin!');
+                                this.startCollectionGlow();
+                                document.getElementById('coins').textContent = this.coins;
+                            } else if (obj.type === 'gem') {
+                                this.gems++;
+                                this.sceneObj.remove(obj.mesh);
+                                this.objects = this.objects.filter(o => o !== obj);
+                                this.showDialogue('A dazzling gem shines in your hand!');
+                                this.startCollectionGlow();
+                                document.getElementById('gems').textContent = this.gems;
+                            } else if (obj.type === 'potion') {
+                                this.potions++;
+                                this.health = Math.min(100, this.health + 20);
+                                this.sceneObj.remove(obj.mesh);
+                                this.objects = this.objects.filter(o => o !== obj);
+                                this.showDialogue('You drank a potion! Health restored.');
+                                this.startCollectionGlow();
+                                document.getElementById('health').textContent = this.health;
+                                document.getElementById('potions').textContent = this.potions;
+                            } else if (obj.type === 'key') {
+                                this.keys++;
+                                this.sceneObj.remove(obj.mesh);
+                                this.objects = this.objects.filter(o => o !== obj);
+                                this.showDialogue('You found a golden key!');
+                                this.startCollectionGlow();
+                                document.getElementById('keys').textContent = this.keys;
+                            } else if (obj.type === 'artifact') {
+                                this.artifacts++;
+                                this.sceneObj.remove(obj.mesh);
+                                this.objects = this.objects.filter(o => o !== obj);
+                                this.showDialogue('You discovered a mystical artifact!');
+                                this.startCollectionGlow();
+                                document.getElementById('artifacts').textContent = this.artifacts;
+                            } else if (obj.type === 'door') {
+                                if (this.scene === 'town') {
+                                    if (obj.building === 'castle' && this.keys > 0) {
+                                        this.scene = 'castle';
+                                        this.keys--;
+                                        this.player.x = 0;
+                                        this.player.z = 0;
+                                        this.player.yaw = 0;
+                                        this.updateObjects();
+                                        this.showDialogue('Entered the majestic castle!');
+                                        document.getElementById('location').textContent = 'Castle';
+                                        document.getElementById('keys').textContent = this.keys;
+                                    } else if (obj.building === 'house') {
+                                        this.scene = 'house';
+                                        this.player.x = 0;
+                                        this.player.z = 0;
+                                        this.player.yaw = 0;
+                                        this.updateObjects();
+                                        this.showDialogue('Entered the cozy house!');
+                                        document.getElementById('location').textContent = 'House';
+                                    } else if (obj.building === 'storybook') {
+                                        this.scene = 'storybook';
+                                        this.player.x = 0;
+                                        this.player.z = 0;
+                                        this.player.yaw = 0;
+                                        this.updateObjects();
+                                        this.showDialogue('Entered the storybook house!');
+                                        document.getElementById('location').textContent = 'Storybook House';
+                                    } else {
+                                        this.showDialogue('Need a key to enter the castle!');
+                                    }
+                                } else if (this.scene !== 'town' && obj.building === 'town') {
+                                    this.scene = 'town';
+                                    this.player.x = obj.x;
+                                    this.player.z = obj.z;
+                                    this.player.yaw = 0;
+                                    this.updateObjects();
+                                    this.showDialogue('Returned to the town!');
+                                    document.getElementById('location').textContent = 'Town';
+                                }
+                            } else if (obj.type === 'shop') {
+                                if (this.coins >= 5) {
+                                    this.coins -= 5;
+                                    this.potions++;
+                                    this.health = Math.min(100, this.health + 20);
+                                    this.showDialogue('Shopkeeper: Bought a potion! Health restored.');
+                                    document.getElementById('coins').textContent = this.coins;
+                                    document.getElementById('potions').textContent = this.potions;
+                                    document.getElementById('health').textContent = this.health;
+                                } else {
+                                    this.showDialogue('Shopkeeper: Need 5 coins for a potion!');
+                                }
+                            }
+                        }
+                    });
+
+                    const sky = this.sceneObj.getObjectByName('sky');
+                    if (sky) {
+                        sky.material.uniforms.topColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
+                        sky.material.uniforms.bottomColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
+                    }
+                }
                 initScene() {
                     // Ground (detailed terrain with grass texture)
                     const groundGeometry = new THREE.PlaneGeometry(100, 100, 50, 50);
@@ -797,6 +1001,8 @@
                     this.objects.push({ mesh: shopGroup, type: 'shop', x: 10, z: 0 });
 
                     this.objects.forEach(obj => this.sceneObj.add(obj.mesh));
+                    this.npcs = this.createNPCs(this.scene);
+                    this.npcs.forEach(npc => this.sceneObj.add(npc.mesh));
                 }
                 initJoysticks() {
                     this.joystickLeft = nipplejs.create({
@@ -1088,135 +1294,4 @@
                         objects.push({ mesh: flower3Group, type: 'flower', x: 15, z: 5 });
 
                         const coinGeometry = new THREE.CircleGeometry(0.5, 32);
-                        const coinMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
-                        const coin1 = new THREE.Mesh(coinGeometry, coinMaterial);
-                        coin1.position.set(0, 0.5, 10);
-                        coin1.rotation.x = Math.PI / 2;
-                        coin1.castShadow = true;
-                        objects.push({ mesh: coin1, type: 'coin', x: 0, z: 10 });
-
-                        const coin2 = new THREE.Mesh(coinGeometry, coinMaterial.clone());
-                        coin2.position.set(10, 0.5, -10);
-                        coin2.rotation.x = Math.PI / 2;
-                        coin2.castShadow = true;
-                        objects.push({ mesh: coin2, type: 'coin', x: 10, z: -10 });
-
-                        const coin3 = new THREE.Mesh(coinGeometry, coinMaterial.clone());
-                        coin3.position.set(-5, 0.5, 15);
-                        coin3.rotation.x = Math.PI / 2;
-                        coin3.castShadow = true;
-                        objects.push({ mesh: coin3, type: 'coin', x: -5, z: 15 });
-
-                        const gemGeometry = new THREE.OctahedronGeometry(0.5, 0);
-                        const gemMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.5, roughness: 0.5 });
-                        const gem1 = new THREE.Mesh(gemGeometry, gemMaterial);
-                        gem1.position.set(-10, 0.5, 10);
-                        gem1.castShadow = true;
-                        objects.push({ mesh: gem1, type: 'gem', x: -10, z: 10 });
-
-                        const gem2 = new THREE.Mesh(gemGeometry, gemMaterial.clone());
-                        gem2.position.set(5, 0.5, -5);
-                        gem2.castShadow = true;
-                        objects.push({ mesh: gem2, type: 'gem', x: 5, z: -5 });
-
-                        const potionBaseGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 32);
-                        const potionBaseMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.8, roughness: 0.2 });
-                        const potionLiquidGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.6, 32);
-                        const potionLiquidMaterial = new THREE.MeshStandardMaterial({ color: 0xff4500, metalness: 0.1, roughness: 0.7 });
-                        const potionBase1 = new THREE.Mesh(potionBaseGeometry, potionBaseMaterial);
-                        const potionLiquid1 = new THREE.Mesh(potionLiquidGeometry, potionLiquidMaterial);
-                        potionLiquid1.position.y = 0.1;
-                        const potionGroup1 = new THREE.Group();
-                        potionGroup1.add(potionBase1, potionLiquid1);
-                        potionGroup1.position.set(0, 0.4, -10);
-                        potionGroup1.castShadow = true;
-                        objects.push({ mesh: potionGroup1, type: 'potion', x: 0, z: -10 });
-
-                        const potionBase2 = new THREE.Mesh(potionBaseGeometry, potionBaseMaterial.clone());
-                        const potionLiquid2 = new THREE.Mesh(potionLiquidGeometry, potionLiquidMaterial.clone());
-                        potionLiquid2.position.y = 0.1;
-                        const potionGroup2 = new THREE.Group();
-                        potionGroup2.add(potionBase2, potionLiquid2);
-                        potionGroup2.position.set(20, 0.4, 0);
-                        potionGroup2.castShadow = true;
-                        objects.push({ mesh: potionGroup2, type: 'potion', x: 20, z: 0 });
-
-                        const keyHandleGeometry = new THREE.SphereGeometry(0.2, 16, 16);
-                        const keyShaftGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
-                        const keyMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
-                        const keyHandle1 = new THREE.Mesh(keyHandleGeometry, keyMaterial);
-                        const keyShaft1 = new THREE.Mesh(keyShaftGeometry, keyMaterial);
-                        keyShaft1.position.y = -0.4;
-                        const keyGroup1 = new THREE.Group();
-                        keyGroup1.add(keyHandle1, keyShaft1);
-                        keyGroup1.position.set(20, 0.5, 20);
-                        keyGroup1.rotation.x = Math.PI / 2;
-                        keyGroup1.castShadow = true;
-                        objects.push({ mesh: keyGroup1, type: 'key', x: 20, z: 20 });
-
-                        const keyHandle2 = new THREE.Mesh(keyHandleGeometry, keyMaterial.clone());
-                        const keyShaft2 = new THREE.Mesh(keyShaftGeometry, keyMaterial.clone());
-                        keyShaft2.position.y = -0.4;
-                        const keyGroup2 = new THREE.Group();
-                        keyGroup2.add(keyHandle2, keyShaft2);
-                        keyGroup2.position.set(-15, 0.5, -15);
-                        keyGroup2.rotation.x = Math.PI / 2;
-                        keyGroup2.castShadow = true;
-                        objects.push({ mesh: keyGroup2, type: 'key', x: -15, z: -15 });
-
-                        const artifactGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-                        const artifactMaterial = new THREE.MeshStandardMaterial({ color: 0x9400d3, metalness: 0.5, roughness: 0.5 });
-                        const artifact1 = new THREE.Mesh(artifactGeometry, artifactMaterial);
-                        artifact1.position.set(-20, 0.5, -20);
-                        artifact1.castShadow = true;
-
-                        const glowGeometry = new THREE.SphereGeometry(0.6, 16, 16);
-                        const glowMaterial = new THREE.MeshBasicMaterial({ 
-                            color: 0xffeb3b, 
-                            transparent: true, 
-                            opacity: 0.5,
-                            side: THREE.BackSide 
-                        });
-                        const glow1 = new THREE.Mesh(glowGeometry, glowMaterial);
-                        glow1.position.copy(artifact1.position);
-                        const artifactGroup1 = new THREE.Group();
-                        artifactGroup1.add(artifact1, glow1);
-                        objects.push({ mesh: artifactGroup1, type: 'artifact', x: -20, z: -20 });
-
-                        const artifact2 = new THREE.Mesh(artifactGeometry, artifactMaterial.clone());
-                        artifact2.position.set(25, 0.5, 5);
-                        artifact2.castShadow = true;
-                        const glow2 = new THREE.Mesh(glowGeometry, glowMaterial.clone());
-                        glow2.position.copy(artifact2.position);
-                        const artifactGroup2 = new THREE.Group();
-                        artifactGroup2.add(artifact2, glow2);
-                        objects.push({ mesh: artifactGroup2, type: 'artifact', x: 25, z: 5 });
-
-                        const treeTrunkGeometry = new THREE.CylinderGeometry(0.5, 0.5, 3, 32);
-                        const treeTrunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7 });
-                        const treeLeavesGeometry = new THREE.SphereGeometry(1.5, 32, 32);
-                        const treeLeavesMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 });
-                        const tree1Group = new THREE.Group();
-                        const trunk1 = new THREE.Mesh(treeTrunkGeometry, treeTrunkMaterial);
-                        const leaves1 = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial);
-                        leaves1.position.y = 2.5;
-                        tree1Group.add(trunk1, leaves1);
-                        tree1Group.position.set(5, 0, 5);
-                        tree1Group.castShadow = true;
-                        objects.push({ mesh: tree1Group, type: 'decoration', x: 5, z: 5 });
-
-                        const tree2Group = new THREE.Group();
-                        const trunk2 = new THREE.Mesh(treeTrunkGeometry, treeTrunkMaterial.clone());
-                        const leaves2 = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial.clone());
-                        leaves2.position.y = 2.5;
-                        tree2Group.add(trunk2, leaves2);
-                        tree2Group.position.set(-5, 0, -5);
-                        tree2Group.castShadow = true;
-                        objects.push({ mesh: tree2Group, type: 'decoration', x: -5, z: -5 });
-
-                        const fountainBaseGeometry = new THREE.CylinderGeometry(2, 2, 1, 32);
-                        const fountainBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                        const fountainBowlGeometry = new THREE.TorusGeometry(2, 0.5, 32, 32);
-                        const fountainBowlMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
-                        const fountainWaterGeometry = new THREE.CylinderGeometry(1, 1, 0.1, 32);
-                        const fountainWaterMaterial = new THREE.MeshStandardMaterial({ color:
+                        const coinMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness
