@@ -149,6 +149,10 @@
                     this.dialogue = text;
                     this.dialogueTimer = 120; // Display for 2 seconds (60 FPS)
                 }
+                updateDayNight() {
+                    this.dayNightCycle = (this.dayNightCycle + 1) % 1200; // 20-second cycle (60 FPS)
+                    this.time = this.dayNightCycle < 600 ? 'Day' : 'Night';
+                }
                 initScene() {
                     // Ground (detailed terrain)
                     const groundGeometry = new THREE.PlaneGeometry(100, 100, 50, 50);
