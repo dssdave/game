@@ -9,28 +9,6 @@
             font-family: 'Arial', sans-serif;
             background: #000;
         }
-        #splashScreen {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #fff;
-            font-size: 48px;
-            font-family: 'Georgia', serif;
-            text-align: center;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            z-index: 100;
-            opacity: 1;
-            transition: opacity 0.5s ease-out;
-            cursor: pointer; /* Indicate clickable */
-        }
-        #splashScreen.hidden {
-            opacity: 0;
-            pointer-events: none;
-            display: none;
-        }
         #gameContainer {
             position: relative;
             width: 100vw;
@@ -124,7 +102,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
 </head>
 <body>
-    <div id="splashScreen">Princess Donia’s Town</div>
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         <div id="ui">
@@ -156,7 +133,6 @@
     <script>
         // Error handling for WebGL and loading state
         try {
-            const splashScreen = document.getElementById('splashScreen');
             const loadingElement = document.getElementById('loading');
             const errorMessage = document.getElementById('errorMessage');
             const gameCanvas = document.getElementById('gameCanvas');
@@ -171,298 +147,31 @@
                 document.getElementById('controls').style.display = 'none';
                 document.getElementById('joystickLeft').style.display = 'none';
                 document.getElementById('joystickRight').style.display = 'none';
-                splashScreen.style.display = 'none';
                 throw new Error('WebGL not supported');
             }
 
-            // Splash screen disappears after 3 seconds or on any click/touch
-            let splashTimeout = setTimeout(() => {
-                splashScreen.classList.add('hidden');
-                loadingElement.style.display = 'none'; // Ensure loading message hides
-                startGame(); // Start the game after splash screen
-            }, 3000);
+            // Scene setup
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-            // Handle clicks/touches to dismiss splash screen and start game
-            splashScreen.addEventListener('click', (e) => {
-                e.preventDefault();
-                clearTimeout(splashTimeout);
-                splashScreen.classList.add('hidden');
-                loadingElement.style.display = 'none'; // Ensure loading message hides
-                startGame(); // Start the game immediately on interaction
-            });
-
-            document.getElementById('gameContainer').addEventListener('click', (e) => {
-                e.preventDefault();
-                clearTimeout(splashTimeout);
-                splashScreen.classList.add('hidden');
-                loadingElement.style.display = 'none'; // Ensure loading message hides
-                startGame(); // Start the game immediately on interaction
-            });
-
-            document.getElementById('joystickLeft').addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                clearTimeout(splashTimeout);
-                splashScreen.classList.add('hidden');
-                loadingElement.style.display = 'none'; // Ensure loading message hides
-                startGame(); // Start the game immediately on interaction
-            });
-
-            document.getElementById('joystickRight').addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                clearTimeout(splashTimeout);
-                splashScreen.classList.add('hidden');
-                loadingElement.style.display = 'none'; // Ensure loading message hides
-                startGame(); // Start the game immediately on interaction
-            });
-
-            // Game state and initialization
-            let game;
-
-            function startGame() {
-                // Scene setup
-                const scene = new THREE.Scene();
-                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas });
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                renderer.shadowMap.enabled = true;
-                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-                // Ensure canvas and renderer are properly initialized
-                if (!renderer.domElement) {
-                    throw new Error('Renderer initialization failed');
-                }
-
-                // Game state
-                game = new Game(scene, camera, renderer);
-                
-                // Camera setup
-                camera.position.set(0, 10, 20);
-                camera.lookAt(0, 0, 0);
-
-                // Update and render loop
-                function update() {
-                    if (game) {
-                        game.updateDayNight();
-
-                        let dx = 0, dz = 0;
-                        if (game.keys['ArrowUp'] || (game.joystickLeft && game.joystickLeft.active)) {
-                            dz -= game.player.speed;
-                        }
-                        if (game.keys['ArrowDown']) {
-                            dz += game.player.speed;
-                        }
-                        if (game.keys['ArrowLeft']) {
-                            dx -= game.player.speed;
-                        }
-                        if (game.keys['ArrowRight']) {
-                            dx += game.player.speed;
-                        }
-
-                        const newX = game.player.x + dx * Math.cos(game.player.yaw) + dz * Math.sin(game.player.yaw);
-                        const newZ = game.player.z - dx * Math.sin(game.player.yaw) + dz * Math.cos(game.player.yaw);
-
-                        if (!game.objects.some(obj => {
-                            const distX = Math.abs(obj.x - newX);
-                            const distZ = Math.abs(obj.z - newZ);
-                            return (obj.type === 'building' || obj.type === 'wall' || obj.type === 'boundary') && distX < 5 && distZ < 5;
-                        })) {
-                            game.player.x = newX;
-                            game.player.z = newZ;
-                        }
-
-                        game.player.object.position.set(game.player.x, 0.5, game.player.z);
-                        game.player.object.rotation.y = -game.player.yaw;
-
-                        if (Object.values(game.keys).some(k => k) || (game.joystickLeft && game.joystickLeft.active)) {
-                            game.player.object.traverse(child => {
-                                if (child.isMesh && child.material.color.equals(new THREE.Color(0xff69b4))) {
-                                    child.rotation.z = Math.sin(Date.now() * 0.005) * 0.1;
-                                }
-                            });
-                        } else {
-                            game.player.object.traverse(child => {
-                                if (child.isMesh && child.material.color.equals(new THREE.Color(0xff69b4))) {
-                                    child.rotation.copy(child.userData.originalRotation || new THREE.Euler());
-                                }
-                            });
-                        }
-
-                        camera.position.set(
-                            game.player.x + 15 * Math.sin(game.player.yaw) * Math.cos(game.player.pitch),
-                            15 + 15 * Math.sin(game.player.pitch),
-                            game.player.z + 15 * Math.cos(game.player.yaw) * Math.cos(game.player.pitch)
-                        );
-                        camera.lookAt(game.player.x, 0.5, game.player.z);
-
-                        game.thrownBalls.forEach((ball, index) => {
-                            ball.position.add(ball.userData.velocity);
-                            ball.userData.velocity.y -= 0.01;
-                            if (ball.position.y < 0) {
-                                scene.remove(ball);
-                                game.thrownBalls.splice(index, 1);
-                            }
-                        });
-
-                        game.npcs.forEach(npc => {
-                            const distX = Math.abs(npc.x - game.player.x);
-                            const distZ = Math.abs(npc.z - game.player.z);
-                            if (distX < 2 && distZ < 2) {
-                                if (npc.role === 'guard' && !game.quests.townGuard.completed) {
-                                    if (!game.quests.townGuard.active) {
-                                        game.showDialogue('Town Guard: Princess, the king needs a flower for his crown. Bring one to the castle!');
-                                        game.quests.townGuard.active = true;
-                                    } else if (game.flowers > 0) {
-                                        game.showDialogue('Town Guard: Thank you! Here’s a key.');
-                                        game.keys++;
-                                        game.flowers--;
-                                        game.quests.townGuard.completed = true;
-                                    } else {
-                                        game.showDialogue('Town Guard: Do you have a flower for the king?');
-                                    }
-                                }
-                            }
-                        });
-
-                        game.objects.forEach(obj => {
-                            const distX = Math.abs(obj.x - game.player.x);
-                            const distZ = Math.abs(obj.z - game.player.z);
-                            if (distX < 1 && distZ < 1) {
-                                if (obj.type === 'flower') {
-                                    game.flowers++;
-                                    scene.remove(obj.mesh);
-                                    game.objects = game.objects.filter(o => o !== obj);
-                                    game.showDialogue('You picked a radiant flower! *Sparkle*');
-                                    game.startCollectionGlow();
-                                    document.getElementById('flowers').textContent = game.flowers;
-                                } else if (obj.type === 'coin') {
-                                    game.coins++;
-                                    scene.remove(obj.mesh);
-                                    game.objects = game.objects.filter(o => o !== obj);
-                                    game.showDialogue('You found a glittering coin!');
-                                    game.startCollectionGlow();
-                                    document.getElementById('coins').textContent = game.coins;
-                                } else if (obj.type === 'gem') {
-                                    game.gems++;
-                                    scene.remove(obj.mesh);
-                                    game.objects = game.objects.filter(o => o !== obj);
-                                    game.showDialogue('A dazzling gem shines in your hand!');
-                                    game.startCollectionGlow();
-                                    document.getElementById('gems').textContent = game.gems;
-                                } else if (obj.type === 'potion') {
-                                    game.potions++;
-                                    game.health = Math.min(100, game.health + 20);
-                                    scene.remove(obj.mesh);
-                                    game.objects = game.objects.filter(o => o !== obj);
-                                    game.showDialogue('You drank a potion! Health restored.');
-                                    game.startCollectionGlow();
-                                    document.getElementById('health').textContent = game.health;
-                                    document.getElementById('potions').textContent = game.potions;
-                                } else if (obj.type === 'key') {
-                                    game.keys++;
-                                    scene.remove(obj.mesh);
-                                    game.objects = game.objects.filter(o => o !== obj);
-                                    game.showDialogue('You found a golden key!');
-                                    game.startCollectionGlow();
-                                    document.getElementById('keys').textContent = game.keys;
-                                } else if (obj.type === 'artifact') {
-                                    game.artifacts++;
-                                    scene.remove(obj.mesh);
-                                    game.objects = game.objects.filter(o => o !== obj);
-                                    game.showDialogue('You discovered a mystical artifact!');
-                                    game.startCollectionGlow();
-                                    document.getElementById('artifacts').textContent = game.artifacts;
-                                } else if (obj.type === 'door') {
-                                    if (this.scene === 'town') {
-                                        if (obj.building === 'castle' && this.keys > 0) {
-                                            this.scene = 'castle';
-                                            this.keys--;
-                                            this.player.x = 0;
-                                            this.player.z = 0;
-                                            this.player.yaw = 0;
-                                            this.updateObjects();
-                                            this.showDialogue('Entered the majestic castle!');
-                                            document.getElementById('location').textContent = 'Castle';
-                                            document.getElementById('keys').textContent = this.keys;
-                                        } else if (obj.building === 'house') {
-                                            this.scene = 'house';
-                                            this.player.x = 0;
-                                            this.player.z = 0;
-                                            this.player.yaw = 0;
-                                            this.updateObjects();
-                                            this.showDialogue('Entered the cozy house!');
-                                            document.getElementById('location').textContent = 'House';
-                                        } else if (obj.building === 'storybook') {
-                                            this.scene = 'storybook';
-                                            this.player.x = 0;
-                                            this.player.z = 0;
-                                            this.player.yaw = 0;
-                                            this.updateObjects();
-                                            this.showDialogue('Entered the storybook house!');
-                                            document.getElementById('location').textContent = 'Storybook House';
-                                        } else {
-                                            this.showDialogue('Need a key to enter the castle!');
-                                        }
-                                    } else if (this.scene !== 'town' && obj.building === 'town') {
-                                        this.scene = 'town';
-                                        this.player.x = obj.x;
-                                        this.player.z = obj.z;
-                                        this.player.yaw = 0;
-                                        this.updateObjects();
-                                        this.showDialogue('Returned to the town!');
-                                        document.getElementById('location').textContent = 'Town';
-                                    }
-                                } else if (obj.type === 'shop') {
-                                    if (game.coins >= 5) {
-                                        game.coins -= 5;
-                                        game.potions++;
-                                        game.health = Math.min(100, game.health + 20);
-                                        game.showDialogue('Shopkeeper: Bought a potion! Health restored.');
-                                        document.getElementById('coins').textContent = game.coins;
-                                        document.getElementById('potions').textContent = game.potions;
-                                        document.getElementById('health').textContent = game.health;
-                                    } else {
-                                        game.showDialogue('Shopkeeper: Need 5 coins for a potion!');
-                                    }
-                                }
-                            }
-                        });
-
-                        const sky = this.sceneObj.getObjectByName('sky');
-                        if (sky) {
-                            sky.material.uniforms.topColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
-                            sky.material.uniforms.bottomColor.value.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
-                        }
-                    }
-                }
-
-                function animate() {
-                    requestAnimationFrame(animate);
-                    if (game && game.renderer && game.sceneObj && game.camera) {
-                        update();
-                        game.renderer.render(game.sceneObj, game.camera);
-                    } else {
-                        console.error('Game, renderer, scene, or camera is not properly initialized:', { game, renderer, scene, camera });
-                    }
-                }
-
-                // Start the game and animation loop immediately, but delay visibility until splash screen is gone
-                gameCanvas.style.display = 'block'; // Ensure canvas is visible
-                animate();
-
-                // Handle window resize
-                window.addEventListener('resize', () => {
-                    if (game && game.camera) {
-                        game.camera.aspect = window.innerWidth / window.innerHeight;
-                        game.camera.updateProjectionMatrix();
-                        if (game.renderer) {
-                            game.renderer.setSize(window.innerWidth, window.innerHeight);
-                        }
-                    }
-                });
+            // Ensure renderer is properly initialized
+            if (!renderer.domElement) {
+                throw new Error('Renderer initialization failed');
             }
 
+            // Hide loading and show canvas immediately
+            loadingElement.style.display = 'none';
+            gameCanvas.style.display = 'block';
+
+            // Game state
+            let game;
+
             class Game {
-                constructor(scene, camera, renderer) {
+                constructor() {
                     this.scene = 'town';
                     this.flowers = 0;
                     this.coins = 0;
@@ -1271,7 +980,7 @@
                         const houseRoof = new THREE.Mesh(houseRoofGeometry, houseRoofMaterial);
                         houseRoof.position.set(-40, 7, -40);
                         houseRoof.castShadow = true;
-                        houseRoof.receiveShadow = true;
+                        houseRoaf.receiveShadow = true;
 
                         const windowGeometry = new THREE.PlaneGeometry(1, 1.5);
                         const windowMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
@@ -1341,4 +1050,184 @@
                         const handleGeometry = new THREE.SphereGeometry(0.1, 16, 16);
                         const handleMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 0.9, roughness: 0.2 });
                         const handle = new THREE.Mesh(handleGeometry, handleMaterial);
-                        handle.position.set(0,
+                        handle.position.set(0, 0, -0.9);
+                        castleDoor.add(handle);
+                        objects.push({ mesh: castleDoor, type: 'door', x: 35, z: 40, building: 'castle' });
+
+                        const houseDoor = new THREE.Mesh(doorGeometry, new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7, side: THREE.DoubleSide }));
+                        houseDoor.position.set(-42, 2, -40);
+                        houseDoor.rotation.y = Math.PI / 2;
+                        const woodHandle = new THREE.Mesh(handleGeometry, handleMaterial.clone());
+                        woodHandle.position.set(0, 0, -0.9);
+                        houseDoor.add(woodHandle);
+                        objects.push({ mesh: houseDoor, type: 'door', x: -42, z: -40, building: 'house' });
+
+                        objects.push({ mesh: doorStory, type: 'door', x: 20, z: 20, building: 'storybook' });
+
+                        const flowerStemGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.5, 8);
+                        const flowerStemMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 });
+                        const flowerPetalsGeometry = new THREE.TorusGeometry(0.3, 0.1, 16, 32);
+                        const flowerPetalsMaterial = new THREE.MeshStandardMaterial({ color: 0xff00ff, metalness: 0.1, roughness: 0.8 });
+
+                        const flower1Group = new THREE.Group();
+                        const stem1 = new THREE.Mesh(flowerStemGeometry, flowerStemMaterial);
+                        stem1.position.y = 0.25;
+                        const petals1 = new THREE.Mesh(flowerPetalsGeometry, flowerPetalsMaterial);
+                        petals1.position.y = 0.75;
+                        petals1.rotation.x = Math.PI / 2;
+                        flower1Group.add(stem1, petals1);
+                        flower1Group.position.set(10, 0, 10);
+                        flower1Group.castShadow = true;
+                        objects.push({ mesh: flower1Group, type: 'flower', x: 10, z: 10 });
+
+                        const flower2Group = new THREE.Group();
+                        const stem2 = new THREE.Mesh(flowerStemGeometry, flowerStemMaterial);
+                        stem2.position.y = 0.25;
+                        const petals2 = new THREE.Mesh(flowerPetalsGeometry, flowerPetalsMaterial);
+                        petals2.position.y = 0.75;
+                        petals2.rotation.x = Math.PI / 2;
+                        flower2Group.add(stem2, petals2);
+                        flower2Group.position.set(-10, 0, 0);
+                        flower2Group.castShadow = true;
+                        objects.push({ mesh: flower2Group, type: 'flower', x: -10, z: 0 });
+
+                        const flower3Group = new THREE.Group();
+                        const stem3 = new THREE.Mesh(flowerStemGeometry, flowerStemMaterial.clone());
+                        stem3.position.y = 0.25;
+                        const petals3 = new THREE.Mesh(flowerPetalsGeometry, flowerPetalsMaterial.clone());
+                        petals3.position.y = 0.75;
+                        petals3.rotation.x = Math.PI / 2;
+                        flower3Group.add(stem3, petals3);
+                        flower3Group.position.set(15, 0, 5);
+                        flower3Group.castShadow = true;
+                        objects.push({ mesh: flower3Group, type: 'flower', x: 15, z: 5 });
+
+                        const coinGeometry = new THREE.CircleGeometry(0.5, 32);
+                        const coinMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
+                        const coin1 = new THREE.Mesh(coinGeometry, coinMaterial);
+                        coin1.position.set(0, 0.5, 10);
+                        coin1.rotation.x = Math.PI / 2;
+                        coin1.castShadow = true;
+                        objects.push({ mesh: coin1, type: 'coin', x: 0, z: 10 });
+
+                        const coin2 = new THREE.Mesh(coinGeometry, coinMaterial.clone());
+                        coin2.position.set(10, 0.5, -10);
+                        coin2.rotation.x = Math.PI / 2;
+                        coin2.castShadow = true;
+                        objects.push({ mesh: coin2, type: 'coin', x: 10, z: -10 });
+
+                        const coin3 = new THREE.Mesh(coinGeometry, coinMaterial.clone());
+                        coin3.position.set(-5, 0.5, 15);
+                        coin3.rotation.x = Math.PI / 2;
+                        coin3.castShadow = true;
+                        objects.push({ mesh: coin3, type: 'coin', x: -5, z: 15 });
+
+                        const gemGeometry = new THREE.OctahedronGeometry(0.5, 0);
+                        const gemMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.5, roughness: 0.5 });
+                        const gem1 = new THREE.Mesh(gemGeometry, gemMaterial);
+                        gem1.position.set(-10, 0.5, 10);
+                        gem1.castShadow = true;
+                        objects.push({ mesh: gem1, type: 'gem', x: -10, z: 10 });
+
+                        const gem2 = new THREE.Mesh(gemGeometry, gemMaterial.clone());
+                        gem2.position.set(5, 0.5, -5);
+                        gem2.castShadow = true;
+                        objects.push({ mesh: gem2, type: 'gem', x: 5, z: -5 });
+
+                        const potionBaseGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 32);
+                        const potionBaseMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.8, roughness: 0.2 });
+                        const potionLiquidGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.6, 32);
+                        const potionLiquidMaterial = new THREE.MeshStandardMaterial({ color: 0xff4500, metalness: 0.1, roughness: 0.7 });
+                        const potionBase1 = new THREE.Mesh(potionBaseGeometry, potionBaseMaterial);
+                        const potionLiquid1 = new THREE.Mesh(potionLiquidGeometry, potionLiquidMaterial);
+                        potionLiquid1.position.y = 0.1;
+                        const potionGroup1 = new THREE.Group();
+                        potionGroup1.add(potionBase1, potionLiquid1);
+                        potionGroup1.position.set(0, 0.4, -10);
+                        potionGroup1.castShadow = true;
+                        objects.push({ mesh: potionGroup1, type: 'potion', x: 0, z: -10 });
+
+                        const potionBase2 = new THREE.Mesh(potionBaseGeometry, potionBaseMaterial.clone());
+                        const potionLiquid2 = new THREE.Mesh(potionLiquidGeometry, potionLiquidMaterial.clone());
+                        potionLiquid2.position.y = 0.1;
+                        const potionGroup2 = new THREE.Group();
+                        potionGroup2.add(potionBase2, potionLiquid2);
+                        potionGroup2.position.set(20, 0.4, 0);
+                        potionGroup2.castShadow = true;
+                        objects.push({ mesh: potionGroup2, type: 'potion', x: 20, z: 0 });
+
+                        const keyHandleGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+                        const keyShaftGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
+                        const keyMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
+                        const keyHandle1 = new THREE.Mesh(keyHandleGeometry, keyMaterial);
+                        const keyShaft1 = new THREE.Mesh(keyShaftGeometry, keyMaterial);
+                        keyShaft1.position.y = -0.4;
+                        const keyGroup1 = new THREE.Group();
+                        keyGroup1.add(keyHandle1, keyShaft1);
+                        keyGroup1.position.set(20, 0.5, 20);
+                        keyGroup1.rotation.x = Math.PI / 2;
+                        keyGroup1.castShadow = true;
+                        objects.push({ mesh: keyGroup1, type: 'key', x: 20, z: 20 });
+
+                        const keyHandle2 = new THREE.Mesh(keyHandleGeometry, keyMaterial.clone());
+                        const keyShaft2 = new THREE.Mesh(keyShaftGeometry, keyMaterial.clone());
+                        keyShaft2.position.y = -0.4;
+                        const keyGroup2 = new THREE.Group();
+                        keyGroup2.add(keyHandle2, keyShaft2);
+                        keyGroup2.position.set(-15, 0.5, -15);
+                        keyGroup2.rotation.x = Math.PI / 2;
+                        keyGroup2.castShadow = true;
+                        objects.push({ mesh: keyGroup2, type: 'key', x: -15, z: -15 });
+
+                        const artifactGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+                        const artifactMaterial = new THREE.MeshStandardMaterial({ color: 0x9400d3, metalness: 0.5, roughness: 0.5 });
+                        const artifact1 = new THREE.Mesh(artifactGeometry, artifactMaterial);
+                        artifact1.position.set(-20, 0.5, -20);
+                        artifact1.castShadow = true;
+
+                        const glowGeometry = new THREE.SphereGeometry(0.6, 16, 16);
+                        const glowMaterial = new THREE.MeshBasicMaterial({ 
+                            color: 0xffeb3b, 
+                            transparent: true, 
+                            opacity: 0.5,
+                            side: THREE.BackSide 
+                        });
+                        const glow1 = new THREE.Mesh(glowGeometry, glowMaterial);
+                        glow1.position.copy(artifact1.position);
+                        const artifactGroup1 = new THREE.Group();
+                        artifactGroup1.add(artifact1, glow1);
+                        objects.push({ mesh: artifactGroup1, type: 'artifact', x: -20, z: -20 });
+
+                        const artifact2 = new THREE.Mesh(artifactGeometry, artifactMaterial.clone());
+                        artifact2.position.set(25, 0.5, 5);
+                        artifact2.castShadow = true;
+                        const glow2 = new THREE.Mesh(glowGeometry, glowMaterial.clone());
+                        glow2.position.copy(artifact2.position);
+                        const artifactGroup2 = new THREE.Group();
+                        artifactGroup2.add(artifact2, glow2);
+                        objects.push({ mesh: artifactGroup2, type: 'artifact', x: 25, z: 5 });
+
+                        const treeTrunkGeometry = new THREE.CylinderGeometry(0.5, 0.5, 3, 32);
+                        const treeTrunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7 });
+                        const treeLeavesGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+                        const treeLeavesMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22, metalness: 0.1, roughness: 0.8 });
+                        const tree1Group = new THREE.Group();
+                        const trunk1 = new THREE.Mesh(treeTrunkGeometry, treeTrunkMaterial);
+                        const leaves1 = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial);
+                        leaves1.position.y = 2.5;
+                        tree1Group.add(trunk1, leaves1);
+                        tree1Group.position.set(5, 0, 5);
+                        tree1Group.castShadow = true;
+                        objects.push({ mesh: tree1Group, type: 'decoration', x: 5, z: 5 });
+
+                        const tree2Group = new THREE.Group();
+                        const trunk2 = new THREE.Mesh(treeTrunkGeometry, treeTrunkMaterial.clone());
+                        const leaves2 = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial.clone());
+                        leaves2.position.y = 2.5;
+                        tree2Group.add(trunk2, leaves2);
+                        tree2Group.position.set(-5, 0, -5);
+                        tree2Group.castShadow = true;
+                        objects.push({ mesh: tree2Group, type: 'decoration', x: -5, z: -5 });
+
+                        const fountainBaseGeometry = new THREE.CylinderGeometry(2, 2, 1, 32);
+                        const fountainBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0
