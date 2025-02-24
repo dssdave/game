@@ -135,7 +135,7 @@
                     };
                     this.dialogue = '';
                     this.dialogueTimer = 0;
-                    this.objects = [];
+                    this.objects = []; // Properly initialize objects array
                     this.npcs = [];
                     this.quests = {
                         townGuard: { active: false, completed: false },
@@ -272,7 +272,7 @@
 
                     const castleGroup = new THREE.Group();
                     castleGroup.add(castleBase, tower1, tower2, tower3);
-                    objects.push({ mesh: castleGroup, type: 'building', x: 40, z: 40 });
+                    this.objects.push({ mesh: castleGroup, type: 'building', x: 40, z: 40 });
 
                     // House (cozy, detailed structure with roof)
                     const houseBaseGeometry = new THREE.BoxGeometry(6, 6, 6);
@@ -291,7 +291,7 @@
 
                     const houseGroup = new THREE.Group();
                     houseGroup.add(houseBase, houseRoof);
-                    objects.push({ mesh: houseGroup, type: 'building', x: -40, z: -40 });
+                    this.objects.push({ mesh: houseGroup, type: 'building', x: -40, z: -40 });
 
                     // Castle door (ornate golden door)
                     const doorGeometry = new THREE.PlaneGeometry(2, 4);
@@ -299,13 +299,13 @@
                     const castleDoor = new THREE.Mesh(doorGeometry, doorMaterial);
                     castleDoor.position.set(35, 2, 40); // Front-left of castle
                     castleDoor.rotation.y = Math.PI / 2;
-                    objects.push({ mesh: castleDoor, type: 'door', x: 35, z: 40, building: 'castle' });
+                    this.objects.push({ mesh: castleDoor, type: 'door', x: 35, z: 40, building: 'castle' });
 
                     // House door (wooden door)
                     const houseDoor = new THREE.Mesh(doorGeometry, new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7, side: THREE.DoubleSide }));
                     houseDoor.position.set(-42, 2, -40); // Front-left of house
                     houseDoor.rotation.y = Math.PI / 2;
-                    objects.push({ mesh: houseDoor, type: 'door', x: -42, z: -40, building: 'house' });
+                    this.objects.push({ mesh: houseDoor, type: 'door', x: -42, z: -40, building: 'house' });
 
                     // Flowers (detailed blossoms)
                     const flowerStemGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.5, 8);
@@ -322,7 +322,7 @@
                     flower1Group.add(stem1, petals1);
                     flower1Group.position.set(10, 0, 10);
                     flower1Group.castShadow = true;
-                    objects.push({ mesh: flower1Group, type: 'flower', x: 10, z: 10 });
+                    this.objects.push({ mesh: flower1Group, type: 'flower', x: 10, z: 10 });
 
                     const flower2Group = new THREE.Group();
                     const stem2 = new THREE.Mesh(flowerStemGeometry, flowerStemMaterial);
@@ -333,7 +333,7 @@
                     flower2Group.add(stem2, petals2);
                     flower2Group.position.set(-10, 0, 0);
                     flower2Group.castShadow = true;
-                    objects.push({ mesh: flower2Group, type: 'flower', x: -10, z: 0 });
+                    this.objects.push({ mesh: flower2Group, type: 'flower', x: -10, z: 0 });
 
                     // Coins (shiny gold coins)
                     const coinGeometry = new THREE.CircleGeometry(0.5, 32);
@@ -342,13 +342,13 @@
                     coin1.position.set(0, 0.5, 10);
                     coin1.rotation.x = Math.PI / 2;
                     coin1.castShadow = true;
-                    objects.push({ mesh: coin1, type: 'coin', x: 0, z: 10 });
+                    this.objects.push({ mesh: coin1, type: 'coin', x: 0, z: 10 });
 
                     const coin2 = new THREE.Mesh(coinGeometry, coinMaterial.clone());
                     coin2.position.set(10, 0.5, -10);
                     coin2.rotation.x = Math.PI / 2;
                     coin2.castShadow = true;
-                    objects.push({ mesh: coin2, type: 'coin', x: 10, z: -10 });
+                    this.objects.push({ mesh: coin2, type: 'coin', x: 10, z: -10 });
 
                     // Gems (prismatic crystals)
                     const gemGeometry = new THREE.OctahedronGeometry(0.5, 0);
@@ -356,7 +356,7 @@
                     const gem = new THREE.Mesh(gemGeometry, gemMaterial);
                     gem.position.set(-10, 0.5, 10);
                     gem.castShadow = true;
-                    objects.push({ mesh: gem, type: 'gem', x: -10, z: 10 });
+                    this.objects.push({ mesh: gem, type: 'gem', x: -10, z: 10 });
 
                     // Potions (glass bottles with glowing liquid)
                     const potionBaseGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 32);
@@ -370,7 +370,7 @@
                     potionGroup.add(potionBase, potionLiquid);
                     potionGroup.position.set(0, 0.4, -10);
                     potionGroup.castShadow = true;
-                    objects.push({ mesh: potionGroup, type: 'potion', x: 0, z: -10 });
+                    this.objects.push({ mesh: potionGroup, type: 'potion', x: 0, z: -10 });
 
                     // Keys (ornate golden keys)
                     const keyHandleGeometry = new THREE.SphereGeometry(0.2, 16, 16);
@@ -384,7 +384,7 @@
                     keyGroup.position.set(20, 0.5, 20);
                     keyGroup.rotation.x = Math.PI / 2;
                     keyGroup.castShadow = true;
-                    objects.push({ mesh: keyGroup, type: 'key', x: 20, z: 20 });
+                    this.objects.push({ mesh: keyGroup, type: 'key', x: 20, z: 20 });
 
                     // Artifacts (mystical orbs with glow)
                     const artifactGeometry = new THREE.SphereGeometry(0.5, 16, 16);
@@ -404,7 +404,7 @@
                     glow.position.copy(artifact.position);
                     const artifactGroup = new THREE.Group();
                     artifactGroup.add(artifact, glow);
-                    objects.push({ mesh: artifactGroup, type: 'artifact', x: -20, z: -20 });
+                    this.objects.push({ mesh: artifactGroup, type: 'artifact', x: -20, z: -20 });
 
                     // Shop (small shop with sign)
                     const shopBaseGeometry = new THREE.BoxGeometry(4, 4, 4);
@@ -421,17 +421,17 @@
                     sign.rotation.y = Math.PI / 2;
                     const shopGroup = new THREE.Group();
                     shopGroup.add(shopBase, sign);
-                    objects.push({ mesh: shopGroup, type: 'shop', x: 0, z: 0 });
+                    this.objects.push({ mesh: shopGroup, type: 'shop', x: 0, z: 0 });
 
                     // Castle interior objects
-                    if (scene === 'castle') {
+                    if (this.scene === 'castle') {
                         const roomGeometry = new THREE.BoxGeometry(40, 10, 40);
                         const roomMaterial = new THREE.MeshStandardMaterial({ color: 0xdeb887, metalness: 0.1, roughness: 0.8 });
                         const room = new THREE.Mesh(roomGeometry, roomMaterial);
                         room.position.set(0, 5, 0);
                         room.castShadow = true;
                         room.receiveShadow = true;
-                        objects.push({ mesh: room, type: 'room', x: 0, z: 0 });
+                        this.objects.push({ mesh: room, type: 'room', x: 0, z: 0 });
 
                         const wallGeometry = new THREE.BoxGeometry(2, 8, 40);
                         const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.2, roughness: 0.7 });
@@ -439,20 +439,20 @@
                         wall1.position.set(10, 4, 0);
                         wall1.castShadow = true;
                         wall1.receiveShadow = true;
-                        objects.push({ mesh: wall1, type: 'wall', x: 10, z: 0 });
+                        this.objects.push({ mesh: wall1, type: 'wall', x: 10, z: 0 });
 
                         const wall2 = new THREE.Mesh(wallGeometry, wallMaterial.clone());
                         wall2.position.set(-10, 4, 0);
                         wall2.castShadow = true;
                         wall2.receiveShadow = true;
-                        objects.push({ mesh: wall2, type: 'wall', x: -10, z: 0 });
+                        this.objects.push({ mesh: wall2, type: 'wall', x: -10, z: 0 });
 
                         const kingBodyGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 32);
                         const kingBodyMaterial = new THREE.MeshStandardMaterial({ color: 0x00008b, metalness: 0.3, roughness: 0.6 });
                         const kingBody = new THREE.Mesh(kingBodyGeometry, kingBodyMaterial);
                         kingBody.position.set(15, 1, 15);
                         kingBody.castShadow = true;
-                        objects.push({ mesh: kingBody, type: 'npc', x: 15, z: 15, role: 'king' });
+                        this.objects.push({ mesh: kingBody, type: 'npc', x: 15, z: 15, role: 'king' });
 
                         const crownGeometry = new THREE.TorusGeometry(0.5, 0.05, 16, 32);
                         const crownMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
@@ -460,20 +460,21 @@
                         crown.position.set(15, 2.5, 15);
                         crown.rotation.x = Math.PI / 2;
                         crown.castShadow = true;
-                        objects.push({ mesh: crown, type: 'crown', x: 15, z: 15 });
+                        this.objects.push({ mesh: crown, type: 'crown', x: 15, z: 15 });
 
                         const doorGeometry = new THREE.PlaneGeometry(2, 4);
                         const doorMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, side: THREE.DoubleSide });
                         const door = new THREE.Mesh(doorGeometry, doorMaterial);
                         door.position.set(-19, 2, -19); // Bottom-left exit
                         door.rotation.y = Math.PI / 2;
-                        objects.push({ mesh: door, type: 'door', x: -19, z: -19, building: 'town' });
+                        this.objects.push({ mesh: door, type: 'door', x: -19, z: -19, building: 'town' });
 
                         const artifactGeometry = new THREE.SphereGeometry(0.5, 16, 16);
                         const artifactMaterial = new THREE.MeshStandardMaterial({ color: 0x9400d3, metalness: 0.5, roughness: 0.5 });
                         const artifact = new THREE.Mesh(artifactGeometry, artifactMaterial);
                         artifact.position.set(0, 0.5, 0);
                         artifact.castShadow = true;
+
                         const glowGeometry = new THREE.SphereGeometry(0.6, 16, 16);
                         const glowMaterial = new THREE.MeshBasicMaterial({ 
                             color: 0xffeb3b, 
@@ -485,18 +486,18 @@
                         glow.position.copy(artifact.position);
                         const artifactGroup = new THREE.Group();
                         artifactGroup.add(artifact, glow);
-                        objects.push({ mesh: artifactGroup, type: 'artifact', x: 0, z: 0 });
+                        this.objects.push({ mesh: artifactGroup, type: 'artifact', x: 0, z: 0 });
                     }
 
                     // House interior objects
-                    if (scene === 'house') {
+                    if (this.scene === 'house') {
                         const roomGeometry = new THREE.BoxGeometry(20, 6, 20);
                         const roomMaterial = new THREE.MeshStandardMaterial({ color: 0xdeb887, metalness: 0.1, roughness: 0.8 });
                         const room = new THREE.Mesh(roomGeometry, roomMaterial);
                         room.position.set(0, 3, 0);
                         room.castShadow = true;
                         room.receiveShadow = true;
-                        objects.push({ mesh: room, type: 'room', x: 0, z: 0 });
+                        this.objects.push({ mesh: room, type: 'room', x: 0, z: 0 });
 
                         const wallGeometry = new THREE.BoxGeometry(2, 5, 20);
                         const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.2, roughness: 0.7 });
@@ -504,31 +505,31 @@
                         wall1.position.set(5, 2.5, 0);
                         wall1.castShadow = true;
                         wall1.receiveShadow = true;
-                        objects.push({ mesh: wall1, type: 'wall', x: 5, z: 0 });
+                        this.objects.push({ mesh: wall1, type: 'wall', x: 5, z: 0 });
 
                         const villagerBodyGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 32);
                         const villagerBodyMaterial = new THREE.MeshStandardMaterial({ color: 0x00008b, metalness: 0.3, roughness: 0.6 });
                         const villagerBody = new THREE.Mesh(villagerBodyGeometry, villagerBodyMaterial);
                         villagerBody.position.set(8, 1, 8);
                         villagerBody.castShadow = true;
-                        objects.push({ mesh: villagerBody, type: 'npc', x: 8, z: 8, role: 'villager' });
+                        this.objects.push({ mesh: villagerBody, type: 'npc', x: 8, z: 8, role: 'villager' });
 
                         const doorGeometry = new THREE.PlaneGeometry(2, 4);
                         const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, side: THREE.DoubleSide });
                         const door = new THREE.Mesh(doorGeometry, doorMaterial);
                         door.position.set(-9, 2, -9); // Bottom-left exit
                         door.rotation.y = Math.PI / 2;
-                        objects.push({ mesh: door, type: 'door', x: -9, z: -9, building: 'town' });
+                        this.objects.push({ mesh: door, type: 'door', x: -9, z: -9, building: 'town' });
 
                         const gemGeometry = new THREE.OctahedronGeometry(0.5, 0);
                         const gemMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.5, roughness: 0.5 });
                         const gem = new THREE.Mesh(gemGeometry, gemMaterial);
                         gem.position.set(0, 0.5, 0);
                         gem.castShadow = true;
-                        objects.push({ mesh: gem, type: 'gem', x: 0, z: 0 });
+                        this.objects.push({ mesh: gem, type: 'gem', x: 0, z: 0 });
                     }
 
-                    return objects;
+                    this.objects.forEach(obj => scene.add(obj.mesh));
                 }
                 createNPCs(scene) {
                     const npcs = [];
@@ -668,58 +669,58 @@
                             game.objects = game.objects.filter(o => o !== obj);
                             game.showDialogue('You discovered a mystical artifact!');
                         } else if (obj.type === 'door') {
-                            if (game.scene === 'town') {
-                                if (obj.building === 'castle' && game.keys > 0) {
-                                    game.scene = 'castle';
-                                    game.keys--;
-                                    game.player.x = 0;
-                                    game.player.z = 0;
-                                    game.player.yaw = 0;
-                                    game.updateObjects();
-                                    game.showDialogue('Entered the majestic castle!');
+                            if (this.scene === 'town') {
+                                if (obj.building === 'castle' && this.keys > 0) {
+                                    this.scene = 'castle';
+                                    this.keys--;
+                                    this.player.x = 0;
+                                    this.player.z = 0;
+                                    this.player.yaw = 0;
+                                    this.updateObjects();
+                                    this.showDialogue('Entered the majestic castle!');
                                 } else if (obj.building === 'house') {
-                                    game.scene = 'house';
-                                    game.player.x = 0;
-                                    game.player.z = 0;
-                                    game.player.yaw = 0;
-                                    game.updateObjects();
-                                    game.showDialogue('Entered the cozy house!');
+                                    this.scene = 'house';
+                                    this.player.x = 0;
+                                    this.player.z = 0;
+                                    this.player.yaw = 0;
+                                    this.updateObjects();
+                                    this.showDialogue('Entered the cozy house!');
                                 } else {
-                                    game.showDialogue('Need a key to enter the castle!');
+                                    this.showDialogue('Need a key to enter the castle!');
                                 }
-                            } else if (game.scene !== 'town' && obj.building === 'town') {
-                                game.scene = 'town';
-                                game.player.x = obj.x;
-                                game.player.z = obj.z;
-                                game.player.yaw = 0;
-                                game.updateObjects();
-                                game.showDialogue('Returned to the town!');
+                            } else if (this.scene !== 'town' && obj.building === 'town') {
+                                this.scene = 'town';
+                                this.player.x = obj.x;
+                                this.player.z = obj.z;
+                                this.player.yaw = 0;
+                                this.updateObjects();
+                                this.showDialogue('Returned to the town!');
                             }
                         } else if (obj.type === 'shop') {
-                            if (game.coins >= 5) {
-                                game.coins -= 5;
-                                game.potions++;
-                                game.health = Math.min(100, game.health + 20);
-                                game.showDialogue('Shopkeeper: Bought a potion! Health restored.');
+                            if (this.coins >= 5) {
+                                this.coins -= 5;
+                                this.potions++;
+                                this.health = Math.min(100, this.health + 20);
+                                this.showDialogue('Shopkeeper: Bought a potion! Health restored.');
                             } else {
-                                game.showDialogue('Shopkeeper: Need 5 coins for a potion!');
+                                this.showDialogue('Shopkeeper: Need 5 coins for a potion!');
                             }
                         }
                     }
                 });
 
-                if (game.health <= 0) {
-                    game.showDialogue('Game Over! You were defeated.');
-                    game.health = 100;
-                    game.mana = 50;
-                    game.player.x = 0;
-                    game.player.z = 0;
-                    game.scene = 'town';
-                    game.updateObjects();
+                if (this.health <= 0) {
+                    this.showDialogue('Game Over! You were defeated.');
+                    this.health = 100;
+                    this.mana = 50;
+                    this.player.x = 0;
+                    this.player.z = 0;
+                    this.scene = 'town';
+                    this.updateObjects();
                 }
 
                 if (Object.values(keys).some(k => k)) {
-                    game.player.frame = (game.player.frame + 1) % 30;
+                    this.player.frame = (this.player.frame + 1) % 30;
                 }
 
                 // Update sky color for day/night
