@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Enhanced 3D Princess RPG with Fixes and Animations</title>
+    <title>Enhanced 3D Princess RPG with Fixes and Storybook House</title>
     <style>
         body {
             margin: 0;
@@ -187,8 +187,8 @@
                         castleKing: { active: false, completed: false },
                         villager: { active: false, completed: false }
                     };
-                    this.ballCount = 0; // Track ball throws (up to 1,000)
-                    this.ballLimit = 1000; // Increased limit to 1,000
+                    this.ballCount = 0; // Track ball throws (up to 1,000,000)
+                    this.ballLimit = 1000000; // Increased limit to 1,000,000
                     this.thrownBalls = []; // Track thrown balls
                     this.collectionGlow = null; // For collection animation
                     this.joystickLeft = null;
@@ -223,7 +223,7 @@
                         document.getElementById('ballCountValue').textContent = this.ballCount;
                         this.showDialogue('Threw a magic ball!');
                     } else if (this.ballCount >= this.ballLimit) {
-                        this.showDialogue('Reached maximum ball throws (1,000)!');
+                        this.showDialogue('Reached maximum ball throws (1,000,000)!');
                     } else {
                         this.showDialogue('Not enough mana to throw a ball!');
                     }
@@ -471,6 +471,53 @@
                     houseGroup.add(houseBase, houseRoof);
                     this.objects.push({ mesh: houseGroup, type: 'building', x: -40, z: -40 });
 
+                    // Storybook-Style House (quaint cottage with stone walls, steep roof, chimney)
+                    const storybookBaseGeometry = new THREE.BoxGeometry(5, 4, 5);
+                    const storybookBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 }); // Stone gray
+                    const storybookBase = new THREE.Mesh(storybookBaseGeometry, storybookBaseMaterial);
+                    storybookBase.position.set(20, 2, 20); // Position in town
+                    storybookBase.castShadow = true;
+                    storybookBase.receiveShadow = true;
+
+                    const storybookRoofGeometry = new THREE.ConeGeometry(3, 4, 32);
+                    const storybookRoofMaterial = new THREE.MeshStandardMaterial({ color: 0x800000, metalness: 0.2, roughness: 0.7 }); // Red roof
+                    const storybookRoof = new THREE.Mesh(storybookRoofGeometry, storybookRoofMaterial);
+                    storybookRoof.position.set(20, 6, 20);
+                    storybookRoof.castShadow = true;
+                    storybookRoof.receiveShadow = true;
+
+                    const chimneyGeometry = new THREE.BoxGeometry(1, 2, 1);
+                    const chimneyMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 }); // Stone gray
+                    const chimney = new THREE.Mesh(chimneyGeometry, chimneyMaterial);
+                    chimney.position.set(22, 7, 20); // Position on roof
+                    chimney.castShadow = true;
+                    chimney.receiveShadow = true;
+
+                    const windowStoryGeometry = new THREE.PlaneGeometry(1, 1.5);
+                    const windowStoryMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 }); // Blue glass
+                    const windowStory1 = new THREE.Mesh(windowStoryGeometry, windowStoryMaterial);
+                    windowStory1.position.set(18, 3.5, 22.5);
+                    windowStory1.rotation.y = Math.PI / 2;
+                    const windowStory2 = new THREE.Mesh(windowStoryGeometry, windowStoryMaterial.clone());
+                    windowStory2.position.set(22, 3.5, 22.5);
+                    windowStory2.rotation.y = Math.PI / 2;
+                    storybookBase.add(windowStory1, windowStory2);
+
+                    const doorStoryGeometry = new THREE.PlaneGeometry(1.5, 3);
+                    const doorStoryMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, metalness: 0.2, roughness: 0.7, side: THREE.DoubleSide }); // Wood brown
+                    const doorStory = new THREE.Mesh(doorStoryGeometry, doorStoryMaterial);
+                    doorStory.position.set(20, 1.5, 17.5); // Front of house
+                    doorStory.rotation.y = Math.PI / 2;
+                    const handleStoryGeometry = new THREE.SphereGeometry(0.05, 16, 16);
+                    const handleStoryMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 0.9, roughness: 0.2 });
+                    const handleStory = new THREE.Mesh(handleStoryGeometry, handleStoryMaterial);
+                    handleStory.position.set(0, 0, -0.7);
+                    doorStory.add(handleStory);
+
+                    const storybookGroup = new THREE.Group();
+                    storybookGroup.add(storybookBase, storybookRoof, chimney, doorStory);
+                    this.objects.push({ mesh: storybookGroup, type: 'building', x: 20, z: 20 });
+
                     // Castle door (ornate golden door with handle)
                     const doorGeometry = new THREE.PlaneGeometry(2, 4);
                     const doorMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2, side: THREE.DoubleSide }); // Gold
@@ -492,6 +539,9 @@
                     woodHandle.position.set(0, 0, -0.9);
                     houseDoor.add(woodHandle);
                     this.objects.push({ mesh: houseDoor, type: 'door', x: -42, z: -40, building: 'house' });
+
+                    // Storybook house door (wooden door with handle)
+                    this.objects.push({ mesh: doorStory, type: 'door', x: 20, z: 20, building: 'storybook' });
 
                     // Flowers (detailed blossoms, more variety)
                     const flowerStemGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.5, 8);
@@ -724,11 +774,11 @@
                     this.objects.push({ mesh: boundaryGroup, type: 'boundary', x: 0, z: 0 });
                     scene.add(boundaryGroup);
 
-                    // Shop (small shop with sign)
+                    // Shop (small shop with sign) - Moved away from starting position
                     const shopBaseGeometry = new THREE.BoxGeometry(4, 4, 4);
                     const shopBaseMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00, metalness: 0.2, roughness: 0.6 });
                     const shopBase = new THREE.Mesh(shopBaseGeometry, shopBaseMaterial);
-                    shopBase.position.set(0, 2, 0);
+                    shopBase.position.set(10, 2, 0); // Moved to (10, 0, 0)
                     shopBase.castShadow = true;
                     shopBase.receiveShadow = true;
 
@@ -739,7 +789,7 @@
                     sign.rotation.y = Math.PI / 2;
                     const shopGroup = new THREE.Group();
                     shopGroup.add(shopBase, sign);
-                    this.objects.push({ mesh: shopGroup, type: 'shop', x: 0, z: 0 });
+                    this.objects.push({ mesh: shopGroup, type: 'shop', x: 10, z: 0 });
 
                     // Castle interior objects
                     if (this.scene === 'castle') {
@@ -879,6 +929,52 @@
                         this.objects.push({ mesh: chair, type: 'decoration', x: 6, z: 6 });
                     }
 
+                    // Storybook house interior objects
+                    if (this.scene === 'storybook') {
+                        const roomGeometry = new THREE.BoxGeometry(15, 5, 15);
+                        const roomMaterial = new THREE.MeshStandardMaterial({ color: 0xdeb887, metalness: 0.1, roughness: 0.8 }); // Warm wood/stone
+                        const room = new THREE.Mesh(roomGeometry, roomMaterial);
+                        room.position.set(0, 2.5, 0);
+                        room.castShadow = true;
+                        room.receiveShadow = true;
+                        this.objects.push({ mesh: room, type: 'room', x: 0, z: 0 });
+
+                        const wallGeometry = new THREE.BoxGeometry(2, 4, 15);
+                        const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.2, roughness: 0.7 });
+                        const wall1 = new THREE.Mesh(wallGeometry, wallMaterial);
+                        wall1.position.set(7.5, 2, 0);
+                        wall1.castShadow = true;
+                        wall1.receiveShadow = true;
+                        this.objects.push({ mesh: wall1, type: 'wall', x: 7.5, z: 0 });
+
+                        const wall2 = new THREE.Mesh(wallGeometry, wallMaterial.clone());
+                        wall2.position.set(-7.5, 2, 0);
+                        wall2.castShadow = true;
+                        wall2.receiveShadow = true;
+                        this.objects.push({ mesh: wall2, type: 'wall', x: -7.5, z: 0 });
+
+                        const storytellerBodyGeometry = new THREE.CylinderGeometry(0.4, 0.4, 1.5, 32);
+                        const storytellerBodyMaterial = new THREE.MeshStandardMaterial({ color: 0x00008b, metalness: 0.3, roughness: 0.6 });
+                        const storytellerBody = new THREE.Mesh(storytellerBodyGeometry, storytellerBodyMaterial);
+                        storytellerBody.position.set(0, 0.75, 5);
+                        storytellerBody.castShadow = true;
+                        this.objects.push({ mesh: storytellerBody, type: 'npc', x: 0, z: 5, role: 'storyteller' });
+
+                        const doorGeometry = new THREE.PlaneGeometry(1.5, 3);
+                        const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, side: THREE.DoubleSide });
+                        const door = new THREE.Mesh(doorGeometry, doorMaterial);
+                        door.position.set(-7, 1.5, -7); // Bottom-left exit
+                        door.rotation.y = Math.PI / 2;
+                        this.objects.push({ mesh: door, type: 'door', x: -7, z: -7, building: 'town' });
+
+                        const bookGeometry = new THREE.BoxGeometry(0.5, 0.1, 0.3);
+                        const bookMaterial = new THREE.MeshStandardMaterial({ color: 0xdeb887, metalness: 0.1, roughness: 0.8 });
+                        const book = new THREE.Mesh(bookGeometry, bookMaterial);
+                        book.position.set(0, 0.6, 5);
+                        book.castShadow = true;
+                        this.objects.push({ mesh: book, type: 'decoration', x: 0, z: 5 });
+                    }
+
                     this.objects.forEach(obj => scene.add(obj.mesh));
                 }
                 initJoysticks() {
@@ -892,9 +988,9 @@
                     });
 
                     this.joystickLeft.on('move', (evt, data) => {
-                        if (data.distance > 0) {
+                        if (data.force > 0) { // Use force instead of distance for active state
                             const angle = data.angle.radian;
-                            const speed = data.distance / 50 * this.player.speed; // Normalize speed
+                            const speed = data.force * this.player.speed; // Use force for speed
                             const dx = Math.cos(angle) * speed;
                             const dz = Math.sin(angle) * speed;
                             const newX = this.player.x + dx;
@@ -925,11 +1021,10 @@
                     });
 
                     this.joystickRight.on('move', (evt, data) => {
-                        if (data.distance > 0) {
-                            const angle = data.angle.radian;
+                        if (data.force > 0) {
                             const sensitivity = 0.002;
-                            this.player.yaw += data.vector.x * sensitivity * data.distance;
-                            this.player.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.player.pitch + data.vector.y * sensitivity * data.distance));
+                            this.player.yaw += data.vector.x * sensitivity * data.force;
+                            this.player.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.player.pitch + data.vector.y * sensitivity * data.force));
                         }
                     });
 
@@ -1006,7 +1101,7 @@
 
                 // Movement (combine keyboard and joystick)
                 let dx = 0, dz = 0;
-                if (game.keys['ArrowUp'] || game.joystickLeft.active) {
+                if (game.keys['ArrowUp'] || (game.joystickLeft && game.joystickLeft.getActiveIds().length > 0)) {
                     dz -= game.player.speed;
                 }
                 if (game.keys['ArrowDown']) {
@@ -1035,7 +1130,7 @@
                 game.player.object.rotation.y = -game.player.yaw;
 
                 // Walking animation for legs
-                if (Object.values(game.keys).some(k => k) || game.joystickLeft.active) {
+                if (Object.values(game.keys).some(k => k) || (game.joystickLeft && game.joystickLeft.getActiveIds().length > 0)) {
                     game.player.object.traverse(child => {
                         if (child.isMesh && child.material.color.equals(new THREE.Color(0xff69b4))) {
                             child.rotation.z = Math.sin(Date.now() * 0.005) * 0.1;
@@ -1084,6 +1179,8 @@
                             } else {
                                 game.showDialogue('Town Guard: Do you have a flower for the king?');
                             }
+                        } else if (npc.role === 'storyteller') {
+                            game.showDialogue('Storyteller: Welcome to my storybook house! Listen to tales of old...');
                         }
                     }
                 });
@@ -1131,93 +1228,36 @@
                             game.showDialogue('You discovered a mystical artifact!');
                             game.startCollectionGlow();
                         } else if (obj.type === 'door') {
-                            if (game.scene === 'town') {
-                                if (obj.building === 'castle' && game.keys > 0) {
-                                    game.scene = 'castle';
-                                    game.keys--;
-                                    game.player.x = 0;
-                                    game.player.z = 0;
-                                    game.player.yaw = 0;
-                                    game.updateObjects();
-                                    game.showDialogue('Entered the majestic castle!');
+                            if (this.scene === 'town') {
+                                if (obj.building === 'castle' && this.keys > 0) {
+                                    this.scene = 'castle';
+                                    this.keys--;
+                                    this.player.x = 0;
+                                    this.player.z = 0;
+                                    this.player.yaw = 0;
+                                    this.updateObjects();
+                                    this.showDialogue('Entered the majestic castle!');
                                 } else if (obj.building === 'house') {
-                                    game.scene = 'house';
-                                    game.player.x = 0;
-                                    game.player.z = 0;
-                                    game.player.yaw = 0;
-                                    game.updateObjects();
-                                    game.showDialogue('Entered the cozy house!');
+                                    this.scene = 'house';
+                                    this.player.x = 0;
+                                    this.player.z = 0;
+                                    this.player.yaw = 0;
+                                    this.updateObjects();
+                                    this.showDialogue('Entered the cozy house!');
+                                } else if (obj.building === 'storybook') {
+                                    this.scene = 'storybook';
+                                    this.player.x = 0;
+                                    this.player.z = 0;
+                                    this.player.yaw = 0;
+                                    this.updateObjects();
+                                    this.showDialogue('Entered the storybook house!');
                                 } else {
-                                    game.showDialogue('Need a key to enter the castle!');
+                                    this.showDialogue('Need a key to enter the castle!');
                                 }
-                            } else if (game.scene !== 'town' && obj.building === 'town') {
-                                game.scene = 'town';
-                                game.player.x = obj.x;
-                                game.player.z = obj.z;
-                                game.player.yaw = 0;
-                                game.updateObjects();
-                                game.showDialogue('Returned to the town!');
-                            }
-                        } else if (obj.type === 'shop') {
-                            if (game.coins >= 5) {
-                                game.coins -= 5;
-                                game.potions++;
-                                game.health = Math.min(100, game.health + 20);
-                                game.showDialogue('Shopkeeper: Bought a potion! Health restored.');
-                            } else {
-                                game.showDialogue('Shopkeeper: Need 5 coins for a potion!');
-                            }
-                        } else if (obj.type === 'decoration') {
-                            game.showDialogue('A beautiful decoration!');
-                        } else if (obj.type === 'boundary') {
-                            game.showDialogue('You cannot pass this dense boundary!');
-                        }
-                    }
-                });
-
-                if (game.health <= 0) {
-                    game.showDialogue('Game Over! You were defeated.');
-                    game.health = 100;
-                    game.mana = 50;
-                    game.player.x = 0;
-                    game.player.z = 0;
-                    game.scene = 'town';
-                    game.updateObjects();
-                }
-
-                // Update sky color for day/night
-                const sky = scene.getObjectByName('sky');
-                if (sky) {
-                    sky.material.uniforms.topColor.value.set(game.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
-                    sky.material.uniforms.bottomColor.value.set(game.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
-                }
-            }
-
-            function animate() {
-                requestAnimationFrame(animate);
-                update();
-                renderer.render(scene, camera);
-            }
-
-            animate();
-
-            // Handle window resize
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-        } catch (error) {
-            console.error('WebGL Error:', error);
-            document.getElementById('errorMessage').style.display = 'block';
-            document.getElementById('gameCanvas').style.display = 'none';
-            document.getElementById('ui').style.display = 'none';
-            document.getElementById('ballCount').style.display = 'none';
-            document.getElementById('dialogue').style.display = 'none';
-            document.getElementById('controls').style.display = 'none';
-            document.getElementById('joystickLeft').style.display = 'none';
-            document.getElementById('joystickRight').style.display = 'none';
-        }
-    </script>
-</body>
-</html>
+                            } else if (this.scene !== 'town' && obj.building === 'town') {
+                                this.scene = 'town';
+                                this.player.x = obj.x;
+                                this.player.z = obj.z;
+                                this.player.yaw = 0;
+                                this.updateObjects();
+                                this.showDialogue('Returned to
