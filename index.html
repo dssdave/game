@@ -163,6 +163,7 @@
           throw new Error('Renderer initialization failed');
         }
 
+        // Show game canvas
         gameCanvas.style.display = 'block';
 
         // Game state
@@ -205,10 +206,11 @@
             this.collectionGlow = null;
             this.joystickLeft = null;
             this.joystickRight = null;
-            this.keys = {};
+            this.keys = {}; // Keyboard input state
             this.sceneObj = scene;
             this.camera = camera;
             this.renderer = renderer;
+
             this.initScene();
             this.initJoysticks();
             this.initKeyboardMouse();
@@ -223,12 +225,14 @@
           }
 
           updateDayNight() {
-            this.dayNightCycle = (this.dayNightCycle + 1) % 1200;
+            // Simple day/night cycle
+            this.dayNightCycle = (this.dayNightCycle + 1) % 1200; // 1200 frames
             this.time = this.dayNightCycle < 600 ? 'Day' : 'Night';
             document.getElementById('time').textContent = this.time;
           }
 
           throwBall() {
+            // Throw a ball if under limit and have enough mana
             if (this.ballCount < this.ballLimit && this.mana >= 5) {
               this.mana -= 5;
               const ballGeometry = new THREE.SphereGeometry(0.3, 16, 16);
@@ -238,8 +242,12 @@
                 roughness: 0.7
               });
               const ball = new THREE.Mesh(ballGeometry, ballMaterial);
+
+              // Start at player's position
               ball.position.copy(this.player.object.position);
               ball.position.y += 1;
+
+              // Direction based on yaw
               const direction = new THREE.Vector3(
                 Math.cos(this.player.yaw),
                 0,
@@ -248,6 +256,7 @@
               ball.userData = {
                 velocity: direction.multiplyScalar(0.5).add(new THREE.Vector3(0, 0.3, 0))
               };
+
               this.sceneObj.add(ball);
               this.thrownBalls.push(ball);
               this.ballCount++;
@@ -262,6 +271,7 @@
           }
 
           startCollectionGlow() {
+            // Brief glow effect when picking up items
             if (this.collectionGlow) this.sceneObj.remove(this.collectionGlow);
             const glowGeometry = new THREE.SphereGeometry(1, 16, 16);
             const glowMaterial = new THREE.MeshBasicMaterial({
@@ -274,6 +284,7 @@
             this.collectionGlow.position.copy(this.player.object.position);
             this.collectionGlow.position.y += 0.5;
             this.sceneObj.add(this.collectionGlow);
+
             setTimeout(() => {
               if (this.collectionGlow) {
                 this.sceneObj.remove(this.collectionGlow);
@@ -283,26 +294,28 @@
           }
 
           startAnimation() {
-            function animate() {
+            // Main render loop
+            const animate = () => {
               requestAnimationFrame(animate);
               if (game && game.renderer && game.sceneObj && game.camera) {
                 game.update();
                 game.renderer.render(game.sceneObj, game.camera);
               } else {
-                console.error('Game, renderer, scene, or camera is not properly initialized:', {
+                console.error('Game, renderer, scene, or camera not properly initialized.', {
                   game,
                   renderer,
                   scene,
                   camera
                 });
               }
-            }
+            };
             animate();
           }
 
           update() {
             this.updateDayNight();
 
+            // Movement from arrow keys or left joystick
             let dx = 0,
               dz = 0;
             if (this.keys['ArrowUp'] || (this.joystickLeft && this.joystickLeft.active)) {
@@ -318,39 +331,39 @@
               dx += this.player.speed;
             }
 
+            // Calculate new position
             const newX =
-              this.player.x +
-              dx * Math.cos(this.player.yaw) +
-              dz * Math.sin(this.player.yaw);
+              this.player.x + dx * Math.cos(this.player.yaw) + dz * Math.sin(this.player.yaw);
             const newZ =
               this.player.z -
               dx * Math.sin(this.player.yaw) +
               dz * Math.cos(this.player.yaw);
 
-            if (
-              !this.objects.some(obj => {
-                const distX = Math.abs(obj.x - newX);
-                const distZ = Math.abs(obj.z - newZ);
-                return (
-                  (obj.type === 'building' ||
-                    obj.type === 'wall' ||
-                    obj.type === 'boundary') &&
-                  distX < 5 &&
-                  distZ < 5
-                );
-              })
-            ) {
+            // Check collisions with buildings or boundaries
+            const blocked = this.objects.some(obj => {
+              const distX = Math.abs(obj.x - newX);
+              const distZ = Math.abs(obj.z - newZ);
+              return (
+                (obj.type === 'building' || obj.type === 'wall' || obj.type === 'boundary') &&
+                distX < 5 &&
+                distZ < 5
+              );
+            });
+
+            if (!blocked) {
               this.player.x = newX;
               this.player.z = newZ;
             }
 
+            // Update player mesh
             this.player.object.position.set(this.player.x, 0.5, this.player.z);
             this.player.object.rotation.y = -this.player.yaw;
 
-            if (
+            // Simple walking animation
+            const isMoving =
               Object.values(this.keys).some(k => k) ||
-              (this.joystickLeft && this.joystickLeft.active)
-            ) {
+              (this.joystickLeft && this.joystickLeft.active);
+            if (isMoving) {
               this.player.object.traverse(child => {
                 if (
                   child.isMesh &&
@@ -365,36 +378,31 @@
                   child.isMesh &&
                   child.material.color.equals(new THREE.Color(0xff69b4))
                 ) {
-                  child.rotation.copy(
-                    child.userData.originalRotation || new THREE.Euler()
-                  );
+                  child.rotation.copy(child.userData.originalRotation || new THREE.Euler());
                 }
               });
             }
 
+            // Update camera
             this.camera.position.set(
-              this.player.x +
-                15 *
-                  Math.sin(this.player.yaw) *
-                  Math.cos(this.player.pitch),
+              this.player.x + 15 * Math.sin(this.player.yaw) * Math.cos(this.player.pitch),
               15 + 15 * Math.sin(this.player.pitch),
-              this.player.z +
-                15 *
-                  Math.cos(this.player.yaw) *
-                  Math.cos(this.player.pitch)
+              this.player.z + 15 * Math.cos(this.player.yaw) * Math.cos(this.player.pitch)
             );
             this.camera.lookAt(this.player.x, 0.5, this.player.z);
 
+            // Update thrown balls
             this.thrownBalls.forEach((ball, index) => {
               ball.position.add(ball.userData.velocity);
-              ball.userData.velocity.y -= 0.01;
+              ball.userData.velocity.y -= 0.01; // gravity
               if (ball.position.y < 0) {
                 this.sceneObj.remove(ball);
                 this.thrownBalls.splice(index, 1);
               }
             });
 
-            // NPC and object collision/update logic goes here...
+            // Here you would check collisions with items/NPCs, handle quests, etc.
+            // ...
           }
 
           initScene() {
@@ -412,7 +420,7 @@
             ground.receiveShadow = true;
             this.sceneObj.add(ground);
 
-            // Skybox
+            // Skybox (fixed shader to handle offset as a vec3)
             const skyGeometry = new THREE.SphereGeometry(500, 60, 40);
             const skyMaterial = new THREE.ShaderMaterial({
               uniforms: {
@@ -436,7 +444,8 @@
                 uniform float exponent;
                 varying vec3 vWorldPosition;
                 void main() {
-                  float h = normalize(vWorldPosition + offset).y;
+                  // IMPORTANT: add offset as a vec3
+                  float h = normalize(vWorldPosition + vec3(0.0, offset, 0.0)).y;
                   gl_FragColor = vec4(
                     mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)),
                     1.0
@@ -446,19 +455,154 @@
               side: THREE.BackSide
             });
             const sky = new THREE.Mesh(skyGeometry, skyMaterial);
-            sky.material.uniforms.topColor.value.set(
-              this.time === 'Day' ? 0x87ceeb : 0x2f4f4f
-            );
-            sky.material.uniforms.bottomColor.value.set(
-              this.time === 'Day' ? 0x87ceeb : 0x2f4f4f
-            );
             sky.name = 'sky';
             this.sceneObj.add(sky);
 
-            // Princess character creation and additional scene objects...
+            // Basic lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            this.sceneObj.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 20, 10);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 4096;
+            directionalLight.shadow.mapSize.height = 4096;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 100;
+            directionalLight.shadow.camera.left = -50;
+            directionalLight.shadow.camera.right = 50;
+            directionalLight.shadow.camera.top = 50;
+            directionalLight.shadow.camera.bottom = -50;
+            this.sceneObj.add(directionalLight);
+
+            // Create the princess (player character)
+            this.createPlayerModel();
+
+            // Add any additional scene objects (buildings, flowers, items, etc.) below
+            // ...
+          }
+
+          createPlayerModel() {
+            // A low-poly "princess" made of basic shapes
+            const princessGroup = new THREE.Group();
+
+            // Materials
+            const bodyMaterial = new THREE.MeshStandardMaterial({
+              color: 0xff69b4,
+              metalness: 0.1,
+              roughness: 0.5
+            }); // Pink
+            const skinMaterial = new THREE.MeshStandardMaterial({
+              color: 0xffe4c4,
+              metalness: 0.1,
+              roughness: 0.5
+            }); // Skin
+            const goldMaterial = new THREE.MeshStandardMaterial({
+              color: 0xffd700,
+              metalness: 0.9,
+              roughness: 0.2
+            }); // Gold
+
+            // Torso segments
+            for (let i = 0; i < 3; i++) {
+              const torsoSegment = new THREE.Mesh(
+                new THREE.BoxGeometry(0.5, 0.4, 0.5),
+                bodyMaterial
+              );
+              torsoSegment.position.y = 0.6 + i * 0.4;
+              princessGroup.add(torsoSegment);
+            }
+
+            // Head
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), skinMaterial);
+            head.position.y = 1.5;
+            princessGroup.add(head);
+
+            // Facial features
+            const eyeSize = 0.05;
+            const leftEye = new THREE.Mesh(
+              new THREE.BoxGeometry(eyeSize, eyeSize, eyeSize),
+              new THREE.MeshStandardMaterial({ color: 0x000000 })
+            );
+            leftEye.position.set(-0.15, 1.6, 0.3);
+            const rightEye = new THREE.Mesh(
+              new THREE.BoxGeometry(eyeSize, eyeSize, eyeSize),
+              new THREE.MeshStandardMaterial({ color: 0x000000 })
+            );
+            rightEye.position.set(0.15, 1.6, 0.3);
+            const mouth = new THREE.Mesh(
+              new THREE.BoxGeometry(0.1, 0.05, 0.05),
+              new THREE.MeshStandardMaterial({ color: 0xff0000 })
+            );
+            mouth.position.set(0, 1.45, 0.3);
+            const leftBlush = new THREE.Mesh(
+              new THREE.BoxGeometry(0.1, 0.05, 0.05),
+              new THREE.MeshStandardMaterial({ color: 0xff8c8c })
+            );
+            leftBlush.position.set(-0.15, 1.5, 0.3);
+            const rightBlush = new THREE.Mesh(
+              new THREE.BoxGeometry(0.1, 0.05, 0.05),
+              new THREE.MeshStandardMaterial({ color: 0xff8c8c })
+            );
+            rightBlush.position.set(0.15, 1.5, 0.3);
+            head.add(leftEye, rightEye, mouth, leftBlush, rightBlush);
+
+            // Arms
+            const armSize = 0.2;
+            const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.5, 0.2), bodyMaterial);
+            leftArm.position.set(-0.5, 1.0, 0);
+            const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.5, 0.2), bodyMaterial);
+            rightArm.position.set(0.5, 1.0, 0);
+            princessGroup.add(leftArm, rightArm);
+
+            // Legs
+            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.4, 0.15), bodyMaterial);
+            leftLeg.position.set(-0.2, 0.3, 0);
+            const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.4, 0.15), bodyMaterial);
+            rightLeg.position.set(0.2, 0.3, 0);
+            princessGroup.add(leftLeg, rightLeg);
+
+            // Crown
+            const crownSize = 0.05;
+            const crownBase = new THREE.Mesh(new THREE.BoxGeometry(0.5, crownSize, 0.5), goldMaterial);
+            crownBase.position.y = 1.9;
+            const crownSpike1 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.3, crownSize), goldMaterial);
+            crownSpike1.position.set(0, 2.05, 0.25);
+            const crownSpike2 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.3, crownSize), goldMaterial);
+            crownSpike2.position.set(0, 2.05, -0.25);
+            const crownSpike3 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.3, crownSize), goldMaterial);
+            crownSpike3.position.set(0.25, 2.05, 0);
+            const crownSpike4 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.3, crownSize), goldMaterial);
+            crownSpike4.position.set(-0.25, 2.05, 0);
+            princessGroup.add(crownBase, crownSpike1, crownSpike2, crownSpike3, crownSpike4);
+
+            // Jewelry
+            const necklaceCube = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, 0.05), goldMaterial);
+            necklaceCube.position.set(0, 1.0, 0.3);
+            const leftEarring = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.1, 0.05), goldMaterial);
+            leftEarring.position.set(-0.5, 1.5, 0.3);
+            const rightEarring = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.1, 0.05), goldMaterial);
+            rightEarring.position.set(0.5, 1.5, 0.3);
+            princessGroup.add(necklaceCube, leftEarring, rightEarring);
+
+            // Position princess at (0,0)
+            princessGroup.position.set(this.player.x, 0.5, this.player.z);
+            this.player.object = princessGroup;
+            this.sceneObj.add(princessGroup);
+
+            // Save original rotation for walking animation reset
+            this.player.object.traverse(child => {
+              if (
+                child.isMesh &&
+                child.material.color.equals(new THREE.Color(0xff69b4))
+              ) {
+                child.userData.originalRotation = child.rotation.clone();
+              }
+            });
           }
 
           initJoysticks() {
+            // Left joystick (movement)
             this.joystickLeft = nipplejs.create({
               zone: document.getElementById('joystickLeft'),
               mode: 'static',
@@ -476,19 +620,20 @@
                 const newX = this.player.x + dx;
                 const newZ = this.player.z - dz;
 
-                if (
-                  !this.objects.some(obj => {
-                    const distX = Math.abs(obj.x - newX);
-                    const distZ = Math.abs(obj.z - newZ);
-                    return (
-                      (obj.type === 'building' ||
-                        obj.type === 'wall' ||
-                        obj.type === 'boundary') &&
-                      distX < 5 &&
-                      distZ < 5
-                    );
-                  })
-                ) {
+                // Check collision
+                const blocked = this.objects.some(obj => {
+                  const distX = Math.abs(obj.x - newX);
+                  const distZ = Math.abs(obj.z - newZ);
+                  return (
+                    (obj.type === 'building' ||
+                      obj.type === 'wall' ||
+                      obj.type === 'boundary') &&
+                    distX < 5 &&
+                    distZ < 5
+                  );
+                });
+
+                if (!blocked) {
                   this.player.x = newX;
                   this.player.z = newZ;
                 }
@@ -502,6 +647,7 @@
               this.joystickLeft.active = true;
             });
 
+            // Right joystick (look)
             this.joystickRight = nipplejs.create({
               zone: document.getElementById('joystickRight'),
               mode: 'static',
@@ -524,17 +670,24 @@
             this.joystickRight.on('end', () => {});
             this.joystickRight.on('start', () => {});
 
+            // Tap center of screen (between joysticks) to throw ball
             document.getElementById('gameContainer').addEventListener('click', e => {
               const rect = document.getElementById('gameContainer').getBoundingClientRect();
               const x = e.clientX - rect.left;
               const y = e.clientY - rect.top;
-              if (x > rect.width / 4 && x < (rect.width * 3) / 4 && y > rect.height / 4 && y < (rect.height * 3) / 4) {
+              if (
+                x > rect.width / 4 &&
+                x < (rect.width * 3) / 4 &&
+                y > rect.height / 4 &&
+                y < (rect.height * 3) / 4
+              ) {
                 this.throwBall();
               }
             });
           }
 
           initKeyboardMouse() {
+            // Keyboard
             document.addEventListener('keydown', e => {
               this.keys[e.key] = true;
               if (e.key === ' ') this.throwBall();
@@ -543,10 +696,10 @@
               this.keys[e.key] = false;
             });
 
+            // Mouse pointer lock for looking around
             document.addEventListener('mousedown', () => {
               document.body.requestPointerLock();
             });
-
             document.addEventListener('mousemove', event => {
               if (document.pointerLockElement === document.body) {
                 const movementX = event.movementX || 0;
@@ -561,6 +714,7 @@
           }
 
           createNPCs(scene) {
+            // Example: create a guard NPC in town
             const npcs = [];
             if (scene === 'town') {
               const npcGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 32);
@@ -578,18 +732,30 @@
           }
 
           updateObjects() {
+            // For switching scenes, remove existing objects and re-add new ones
             this.sceneObj.remove(...this.objects.map(obj => obj.mesh));
             this.sceneObj.remove(...this.npcs.map(npc => npc.mesh));
+
             this.objects = this.createObjects(this.scene);
             this.npcs = this.createNPCs(this.scene);
+
             this.objects.forEach(obj => this.sceneObj.add(obj.mesh));
             this.npcs.forEach(npc => this.sceneObj.add(npc.mesh));
           }
 
           createObjects(scene) {
+            // Example of re-creating objects for different scenes
             const objects = [];
+            // Always push the player so they remain in the scene
             objects.push({ mesh: this.player.object, type: 'player', x: this.player.x, z: this.player.z });
-            // Additional object creation based on the scene goes here...
+
+            if (scene === 'town') {
+              // Add your town buildings, items, etc.
+              // ...
+            } else if (scene === 'castle') {
+              // Add your castle interior, items, etc.
+              // ...
+            }
             return objects;
           }
         }
