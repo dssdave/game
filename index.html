@@ -7,7 +7,7 @@
       body {
         margin: 0;
         overflow: hidden;
-        font-family: 'Arial', sans-serif;
+        font-family: Arial, sans-serif;
         background: #000;
       }
       #gameContainer {
@@ -24,7 +24,7 @@
         left: 10px;
         color: #fff;
         font-size: 16px;
-        background: rgba(0,0,0,0.7);
+        background: rgba(0, 0, 0, 0.7);
         padding: 10px;
         border-radius: 5px;
         z-index: 10;
@@ -35,7 +35,7 @@
         right: 10px;
         color: #fff;
         font-size: 16px;
-        background: rgba(0,0,0,0.7);
+        background: rgba(0, 0, 0, 0.7);
         padding: 5px;
         border-radius: 5px;
         z-index: 10;
@@ -46,7 +46,7 @@
         left: 10px;
         color: #fff;
         font-size: 14px;
-        background: rgba(0,0,0,0.7);
+        background: rgba(0, 0, 0, 0.7);
         padding: 10px;
         border-radius: 5px;
         max-width: 600px;
@@ -58,7 +58,7 @@
         right: 10px;
         color: #fff;
         font-size: 14px;
-        background: rgba(0,0,0,0.7);
+        background: rgba(0, 0, 0, 0.7);
         padding: 10px;
         border-radius: 5px;
         z-index: 10;
@@ -70,13 +70,13 @@
         transform: translate(-50%, -50%);
         color: #fff;
         font-size: 20px;
-        background: rgba(0,0,0,0.8);
+        background: rgba(0, 0, 0, 0.8);
         padding: 20px;
         border-radius: 5px;
         z-index: 20;
         display: none;
       }
-      /* Joystick containers using viewport units so they stay at the bottom on mobile */
+      /* Joystick containers using viewport units so they appear at the bottom on mobile */
       #joystickLeft,
       #joystickRight {
         position: absolute;
@@ -141,19 +141,24 @@
           gameCanvas.style.display = 'none';
           throw new Error('WebGL not supported');
         }
-        // Set up scene, camera, and renderer.
+        
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(
+          75,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          1000
+        );
         const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         gameCanvas.style.display = 'block';
-
-        // Global NPC data for blue character.
+        
+        // Global NPC data for blue NPC.
         let npcData = { angle: 0, speed: 0.001, radius: 85, object: null };
-
+        
         class Game {
           constructor() {
             this.scene = 'town';
@@ -166,7 +171,7 @@
             this.health = 100;
             this.time = 'Day';
             this.dayNightCycle = 0;
-            // Separate speeds: keyboard vs. joystick.
+            // Define separate speeds for keyboard and joystick.
             this.player = {
               x: 0,
               z: 0,
@@ -189,7 +194,9 @@
             this.sceneObj = scene;
             this.camera = camera;
             this.renderer = renderer;
+            // Spread items over a large range.
             this.itemRange = 80;
+            // Initialize the scene and input systems.
             this.initScene();
             this.initJoysticks();
             this.initKeyboardMouse();
@@ -266,6 +273,8 @@
           
           update() {
             this.updateDayNight();
+            
+            // Handle player movement.
             let dx = 0, dz = 0;
             let currentSpeed = 0;
             if (
@@ -322,7 +331,8 @@
                 }
               });
             }
-            // Update blue NPC along a circle.
+            
+            // Update blue NPC: patrol around in a circle.
             npcData.angle += npcData.speed;
             const nx = npcData.radius * Math.cos(npcData.angle);
             const nz = npcData.radius * Math.sin(npcData.angle);
@@ -330,13 +340,15 @@
               npcData.object.position.set(nx, 0.5, nz);
               npcData.object.rotation.y = -npcData.angle;
             }
-            // Camera positioning: offset the lookAt so the player appears near the bottom.
+            
+            // Update camera so the player appears toward the bottom of the screen.
             const dist = 15;
             const offsetX = dist * Math.sin(this.player.yaw) * Math.cos(this.player.pitch);
             const offsetZ = dist * Math.cos(this.player.yaw) * Math.cos(this.player.pitch);
             const offsetY = dist * Math.sin(this.player.pitch) + 15;
             this.camera.position.set(this.player.x + offsetX, offsetY, this.player.z + offsetZ);
             this.camera.lookAt(new THREE.Vector3(this.player.x, 0.5 + 3, this.player.z));
+            
             // Update thrown balls.
             this.thrownBalls.forEach((ball, index) => {
               ball.position.add(ball.userData.velocity);
@@ -346,6 +358,7 @@
                 this.thrownBalls.splice(index, 1);
               }
             });
+            
             // Check for item pickups.
             for (const obj of this.objects) {
               if (obj.isPickup) {
@@ -407,6 +420,7 @@
             ground.rotation.x = Math.PI / 2;
             ground.receiveShadow = true;
             this.sceneObj.add(ground);
+            
             const skyGeo = new THREE.SphereGeometry(500, 60, 40);
             const skyMat = new THREE.ShaderMaterial({
               uniforms: {
@@ -442,14 +456,17 @@
             const sky = new THREE.Mesh(skyGeo, skyMat);
             sky.name = 'sky';
             this.sceneObj.add(sky);
+            
             const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
             this.sceneObj.add(ambientLight);
+            
             const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
             dirLight.position.set(10, 20, 10);
             dirLight.castShadow = true;
             dirLight.shadow.mapSize.width = 2048;
             dirLight.shadow.mapSize.height = 2048;
             this.sceneObj.add(dirLight);
+            
             this.createPlayerModel();
             this.createBlueNPC();
             this.createBoundary();
@@ -478,7 +495,7 @@
             head.position.set(0, 1.4, 0);
             head.userData.isBodyPart = true;
             npcGroup.add(head);
-            const hairGeo = new THREE.SphereGeometry(0.31, 16, 16, 0, Math.PI * 2, 0, Math.PI/2);
+            const hairGeo = new THREE.SphereGeometry(0.31, 16, 16, 0, Math.PI*2, 0, Math.PI/2);
             const hairMat = new THREE.MeshStandardMaterial({ color: 0x553322 });
             const hair = new THREE.Mesh(hairGeo, hairMat);
             hair.position.set(0, 1.4, 0);
@@ -827,7 +844,7 @@
             head.position.set(0, 1.4, 0);
             head.userData.isBodyPart = true;
             playerGroup.add(head);
-            const hairGeo = new THREE.SphereGeometry(0.31, 16, 16, 0, Math.PI * 2, 0, Math.PI/2);
+            const hairGeo = new THREE.SphereGeometry(0.31, 16, 16, 0, Math.PI*2, 0, Math.PI/2);
             const hairMat = new THREE.MeshStandardMaterial({ color: 0x553322 });
             const hair = new THREE.Mesh(hairGeo, hairMat);
             hair.position.set(0, 1.4, 0);
