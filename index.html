@@ -91,21 +91,6 @@
         bottom: 20px;
         right: 20px;
       }
-      /* Celebration star overlay */
-      #celebration {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: #ff0;
-        font-size: 48px;
-        background: rgba(0, 0, 0, 0.7);
-        padding: 20px;
-        border-radius: 10px;
-        z-index: 200;
-        display: none; /* hidden by default */
-        text-align: center;
-      }
     </style>
     <!-- Include Three.js and NippleJS from CDNs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -122,7 +107,6 @@
         Keys: <span id="keys">0</span> |
         Artifacts: <span id="artifacts">0</span> |
         Health: <span id="health">100</span> |
-        Mana: <span id="mana">50</span> |
         Time: <span id="time">Day</span> |
         Location: <span id="location">Town</span>
       </div>
@@ -141,8 +125,6 @@
       <div id="errorMessage">
         WebGL is not supported in your browser. Please use a modern browser like Chrome, Firefox, or Edge.
       </div>
-      <!-- Celebration overlay -->
-      <div id="celebration">⭐ Princess Donia Trophy! ⭐</div>
     </div>
 
     <script>
@@ -195,15 +177,14 @@
             this.keys = 0;
             this.artifacts = 0;
             this.health = 100;
-            this.mana = 50;
             this.time = 'Day';
             this.dayNightCycle = 0;
 
-            // Even slower movement speed
+            // Very slow movement for the joystick
             this.player = {
               x: 0,
               z: 0,
-              speed: 0.1, // reduced from 0.2
+              speed: 0.1, // slow movement
               yaw: 0,
               pitch: 0,
               object: null
@@ -213,24 +194,19 @@
             this.dialogueTimer = 0;
             this.objects = [];
             this.npcs = [];
-            this.quests = {};
-
-            // Increase balloon limit
+            // We'll just track balls thrown, no limit or mana cost
             this.ballCount = 0;
-            this.ballLimit = 1000000000; // 1 billion
-
             this.thrownBalls = [];
             this.collectionGlow = null;
             this.joystickLeft = null;
             this.joystickRight = null;
-            this.keys = {};
+            this.keysPressed = {}; // for arrow keys
             this.sceneObj = scene;
             this.camera = camera;
             this.renderer = renderer;
 
-            // We'll define how many total flowers/coins we place
-            this.totalFlowers = 10;
-            this.totalCoins = 5;
+            // We'll scatter items in a bigger range
+            this.itemRange = 80; // from -80 to 80 in x/z
 
             this.initScene();
             this.initJoysticks();
@@ -245,57 +221,44 @@
             document.getElementById('dialogue').textContent = this.dialogue;
           }
 
-          showCelebration() {
-            // Display the big star overlay for a few seconds
-            const celeb = document.getElementById('celebration');
-            celeb.style.display = 'block';
-            setTimeout(() => {
-              celeb.style.display = 'none';
-            }, 3000);
-          }
-
           updateDayNight() {
+            // Simple day/night cycle
             this.dayNightCycle = (this.dayNightCycle + 1) % 1200;
             this.time = this.dayNightCycle < 600 ? 'Day' : 'Night';
             document.getElementById('time').textContent = this.time;
           }
 
+          // No limit on throwing balls. Just increment ballCount.
           throwBall() {
-            if (this.ballCount < this.ballLimit && this.mana >= 5) {
-              this.mana -= 5;
-              const ballGeometry = new THREE.SphereGeometry(0.3, 16, 16);
-              const ballMaterial = new THREE.MeshStandardMaterial({
-                color: 0xff4500,
-                metalness: 0.1,
-                roughness: 0.7
-              });
-              const ball = new THREE.Mesh(ballGeometry, ballMaterial);
+            const ballGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+            const ballMaterial = new THREE.MeshStandardMaterial({
+              color: 0xff4500,
+              metalness: 0.1,
+              roughness: 0.7
+            });
+            const ball = new THREE.Mesh(ballGeometry, ballMaterial);
 
-              // Start at player's position
-              ball.position.copy(this.player.object.position);
-              ball.position.y += 1;
+            // Start at player's position
+            ball.position.copy(this.player.object.position);
+            ball.position.y += 1;
 
-              // Direction based on yaw
-              const direction = new THREE.Vector3(
-                Math.cos(this.player.yaw),
-                0,
-                Math.sin(this.player.yaw)
-              ).normalize();
-              ball.userData = {
-                velocity: direction.multiplyScalar(0.5).add(new THREE.Vector3(0, 0.3, 0))
-              };
+            // Direction based on yaw
+            const direction = new THREE.Vector3(
+              Math.cos(this.player.yaw),
+              0,
+              Math.sin(this.player.yaw)
+            ).normalize();
 
-              this.sceneObj.add(ball);
-              this.thrownBalls.push(ball);
-              this.ballCount++;
-              document.getElementById('ballCountValue').textContent = this.ballCount;
-              this.showDialogue('Threw a magic ball!');
-              document.getElementById('mana').textContent = this.mana;
-            } else if (this.ballCount >= this.ballLimit) {
-              this.showDialogue('Reached maximum ball throws (1,000,000,000)!');
-            } else {
-              this.showDialogue('Not enough mana to throw a ball!');
-            }
+            // A bit of upward velocity
+            ball.userData = {
+              velocity: direction.multiplyScalar(0.5).add(new THREE.Vector3(0, 0.3, 0))
+            };
+
+            this.sceneObj.add(ball);
+            this.thrownBalls.push(ball);
+            this.ballCount++;
+            document.getElementById('ballCountValue').textContent = this.ballCount;
+            this.showDialogue('Threw a magic ball!');
           }
 
           startCollectionGlow() {
@@ -336,16 +299,16 @@
 
             // Movement from arrow keys or left joystick
             let dx = 0, dz = 0;
-            if (this.keys['ArrowUp'] || (this.joystickLeft && this.joystickLeft.active)) {
+            if (this.keysPressed['ArrowUp'] || (this.joystickLeft && this.joystickLeft.active)) {
               dz -= this.player.speed;
             }
-            if (this.keys['ArrowDown']) {
+            if (this.keysPressed['ArrowDown']) {
               dz += this.player.speed;
             }
-            if (this.keys['ArrowLeft']) {
+            if (this.keysPressed['ArrowLeft']) {
               dx -= this.player.speed;
             }
-            if (this.keys['ArrowRight']) {
+            if (this.keysPressed['ArrowRight']) {
               dx += this.player.speed;
             }
 
@@ -353,10 +316,14 @@
             const newX = this.player.x + dx * Math.cos(this.player.yaw) + dz * Math.sin(this.player.yaw);
             const newZ = this.player.z - dx * Math.sin(this.player.yaw) + dz * Math.cos(this.player.yaw);
 
-            // Check collisions
+            // Check collisions with buildings/boundaries
             let blocked = false;
             for (const obj of this.objects) {
-              if (obj.type === 'building' || obj.type === 'wall' || obj.type === 'boundary') {
+              if (
+                obj.type === 'building' ||
+                obj.type === 'wall' ||
+                obj.type === 'boundary'
+              ) {
                 const dxObj = newX - obj.x;
                 const dzObj = newZ - obj.z;
                 const distSq = dxObj * dxObj + dzObj * dzObj;
@@ -379,7 +346,7 @@
 
             // Simple "walking" sway
             const isMoving =
-              Object.values(this.keys).some(k => k) ||
+              Object.values(this.keysPressed).some(k => k) ||
               (this.joystickLeft && this.joystickLeft.active);
             if (isMoving) {
               this.player.object.traverse(child => {
@@ -403,7 +370,7 @@
             );
             this.camera.lookAt(this.player.x, 0.5, this.player.z);
 
-            // Update thrown balls
+            // Update thrown balls (gravity + removal)
             this.thrownBalls.forEach((ball, index) => {
               ball.position.add(ball.userData.velocity);
               ball.userData.velocity.y -= 0.01; // gravity
@@ -415,32 +382,51 @@
 
             // Check for item pickups
             for (const obj of this.objects) {
-              if (obj.type === 'flower' || obj.type === 'coin') {
+              if (obj.isPickup) {
                 const dxObj = this.player.x - obj.x;
                 const dzObj = this.player.z - obj.z;
                 const distSq = dxObj * dxObj + dzObj * dzObj;
                 // If close enough, pick up
-                if (distSq < 1) {
-                  if (obj.type === 'flower') {
-                    this.flowers++;
-                    document.getElementById('flowers').textContent = this.flowers;
-                    this.showDialogue('You picked a flower!');
-                  } else if (obj.type === 'coin') {
-                    this.coins++;
-                    document.getElementById('coins').textContent = this.coins;
-                    this.showDialogue('You picked up a coin!');
+                if (distSq < 1.5) {
+                  // Increment relevant counters
+                  switch (obj.type) {
+                    case 'flower':
+                      this.flowers++;
+                      document.getElementById('flowers').textContent = this.flowers;
+                      this.showDialogue('You picked a radiant flower!');
+                      break;
+                    case 'coin':
+                      this.coins++;
+                      document.getElementById('coins').textContent = this.coins;
+                      this.showDialogue('You picked up a shiny coin!');
+                      break;
+                    case 'gem':
+                      this.gems++;
+                      document.getElementById('gems').textContent = this.gems;
+                      this.showDialogue('A dazzling gem is yours!');
+                      break;
+                    case 'potion':
+                      this.potions++;
+                      document.getElementById('potions').textContent = this.potions;
+                      this.showDialogue('You found a potion!');
+                      break;
+                    case 'key':
+                      this.keys++;
+                      document.getElementById('keys').textContent = this.keys;
+                      this.showDialogue('A golden key is yours!');
+                      break;
+                    case 'artifact':
+                      this.artifacts++;
+                      document.getElementById('artifacts').textContent = this.artifacts;
+                      this.showDialogue('You discovered a mystical artifact!');
+                      break;
+                    default:
+                      break;
                   }
+                  // Remove from scene
                   this.sceneObj.remove(obj.mesh);
                   this.objects = this.objects.filter(o => o !== obj);
                   this.startCollectionGlow();
-
-                  // Check if all flowers & coins are collected
-                  if (
-                    this.flowers === this.totalFlowers &&
-                    this.coins === this.totalCoins
-                  ) {
-                    this.showCelebration();
-                  }
                 }
               }
             }
@@ -511,20 +497,28 @@
             // Player
             this.createPlayerModel();
 
-            // Boundary
+            // Boundary shrubs
             this.createBoundary();
 
-            // Castle
+            // NPC guard
+            this.createGuard();
+
+            // Castle (lighter grey, with "Daddy's Castle" text)
             this.createCastle();
 
             // House
             this.createHouse();
 
-            // Flowers
-            this.createFlowers();
+            // Fountain (extra decorative element)
+            this.createFountain();
 
-            // Coins
-            this.createCoins();
+            // Multiple items scattered (flowers, coins, gems, potions, keys, artifacts)
+            this.createFlowers(10);  // 10 flowers
+            this.createCoins(8);     // 8 coins
+            this.createGems(4);      // 4 gems
+            this.createPotions(3);   // 3 potions
+            this.createKeys(2);      // 2 keys
+            this.createArtifacts(2); // 2 artifacts
           }
 
           createBoundary() {
@@ -561,12 +555,30 @@
             });
           }
 
+          createGuard() {
+            // Simple cylinder guard in the middle
+            const guardGeo = new THREE.CylinderGeometry(0.5, 0.5, 2, 16);
+            const guardMat = new THREE.MeshStandardMaterial({ color: 0x00008b });
+            const guardMesh = new THREE.Mesh(guardGeo, guardMat);
+            guardMesh.position.set(0, 1, 0);
+            guardMesh.castShadow = true;
+            guardMesh.receiveShadow = true;
+            this.sceneObj.add(guardMesh);
+
+            this.npcs.push({
+              mesh: guardMesh,
+              x: 0,
+              z: 0,
+              role: 'guard'
+            });
+          }
+
           createCastle() {
             const castleGroup = new THREE.Group();
 
-            // Main keep
+            // Main keep (lighter grey)
             const keepGeo = new THREE.BoxGeometry(20, 10, 20);
-            const keepMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+            const keepMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
             const keep = new THREE.Mesh(keepGeo, keepMat);
             keep.position.set(0, 5, 0);
             keep.castShadow = true;
@@ -575,7 +587,7 @@
 
             // Four towers
             const towerGeo = new THREE.CylinderGeometry(3, 3, 15, 16);
-            const towerMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+            const towerMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
             const towerPositions = [
               [10, 7.5, 10],
               [-10, 7.5, 10],
@@ -597,6 +609,26 @@
             door.position.set(0, 3, 10.01);
             castleGroup.add(door);
 
+            // "Daddy's Castle" text on a plane (using canvas)
+            const textCanvas = document.createElement('canvas');
+            textCanvas.width = 512;
+            textCanvas.height = 128;
+            const ctx = textCanvas.getContext('2d');
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, textCanvas.width, textCanvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '60px Arial';
+            ctx.fillText("Daddy's Castle", 50, 80);
+            const textTexture = new THREE.Texture(textCanvas);
+            textTexture.needsUpdate = true;
+
+            const textMat = new THREE.MeshBasicMaterial({ map: textTexture, transparent: false });
+            const textGeo = new THREE.PlaneGeometry(12, 3); // wide plane
+            const textMesh = new THREE.Mesh(textGeo, textMat);
+            textMesh.position.set(0, 8, 10.1);
+            castleGroup.add(textMesh);
+
+            // Position the entire castle
             castleGroup.position.set(40, 0, 40);
             this.sceneObj.add(castleGroup);
 
@@ -650,11 +682,51 @@
             });
           }
 
-          createFlowers() {
-            // Place totalFlowers
-            for (let i = 0; i < this.totalFlowers; i++) {
-              const fx = Math.random() * 40 - 20;
-              const fz = Math.random() * 40 - 20;
+          createFountain() {
+            // A simple fountain in the town
+            const fountainGroup = new THREE.Group();
+
+            const baseGeo = new THREE.CylinderGeometry(3, 3, 1, 16);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x808080 });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.set(0, 0.5, 0);
+            base.castShadow = true;
+            base.receiveShadow = true;
+            fountainGroup.add(base);
+
+            const bowlGeo = new THREE.TorusGeometry(3, 0.3, 16, 32);
+            const bowlMat = new THREE.MeshStandardMaterial({ color: 0x808080 });
+            const bowl = new THREE.Mesh(bowlGeo, bowlMat);
+            bowl.rotation.x = Math.PI / 2;
+            bowl.position.y = 1;
+            fountainGroup.add(bowl);
+
+            const waterGeo = new THREE.CylinderGeometry(2.8, 2.8, 0.2, 16);
+            const waterMat = new THREE.MeshStandardMaterial({
+              color: 0x00ffff,
+              transparent: true,
+              opacity: 0.6
+            });
+            const water = new THREE.Mesh(waterGeo, waterMat);
+            water.position.set(0, 1.1, 0);
+            fountainGroup.add(water);
+
+            fountainGroup.position.set(0, 0, 20);
+            this.sceneObj.add(fountainGroup);
+
+            this.objects.push({
+              mesh: fountainGroup,
+              type: 'decoration',
+              x: 0,
+              z: 20,
+              boundingRadius: 5
+            });
+          }
+
+          createFlowers(count) {
+            for (let i = 0; i < count; i++) {
+              const fx = Math.random() * this.itemRange * 2 - this.itemRange; // from -itemRange to itemRange
+              const fz = Math.random() * this.itemRange * 2 - this.itemRange;
 
               // Stem
               const stemGeo = new THREE.CylinderGeometry(0.05, 0.05, 1, 8);
@@ -678,17 +750,17 @@
               this.objects.push({
                 mesh: flowerGroup,
                 type: 'flower',
+                isPickup: true,
                 x: fx,
                 z: fz
               });
             }
           }
 
-          createCoins() {
-            // Place totalCoins
-            for (let i = 0; i < this.totalCoins; i++) {
-              const cx = Math.random() * 40 - 20;
-              const cz = Math.random() * 40 - 20;
+          createCoins(count) {
+            for (let i = 0; i < count; i++) {
+              const cx = Math.random() * this.itemRange * 2 - this.itemRange;
+              const cz = Math.random() * this.itemRange * 2 - this.itemRange;
 
               const coinGeo = new THREE.CircleGeometry(0.3, 16);
               const coinMat = new THREE.MeshStandardMaterial({ color: 0xffff00 });
@@ -702,8 +774,131 @@
               this.objects.push({
                 mesh: coinMesh,
                 type: 'coin',
+                isPickup: true,
                 x: cx,
                 z: cz
+              });
+            }
+          }
+
+          createGems(count) {
+            for (let i = 0; i < count; i++) {
+              const gx = Math.random() * this.itemRange * 2 - this.itemRange;
+              const gz = Math.random() * this.itemRange * 2 - this.itemRange;
+
+              const gemGeo = new THREE.OctahedronGeometry(0.5, 0);
+              const gemMat = new THREE.MeshStandardMaterial({ color: 0x00ffff });
+              const gemMesh = new THREE.Mesh(gemGeo, gemMat);
+              gemMesh.position.set(gx, 0.5, gz);
+              gemMesh.castShadow = true;
+              gemMesh.receiveShadow = true;
+
+              this.sceneObj.add(gemMesh);
+              this.objects.push({
+                mesh: gemMesh,
+                type: 'gem',
+                isPickup: true,
+                x: gx,
+                z: gz
+              });
+            }
+          }
+
+          createPotions(count) {
+            for (let i = 0; i < count; i++) {
+              const px = Math.random() * this.itemRange * 2 - this.itemRange;
+              const pz = Math.random() * this.itemRange * 2 - this.itemRange;
+
+              const potionBaseGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 16);
+              const potionBaseMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+              const potionBase = new THREE.Mesh(potionBaseGeo, potionBaseMat);
+              potionBase.position.y = 0.4;
+
+              const potionLiquidGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.6, 16);
+              const potionLiquidMat = new THREE.MeshStandardMaterial({ color: 0xff4500 });
+              const potionLiquid = new THREE.Mesh(potionLiquidGeo, potionLiquidMat);
+              potionLiquid.position.y = 0.4;
+
+              const potionGroup = new THREE.Group();
+              potionGroup.add(potionBase, potionLiquid);
+              potionGroup.position.set(px, 0, pz);
+              potionGroup.castShadow = true;
+              potionGroup.receiveShadow = true;
+
+              this.sceneObj.add(potionGroup);
+              this.objects.push({
+                mesh: potionGroup,
+                type: 'potion',
+                isPickup: true,
+                x: px,
+                z: pz
+              });
+            }
+          }
+
+          createKeys(count) {
+            for (let i = 0; i < count; i++) {
+              const kx = Math.random() * this.itemRange * 2 - this.itemRange;
+              const kz = Math.random() * this.itemRange * 2 - this.itemRange;
+
+              const keyHandleGeo = new THREE.SphereGeometry(0.2, 16, 16);
+              const keyShaftGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
+              const keyMat = new THREE.MeshStandardMaterial({ color: 0xffd700 });
+
+              const keyHandle = new THREE.Mesh(keyHandleGeo, keyMat);
+              const keyShaft = new THREE.Mesh(keyShaftGeo, keyMat);
+              keyShaft.position.y = -0.4;
+
+              const keyGroup = new THREE.Group();
+              keyGroup.add(keyHandle, keyShaft);
+              keyGroup.position.set(kx, 0.5, kz);
+              keyGroup.rotation.x = Math.PI / 2;
+              keyGroup.castShadow = true;
+              keyGroup.receiveShadow = true;
+
+              this.sceneObj.add(keyGroup);
+              this.objects.push({
+                mesh: keyGroup,
+                type: 'key',
+                isPickup: true,
+                x: kx,
+                z: kz
+              });
+            }
+          }
+
+          createArtifacts(count) {
+            for (let i = 0; i < count; i++) {
+              const ax = Math.random() * this.itemRange * 2 - this.itemRange;
+              const az = Math.random() * this.itemRange * 2 - this.itemRange;
+
+              const artifactGeo = new THREE.SphereGeometry(0.5, 16, 16);
+              const artifactMat = new THREE.MeshStandardMaterial({ color: 0x9400d3 });
+              const artifact = new THREE.Mesh(artifactGeo, artifactMat);
+              artifact.castShadow = true;
+              artifact.receiveShadow = true;
+
+              // A slight glow
+              const glowGeo = new THREE.SphereGeometry(0.6, 16, 16);
+              const glowMat = new THREE.MeshBasicMaterial({
+                color: 0xffeb3b,
+                transparent: true,
+                opacity: 0.5,
+                side: THREE.BackSide
+              });
+              const glow = new THREE.Mesh(glowGeo, glowMat);
+
+              const artifactGroup = new THREE.Group();
+              artifactGroup.add(artifact, glow);
+              artifactGroup.position.set(ax, 0.5, az);
+
+              this.sceneObj.add(artifactGroup);
+              this.objects.push({
+                mesh: artifactGroup,
+                type: 'artifact',
+                isPickup: true,
+                x: ax,
+                z: az
               });
             }
           }
@@ -728,7 +923,7 @@
             head.userData.isBodyPart = true;
             playerGroup.add(head);
 
-            // Hair (cap)
+            // Hair
             const hairGeo = new THREE.SphereGeometry(0.31, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
             const hairMat = new THREE.MeshStandardMaterial({ color: 0x553322 });
             const hair = new THREE.Mesh(hairGeo, hairMat);
@@ -780,17 +975,19 @@
             this.joystickLeft.on('move', (evt, data) => {
               if (data && data.force > 0) {
                 const angle = data.angle.radian;
-                // scale movement by player.speed
                 const speed = data.force * this.player.speed;
                 const dx = Math.cos(angle) * speed;
                 const dz = Math.sin(angle) * speed;
                 const newX = this.player.x + dx;
                 const newZ = this.player.z - dz;
 
-                // Check collisions
                 let blocked = false;
                 for (const obj of this.objects) {
-                  if (obj.type === 'building' || obj.type === 'wall' || obj.type === 'boundary') {
+                  if (
+                    obj.type === 'building' ||
+                    obj.type === 'wall' ||
+                    obj.type === 'boundary'
+                  ) {
                     const dxObj = newX - obj.x;
                     const dzObj = newZ - obj.z;
                     const distSq = dxObj * dxObj + dzObj * dzObj;
@@ -826,7 +1023,7 @@
 
             this.joystickRight.on('move', (evt, data) => {
               if (data && data.force > 0) {
-                // Lower rotation sensitivity from 0.002 to 0.001
+                // Lower rotation sensitivity
                 const sensitivity = 0.001;
                 this.player.yaw += data.vector.x * sensitivity * data.force;
                 this.player.pitch = Math.max(
@@ -858,11 +1055,11 @@
           initKeyboardMouse() {
             // Keyboard
             document.addEventListener('keydown', e => {
-              this.keys[e.key] = true;
+              this.keysPressed[e.key] = true;
               if (e.key === ' ') this.throwBall();
             });
             document.addEventListener('keyup', e => {
-              this.keys[e.key] = false;
+              this.keysPressed[e.key] = false;
             });
 
             // Mouse pointer lock for looking around
@@ -873,7 +1070,7 @@
               if (document.pointerLockElement === document.body) {
                 const movementX = event.movementX || 0;
                 const movementY = event.movementY || 0;
-                // Lower rotation sensitivity for mouse as well
+                // Lower rotation sensitivity for mouse
                 const sensitivity = 0.001;
                 this.player.yaw += movementX * sensitivity;
                 this.player.pitch = Math.max(
