@@ -1,74 +1,57 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Ultimate Classic Princess RPG</title>
+    <title>Simple 3D Princess RPG</title>
     <style>
-        #gameContainer {
-            text-align: center;
-            font-family: 'Press Start 2P', cursive; /* Retro font */
-            background: #87ceeb; /* Sky blue for retro feel */
-        }
-        canvas {
-            border: 2px solid #4a4a4a;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background: #000;
         }
         #ui {
-            margin-top: 10px;
-            font-size: 16px;
+            position: absolute;
+            top: 10px;
+            left: 10px;
             color: #fff;
-            font-weight: bold;
-            background: #2f4f4f;
-            padding: 5px;
+            font-size: 16px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
             border-radius: 5px;
         }
         #dialogue {
-            margin-top: 10px;
-            font-size: 14px;
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
             color: #fff;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-            background: #2f4f4f;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.7);
             padding: 10px;
             border-radius: 5px;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-        }
-        #soundCue {
-            margin-top: 5px;
-            font-size: 12px;
-            color: #fff;
-            font-style: italic;
-            background: #2f4f4f;
-            padding: 5px;
-            border-radius: 5px;
+            max-width: 600px;
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- Include Three.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-    <div id="gameContainer">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
-        <div id="ui">
-            Flowers: <span id="flowers">0</span> |
-            Coins: <span id="coins">0</span> |
-            Gems: <span id="gems">0</span> |
-            Potions: <span id="potions">0</span> |
-            Keys: <span id="keys">0</span> |
-            Artifacts: <span id="artifacts">0</span> |
-            Health: <span id="health">100</span> |
-            Time: <span id="time">Day</span> |
-            Location: <span id="location">Town</span>
-        </div>
-        <div id="dialogue"></div>
-        <div id="soundCue"></div>
+    <div id="ui">
+        Flowers: <span id="flowers">0</span> |
+        Coins: <span id="coins">0</span> |
+        Gems: <span id="gems">0</span> |
+        Potions: <span id="potions">0</span> |
+        Health: <span id="health">100</span> |
+        Location: <span id="location">Town</span>
     </div>
+    <div id="dialogue"></div>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const TILE_SIZE = 32;
-        const GRID_WIDTH = 25;
-        const GRID_HEIGHT = 18;
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
 
         // Game state
         class Game {
@@ -78,561 +61,305 @@
                 this.coins = 0;
                 this.gems = 0;
                 this.potions = 0;
-                this.keys = 0;
-                this.artifacts = 0;
                 this.health = 100;
-                this.time = 'Day';
-                this.dayNightCycle = 0;
                 this.player = {
-                    x: 12 * TILE_SIZE,
-                    y: 9 * TILE_SIZE,
-                    speed: 4,
-                    frame: 0,
-                    direction: 'down',
-                    questStatus: {
-                        townGuard: false,
-                        castleKing: false,
-                        villagerQuest: false
-                    }
+                    x: 0,
+                    z: 0,
+                    speed: 0.5,
+                    yaw: 0,
+                    object: null
                 };
                 this.dialogue = '';
                 this.dialogueTimer = 0;
+                this.objects = [];
+                this.initScene();
             }
             showDialogue(text) {
                 this.dialogue = text;
                 this.dialogueTimer = 120; // Display for 2 seconds (60 FPS)
-                this.playSound('dialogue');
             }
-            playSound(type) {
-                const soundCue = document.getElementById('soundCue');
-                switch(type) {
-                    case 'dialogue': soundCue.textContent = '*Chime sound*'; break;
-                    case 'collect': soundCue.textContent = '*Ding sound*'; break;
+            initScene() {
+                // Ground
+                const groundGeometry = new THREE.PlaneGeometry(50, 50);
+                const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x6bb26b, side: THREE.DoubleSide });
+                const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+                ground.rotation.x = Math.PI / 2;
+                scene.add(ground);
+
+                // Player (simple cube for princess)
+                const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
+                const playerMaterial = new THREE.MeshBasicMaterial({ color: 0xff69b4 }); // Pink for princess
+                this.player.object = new THREE.Mesh(playerGeometry, playerMaterial);
+                this.player.object.position.set(this.player.x, 1, this.player.z);
+                scene.add(this.player.object);
+
+                // Objects (buildings, collectibles)
+                this.objects = this.createObjects(this.scene);
+                this.objects.forEach(obj => scene.add(obj.mesh));
+            }
+            createObjects(scene) {
+                const objects = [];
+                if (scene === 'town') {
+                    // Castle (large cube)
+                    const castleGeometry = new THREE.BoxGeometry(5, 5, 5);
+                    const castleMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 }); // Grey for stone
+                    const castle = new THREE.Mesh(castleGeometry, castleMaterial);
+                    castle.position.set(10, 2.5, 10);
+                    objects.push({ mesh: castle, type: 'building', x: 10, z: 10 });
+
+                    // House (smaller cube)
+                    const houseGeometry = new THREE.BoxGeometry(3, 3, 3);
+                    const houseMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 }); // Grey for stone
+                    const house = new THREE.Mesh(houseGeometry, houseMaterial);
+                    house.position.set(-10, 1.5, -10);
+                    objects.push({ mesh: house, type: 'building', x: -10, z: -10 });
+
+                    // Door for castle (red cube at bottom-left)
+                    const doorGeometry = new THREE.BoxGeometry(1, 2, 0.5);
+                    const doorMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red for door
+                    const castleDoor = new THREE.Mesh(doorGeometry, doorMaterial);
+                    castleDoor.position.set(7.5, 1, 7.5); // Bottom-left of castle
+                    objects.push({ mesh: castleDoor, type: 'door', x: 7.5, z: 7.5, building: 'castle' });
+
+                    // Door for house (red cube at bottom-left)
+                    const houseDoor = new THREE.Mesh(doorGeometry, doorMaterial);
+                    houseDoor.position.set(-11.5, 1, -11.5); // Bottom-left of house
+                    objects.push({ mesh: houseDoor, type: 'door', x: -11.5, z: -11.5, building: 'house' });
+
+                    // Flowers (small spheres, magenta)
+                    const flowerGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+                    const flowerMaterial = new THREE.MeshBasicMaterial({ color: 0xff00ff });
+                    const flower1 = new THREE.Mesh(flowerGeometry, flowerMaterial);
+                    flower1.position.set(5, 0.3, 5);
+                    objects.push({ mesh: flower1, type: 'flower', x: 5, z: 5 });
+
+                    const flower2 = new THREE.Mesh(flowerGeometry, flowerMaterial);
+                    flower2.position.set(-5, 0.3, 0);
+                    objects.push({ mesh: flower2, type: 'flower', x: -5, z: 0 });
+
+                    // Coins (small spheres, gold)
+                    const coinGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+                    const coinMaterial = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+                    const coin1 = new THREE.Mesh(coinGeometry, coinMaterial);
+                    coin1.position.set(0, 0.3, 5);
+                    objects.push({ mesh: coin1, type: 'coin', x: 0, z: 5 });
+
+                    const coin2 = new THREE.Mesh(coinGeometry, coinMaterial);
+                    coin2.position.set(5, 0.3, -5);
+                    objects.push({ mesh: coin2, type: 'coin', x: 5, z: -5 });
+
+                    // Gems (small octahedrons, cyan)
+                    const gemGeometry = new THREE.OctahedronGeometry(0.3, 0);
+                    const gemMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+                    const gem = new THREE.Mesh(gemGeometry, gemMaterial);
+                    gem.position.set(-5, 0.3, 5);
+                    objects.push({ mesh: gem, type: 'gem', x: -5, z: 5 });
+
+                    // Potions (small cylinders, orange)
+                    const potionGeometry = new THREE.CylinderGeometry(0.2, 0.2, 0.8, 32);
+                    const potionMaterial = new THREE.MeshBasicMaterial({ color: 0xff4500 });
+                    const potion = new THREE.Mesh(potionGeometry, potionMaterial);
+                    potion.position.set(0, 0.4, -5);
+                    objects.push({ mesh: potion, type: 'potion', x: 0, z: -5 });
+
+                    // Shop (small cube, yellow)
+                    const shopGeometry = new THREE.BoxGeometry(2, 2, 2);
+                    const shopMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+                    const shop = new THREE.Mesh(shopGeometry, shopMaterial);
+                    shop.position.set(0, 1, 0);
+                    objects.push({ mesh: shop, type: 'shop', x: 0, z: 0 });
+                } else if (scene === 'castle') {
+                    // Simple castle interior (large room)
+                    const roomGeometry = new THREE.BoxGeometry(20, 5, 20);
+                    const roomMaterial = new THREE.MeshBasicMaterial({ color: 0xdeb887 }); // Tan for interior
+                    const room = new THREE.Mesh(roomGeometry, roomMaterial);
+                    room.position.set(0, 2.5, 0);
+                    objects.push({ mesh: room, type: 'room', x: 0, z: 0 });
+
+                    // NPC (king, blue cube)
+                    const npcGeometry = new THREE.BoxGeometry(1, 2, 1);
+                    const npcMaterial = new THREE.MeshBasicMaterial({ color: 0x00008b });
+                    const npc = new THREE.Mesh(npcGeometry, npcMaterial);
+                    npc.position.set(5, 1, 5);
+                    objects.push({ mesh: npc, type: 'npc', x: 5, z: 5 });
+
+                    // Door (red cube to exit)
+                    const doorGeometry = new THREE.BoxGeometry(1, 2, 0.5);
+                    const doorMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+                    const door = new THREE.Mesh(doorGeometry, doorMaterial);
+                    door.position.set(-9.5, 1, -9.5); // Bottom-left exit
+                    objects.push({ mesh: door, type: 'door', x: -9.5, z: -9.5, building: 'town' });
+                } else if (scene === 'house') {
+                    // Simple house interior (small room)
+                    const roomGeometry = new THREE.BoxGeometry(10, 3, 10);
+                    const roomMaterial = new THREE.MeshBasicMaterial({ color: 0xdeb887 }); // Tan for interior
+                    const room = new THREE.Mesh(roomGeometry, roomMaterial);
+                    room.position.set(0, 1.5, 0);
+                    objects.push({ mesh: room, type: 'room', x: 0, z: 0 });
+
+                    // NPC (villager, blue cube)
+                    const npcGeometry = new THREE.BoxGeometry(1, 2, 1);
+                    const npcMaterial = new THREE.MeshBasicMaterial({ color: 0x00008b });
+                    const npc = new THREE.Mesh(npcGeometry, npcMaterial);
+                    npc.position.set(3, 1, 3);
+                    objects.push({ mesh: npc, type: 'npc', x: 3, z: 3 });
+
+                    // Door (red cube to exit)
+                    const doorGeometry = new THREE.BoxGeometry(1, 2, 0.5);
+                    const doorMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+                    const door = new THREE.Mesh(doorGeometry, doorMaterial);
+                    door.position.set(-4.5, 1, -4.5); // Bottom-left exit
+                    objects.push({ mesh: door, type: 'door', x: -4.5, z: -4.5, building: 'town' });
+
+                    // Hidden gem (cyan octahedron)
+                    const gemGeometry = new THREE.OctahedronGeometry(0.3, 0);
+                    const gemMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+                    const gem = new THREE.Mesh(gemGeometry, gemMaterial);
+                    gem.position.set(0, 0.3, 0);
+                    objects.push({ mesh: gem, type: 'gem', x: 0, z: 0 });
                 }
-                setTimeout(() => soundCue.textContent = '', 1000);
+                return objects;
             }
-            updateDayNight() {
-                this.dayNightCycle = (this.dayNightCycle + 1) % 1200; // 20-second cycle (60 FPS)
-                this.time = this.dayNightCycle < 600 ? 'Day' : 'Night';
+            updateObjects() {
+                scene.remove(...this.objects.map(obj => obj.mesh));
+                this.objects = this.createObjects(this.scene);
+                this.objects.forEach(obj => scene.add(obj.mesh));
             }
         }
 
         let game = new Game();
 
-        // Professional old-school tile map with properly designed doors (0=grass, 1=path, 2=water, 3=wall, 4=door, 5=flower, 6=coin, 7=gem, 8=potion, 9=NPC, 11=shop, 12=key, 13=artifact)
-        const maps = {
-            town: [
-                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
-                [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
-                [2,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,2],
-                [2,0,1,0,0,0,0,0,0,0,0,0,0,9,0,0,0,0,0,1,0,0,0,0,2],
-                [2,0,1,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,2],
-                [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,6,0,2],
-                [2,0,1,0,0,0,0,0,0,0,3,3,3,3,3,0,0,0,0,1,0,0,0,0,2],
-                [2,0,1,0,0,0,0,0,0,0,3,0,3,4,0,0,0,0,0,1,0,0,0,0,2], // Castle door at bottom-left
-                [2,0,1,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,1,0,0,0,0,2],
-                [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,2],
-                [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,1,0,5,0,0,2],
-                [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,7,0,2],
-                [2,0,1,0,0,0,0,0,0,0,0,3,3,0,0,0,0,0,0,1,0,0,0,0,2],
-                [2,0,1,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,1,0,0,0,0,2],
-                [2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,1,0,0,0,0,2],
-                [2,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,2],
-                [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
-                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
-            ],
-            castle: [
-                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-                [0,1,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,4,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-            ],
-            house: [
-                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-                [0,1,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,3,0,0,0,0,0,0,0,3,0,4,0,0,0,0,0,0,0,0,0,3,1,0],
-                [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-            ]
-        };
+        // Camera setup
+        camera.position.set(0, 10, 20);
+        camera.lookAt(0, 0, 0);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(0, 10, 0);
+        scene.add(directionalLight);
 
         // Input handling
         const keys = {};
         document.addEventListener('keydown', (e) => keys[e.key] = true);
         document.addEventListener('keyup', (e) => keys[e.key] = false);
 
-        // Professional old-school pixel-art drawing functions with border-style technique
-        function drawTile(type, x, y) {
-            ctx.save();
-            ctx.imageSmoothingEnabled = false; // Pixel-perfect retro look
-            switch(type) {
-                case 0: // Grass (static, clean pixel art like border, with subtle texture)
-                    ctx.fillStyle = '#6bb26b';
-                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                    ctx.fillStyle = '#559955';
-                    ctx.fillRect(x + 4, y + 4, TILE_SIZE - 8, TILE_SIZE - 8);
-                    ctx.fillStyle = '#77c877';
-                    ctx.fillRect(x + 8, y + 8, TILE_SIZE - 16, TILE_SIZE - 16);
-                    ctx.strokeStyle = '#447744';
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
-                    ctx.fillStyle = '#558855';
-                    ctx.fillRect(x + 6, y + 6, 2, 2);
-                    ctx.fillRect(x + 22, y + 22, 2, 2);
-                    break;
-                case 1: // Path (static cobblestone like border, with subtle cracks)
-                    ctx.fillStyle = '#b5946b';
-                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                    ctx.fillStyle = '#9c7d5a';
-                    for (let i = 0; i < 2; i++) {
-                        for (let j = 0; j < 2; j++) {
-                            ctx.fillRect(x + i * 16, y + j * 16, 16, 16);
-                        }
-                    }
-                    ctx.strokeStyle = '#8b5f3d';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(x + 8, y + 8);
-                    ctx.lineTo(x + 24, y + 24);
-                    ctx.stroke();
-                    ctx.fillStyle = '#664422';
-                    ctx.fillRect(x + 4, y + 4, 4, 4);
-                    break;
-                case 2: // Water (static pixel-art waves like border, with subtle ripples)
-                    ctx.fillStyle = '#4da6ff';
-                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                    ctx.fillStyle = '#3b84cc';
-                    ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
-                    ctx.strokeStyle = '#2e6699';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(x, y + 16);
-                    ctx.quadraticCurveTo(x + 16, y + 8, x + 32, y + 16);
-                    ctx.stroke();
-                    ctx.fillStyle = '#ffffff';
-                    ctx.beginPath();
-                    ctx.arc(x + 16, y + 16, 4, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#e0f6ff';
-                    ctx.beginPath();
-                    ctx.arc(x + 16, y + 12, 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    break;
-                case 3: // Wall (static stone like border, with cracks and moss)
-                    ctx.fillStyle = '#808080';
-                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                    ctx.fillStyle = '#666666';
-                    for (let i = 0; i < 2; i++) {
-                        for (let j = 0; j < 2; j++) {
-                            ctx.fillRect(x + i * 16, y + j * 16, 16, 16);
-                        }
-                    }
-                    ctx.fillStyle = '#006400';
-                    ctx.fillRect(x + 8, y + 8, 4, 4);
-                    ctx.strokeStyle = '#4a4a4a';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(x + 8, y + 24);
-                    ctx.lineTo(x + 24, y + 8);
-                    ctx.stroke();
-                    break;
-                case 4: // Door (static pixel-art wooden door like border, with handle and hinges)
-                    ctx.fillStyle = '#8b4513';
-                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                    ctx.fillStyle = '#5c2f00';
-                    ctx.fillRect(x + 8, y + 8, 16, 16);
-                    ctx.fillStyle = '#c0c0c0';
-                    ctx.fillRect(x + 14, y + 12, 4, 8); // Handle
-                    ctx.fillStyle = '#808080';
-                    ctx.fillRect(x + 4, y + 12, 2, 8); // Hinge 1
-                    ctx.fillRect(x + 26, y + 12, 2, 8); // Hinge 2
-                    break;
-                case 5: // Flower (static pixel-art flower like border, with stem and leaves)
-                    ctx.fillStyle = '#ff00ff';
-                    for (let i = 0; i < 5; i++) {
-                        ctx.beginPath();
-                        ctx.moveTo(x + 16, y + 16);
-                        ctx.lineTo(x + 16 + Math.cos(i * 2*Math.PI/5) * 12, y + 16 + Math.sin(i * 2*Math.PI/5) * 12);
-                        ctx.lineTo(x + 16 + Math.cos(i * 2*Math.PI/5 + Math.PI/10) * 8, y + 16 + Math.sin(i * 2*Math.PI/5 + Math.PI/10) * 8);
-                        ctx.fill();
-                    }
-                    ctx.fillStyle = '#00ff00';
-                    ctx.beginPath();
-                    ctx.arc(x + 16, y + 16, 6, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#228b22';
-                    ctx.fillRect(x + 14, y + 16, 4, 16);
-                    ctx.beginPath();
-                    ctx.moveTo(x + 12, y + 28);
-                    ctx.lineTo(x + 16, y + 16);
-                    ctx.lineTo(x + 20, y + 28);
-                    ctx.fill();
-                    break;
-                case 6: // Coin (static pixel-art gold coin like border, with royal seal)
-                    ctx.fillStyle = '#ffd700';
-                    ctx.beginPath();
-                    ctx.arc(x + 16, y + 16, 10, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.strokeStyle = '#daa520';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-                    ctx.fillStyle = '#ffffff';
-                    ctx.beginPath();
-                    ctx.arc(x + 16, y + 16, 6, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#000000';
-                    ctx.font = '8px "Press Start 2P"';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('R', x + 16, y + 18);
-                    break;
-                case 7: // Gem (static pixel-art prismatic gem like border, with facets)
-                    ctx.fillStyle = '#00ffff';
-                    ctx.beginPath();
-                    ctx.moveTo(x + 16, y + 8);
-                    ctx.lineTo(x + 8, y + 24);
-                    ctx.lineTo(x + 24, y + 24);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.strokeStyle = '#00c0c0';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-                    ctx.fillStyle = '#ffffff';
-                    ctx.beginPath();
-                    ctx.arc(x + 16, y + 16, 4, 0, Math.PI * 2);
-                    ctx.fill();
-                    break;
-                case 8: // Potion (static pixel-art bottle like border, with liquid and cork)
-                    ctx.fillStyle = '#ffffff';
-                    ctx.beginPath();
-                    ctx.moveTo(x + 8, y + 8);
-                    ctx.lineTo(x + 24, y + 8);
-                    ctx.lineTo(x + 24, y + 24);
-                    ctx.lineTo(x + 8, y + 24);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.strokeStyle = '#000000';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-                    ctx.fillStyle = '#ff4500';
-                    ctx.beginPath();
-                    ctx.moveTo(x + 12, y + 12);
-                    ctx.lineTo(x + 20, y + 12);
-                    ctx.lineTo(x + 16, y + 20);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.fillStyle = '#c0c0c0';
-                    ctx.fillRect(x + 14, y + 4, 4, 4); // Cork
-                    break;
-                case 9: // NPC (static pixel-art guard/villager like border, with armor and expression)
-                    ctx.fillStyle = '#00008b';
-                    ctx.fillRect(x + 8, y + 8, 16, 24);
-                    ctx.fillStyle = '#ff4500';
-                    ctx.fillRect(x + 12, y + 10, 8, 8); // Helmet
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(x + 14, y + 12, 4, 4); // Eyes
-                    ctx.fillStyle = '#c0c0c0';
-                    ctx.fillRect(x + 10, y + 18, 12, 6); // Armor
-                    break;
-                case 11: // Shop (static pixel-art sign like border, with goods)
-                    ctx.fillStyle = '#808080';
-                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                    ctx.fillStyle = '#ffff00';
-                    ctx.fillRect(x + 8, y + 8, 16, 16);
-                    ctx.fillStyle = '#000000';
-                    ctx.font = '10px "Press Start 2P"';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('Shop', x + 16, y + 16);
-                    break;
-                case 12: // Key (static pixel-art golden key like border, with handle and teeth)
-                    ctx.fillStyle = '#ffd700';
-                    ctx.fillRect(x + 8, y + 16, 16, 8);
-                    ctx.fillStyle = '#daa520';
-                    ctx.beginPath();
-                    ctx.arc(x + 8, y + 20, 4, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#ffffff';
-                    ctx.beginPath();
-                    ctx.arc(x + 24, y + 20, 4, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#ffd700';
-                    ctx.fillRect(x + 22, y + 14, 4, 8); // Teeth
-                    break;
-                case 13: // Artifact (static pixel-art mystic orb like border, with runes)
-                    ctx.fillStyle = '#9400d3';
-                    ctx.beginPath();
-                    ctx.arc(x + 16, y + 16, 10, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.strokeStyle = '#4b0082';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-                    ctx.fillStyle = '#ffffff';
-                    ctx.beginPath();
-                    ctx.arc(x + 16, y + 16, 6, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#000000';
-                    ctx.font = '8px "Press Start 2P"';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('Rune', x + 16, y + 18);
-                    break;
-            }
-            ctx.restore();
-        }
+        document.addEventListener('mousedown', () => {
+            document.body.requestPointerLock();
+        });
 
-        function drawPlayer(x, y, frame, direction) {
-            ctx.save();
-            ctx.imageSmoothingEnabled = false; // Pixel-perfect retro look
-            // Body (classic pixel-art royal dress with embroidery and jewels)
-            ctx.fillStyle = '#ff69b4';
-            ctx.fillRect(x + 8, y + 8, 16, 24);
-            ctx.strokeStyle = '#ffd700';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(x + 8, y + 8, 16, 24);
-            ctx.fillStyle = '#ffffff';
-            for (let i = 0; i < 3; i++) {
-                ctx.fillRect(x + 10 + i * 4, y + 20, 2, 4);
+        document.addEventListener('mousemove', (event) => {
+            if (document.pointerLockElement === document.body) {
+                const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+                game.player.yaw += movementX * 0.002;
             }
-            ctx.fillStyle = '#00ffff';
-            ctx.beginPath();
-            ctx.arc(x + 12, y + 22, 4, 0, Math.PI * 2);
-            ctx.fill();
-            // Crown (pixel-art gold with jewels and filigree)
-            ctx.fillStyle = '#ffd700';
-            ctx.fillRect(x + 6, y, 20, 8);
-            ctx.fillStyle = '#00ffff';
-            ctx.beginPath();
-            ctx.arc(x + 10, y + 4, 4, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(x + 22, y + 4, 4, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#ff00ff';
-            ctx.beginPath();
-            ctx.arc(x + 16, y + 4, 4, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(x + 8, y + 8);
-            ctx.lineTo(x + 24, y + 8);
-            ctx.stroke();
-            // Face (pixel-art with eyes, nose, mouth, and blush)
-            ctx.fillStyle = '#ffe4c4';
-            ctx.fillRect(x + 12, y + 10, 8, 6);
-            ctx.fillStyle = '#ff69b4';
-            ctx.beginPath();
-            ctx.arc(x + 14, y + 12, 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(x + 18, y + 12, 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(x + 15, y + 13, 2, 2); // Nose
-            ctx.fillRect(x + 14, y + 15, 2, 1); // Mouth
-            ctx.fillStyle = '#ff8c8c';
-            ctx.beginPath();
-            ctx.arc(x + 14, y + 14, 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(x + 18, y + 14, 2, 0, Math.PI * 2);
-            ctx.fill();
-            // Walking animation (pixel-perfect limbs with flowing fabric, static for simplicity)
-            if (frame > 15) {
-                ctx.fillStyle = '#ff69b4';
-                if (direction === 'left') {
-                    ctx.fillRect(x + 4, y + 24, 8, 8); // Left leg
-                    ctx.fillRect(x + 24, y + 16, 8, 8); // Right arm
-                } else if (direction === 'right') {
-                    ctx.fillRect(x + 20, y + 24, 8, 8); // Right leg
-                    ctx.fillRect(x + 4, y + 16, 8, 8); // Left arm
-                } else if (direction === 'up') {
-                    ctx.fillRect(x + 12, y + 16, 8, 8); // Legs
-                    ctx.fillRect(x + 8, y + 8, 8, 8); // Arms up
-                } else if (direction === 'down') {
-                    ctx.fillRect(x + 12, y + 24, 8, 8); // Legs
-                    ctx.fillRect(x + 16, y + 8, 8, 8); // Arms down
-                }
-                ctx.strokeStyle = '#ffd700';
-                ctx.lineWidth = 1;
-                if (direction === 'left') {
-                    ctx.beginPath();
-                    ctx.moveTo(x + 24, y + 16);
-                    ctx.lineTo(x + 32, y + 16);
-                    ctx.stroke();
-                } else if (direction === 'right') {
-                    ctx.beginPath();
-                    ctx.moveTo(x + 4, y + 16);
-                    ctx.lineTo(x - 4, y + 16);
-                    ctx.stroke();
-                } else if (direction === 'up') {
-                    ctx.beginPath();
-                    ctx.moveTo(x + 8, y + 8);
-                    ctx.lineTo(x + 8, y);
-                    ctx.stroke();
-                } else if (direction === 'down') {
-                    ctx.beginPath();
-                    ctx.moveTo(x + 16, y + 8);
-                    ctx.lineTo(x + 16, y + 16);
-                    ctx.stroke();
-                }
-            }
-            ctx.restore();
-        }
+        });
 
-        // Draw static day/night sky with stars (inspired by flight sim stars, but static)
-        function drawSky() {
-            ctx.fillStyle = game.time === 'Day' ? '#87ceeb' : '#2f4f4f';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            if (game.time === 'Night') {
-                ctx.fillStyle = '#ffffff';
-                for (let i = 0; i < 100; i++) {
-                    ctx.beginPath();
-                    ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 1, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-        }
-
-        // Collision detection
-        function isCollision(x, y) {
-            const gridX = Math.floor(x / TILE_SIZE);
-            const gridY = Math.floor(y / TILE_SIZE);
-            const tile = maps[game.scene][gridY][gridX];
-            return tile === 2 || tile === 3; // Water or wall
-        }
-
+        // Update and render loop
         function update() {
             game.updateDayNight();
 
-            let newX = game.player.x;
-            let newY = game.player.y;
+            let dx = 0, dz = 0;
+            if (keys['ArrowUp']) dz -= game.player.speed;
+            if (keys['ArrowDown']) dz += game.player.speed;
+            if (keys['ArrowLeft']) dx -= game.player.speed;
+            if (keys['ArrowRight']) dx += game.player.speed;
 
-            if (keys['ArrowUp']) {
-                newY -= game.player.speed;
-                game.player.direction = 'up';
-            }
-            if (keys['ArrowDown']) {
-                newY += game.player.speed;
-                game.player.direction = 'down';
-            }
-            if (keys['ArrowLeft']) {
-                newX -= game.player.speed;
-                game.player.direction = 'left';
-            }
-            if (keys['ArrowRight']) {
-                newX += game.player.speed;
-                game.player.direction = 'right';
+            const newX = game.player.x + dx * Math.cos(game.player.yaw) + dz * Math.sin(game.player.yaw);
+            const newZ = game.player.z - dx * Math.sin(game.player.yaw) + dz * Math.cos(game.player.yaw);
+
+            if (!game.objects.some(obj => {
+                const distX = Math.abs(obj.x - newX);
+                const distZ = Math.abs(obj.z - newZ);
+                return (obj.type === 'building' || obj.type === 'wall') && distX < 2.5 && distZ < 2.5;
+            })) {
+                game.player.x = newX;
+                game.player.z = newZ;
             }
 
-            if (!isCollision(newX, newY) && !isCollision(newX + TILE_SIZE - 1, newY) &&
-                !isCollision(newX, newY + TILE_SIZE - 1) && !isCollision(newX + TILE_SIZE - 1, newY + TILE_SIZE - 1)) {
-                game.player.x = Math.max(0, Math.min(canvas.width - TILE_SIZE, newX));
-                game.player.y = Math.max(0, Math.min(canvas.height - TILE_SIZE, newY));
-            }
+            game.player.object.position.set(game.player.x, 1, game.player.z);
+            game.player.object.rotation.y = -game.player.yaw;
 
-            const gridX = Math.floor(game.player.x / TILE_SIZE);
-            const gridY = Math.floor(game.player.y / TILE_SIZE);
-            const tile = maps[game.scene][gridY][gridX];
+            // Camera follows player
+            camera.position.set(game.player.x, 10, game.player.z + 20);
+            camera.lookAt(game.player.x, 1, game.player.z);
 
-            if (tile === 4) { // Door
-                if (game.scene === 'town') {
-                    game.scene = gridY === 7 ? 'castle' : 'house';
-                } else {
-                    game.scene = 'town';
+            // Check for interactions
+            game.objects.forEach(obj => {
+                const distX = Math.abs(obj.x - game.player.x);
+                const distZ = Math.abs(obj.z - game.player.z);
+                if (distX < 1 && distZ < 1) {
+                    if (obj.type === 'flower') {
+                        game.flowers++;
+                        scene.remove(obj.mesh);
+                        game.objects = game.objects.filter(o => o !== obj);
+                        game.showDialogue('You picked a flower! *Sparkle*');
+                    } else if (obj.type === 'coin') {
+                        game.coins++;
+                        scene.remove(obj.mesh);
+                        game.objects = game.objects.filter(o => o !== obj);
+                        game.showDialogue('You found a coin!');
+                    } else if (obj.type === 'gem') {
+                        game.gems++;
+                        scene.remove(obj.mesh);
+                        game.objects = game.objects.filter(o => o !== obj);
+                        game.showDialogue('You found a gem!');
+                    } else if (obj.type === 'potion') {
+                        game.potions++;
+                        scene.remove(obj.mesh);
+                        game.objects = game.objects.filter(o => o !== obj);
+                        game.showDialogue('You found a potion!');
+                    } else if (obj.type === 'door') {
+                        if (game.scene === 'town') {
+                            if (obj.building === 'castle') game.scene = 'castle';
+                            else if (obj.building === 'house') game.scene = 'house';
+                            game.player.x = 0;
+                            game.player.z = 0;
+                            game.player.yaw = 0;
+                            game.updateObjects();
+                            game.showDialogue(`Entered the ${game.scene}!`);
+                        } else if (game.scene !== 'town' && obj.building === 'town') {
+                            game.scene = 'town';
+                            game.player.x = obj.x;
+                            game.player.z = obj.z;
+                            game.player.yaw = 0;
+                            game.updateObjects();
+                            game.showDialogue('Returned to the town!');
+                        }
+                    } else if (obj.type === 'npc') {
+                        if (game.scene === 'town' && !game.questStatus.townGuard) {
+                            game.showDialogue('Town Guard: Princess, the king needs a flower. Bring one to the castle!');
+                            game.questStatus.townGuard = true;
+                        } else if (game.scene === 'town' && game.questStatus.townGuard) {
+                            game.showDialogue('Town Guard: Have you given the flower to the king?');
+                        } else if (game.scene === 'castle' && !game.questStatus.castleKing && game.flowers > 0) {
+                            game.showDialogue('King: Thank you! Here’s a gem.');
+                            game.gems++;
+                            game.flowers--;
+                            game.questStatus.castleKing = true;
+                        } else if (game.scene === 'castle' && game.questStatus.castleKing) {
+                            game.showDialogue('King: You’re a hero!');
+                        } else if (game.scene === 'house' && !game.questStatus.villagerQuest) {
+                            game.showDialogue('Villager: I lost my gem. Find it, and I’ll give you a potion!');
+                            game.questStatus.villagerQuest = true;
+                        } else if (game.scene === 'house' && game.questStatus.villagerQuest && game.gems > 0) {
+                            game.showDialogue('Villager: Thank you! Here’s a potion.');
+                            game.potions++;
+                            game.gems--;
+                            game.questStatus.villagerQuest = false;
+                        }
+                    } else if (obj.type === 'shop') {
+                        if (game.coins >= 5) {
+                            game.coins -= 5;
+                            game.potions++;
+                            game.showDialogue('Shopkeeper: Here’s a potion for 5 coins!');
+                        } else {
+                            game.showDialogue('Shopkeeper: Need 5 coins for a potion!');
+                        }
+                    }
                 }
-                game.player.x = 12 * TILE_SIZE;
-                game.player.y = 9 * TILE_SIZE;
-                game.playSound('dialogue');
-            } else if (tile === 5) { // Flower
-                game.flowers++;
-                maps[game.scene][gridY][gridX] = 0;
-                game.showDialogue('You picked a radiant flower! *Sparkle*');
-                game.playSound('collect');
-            } else if (tile === 6) { // Coin
-                game.coins++;
-                maps[game.scene][gridY][gridX] = 0;
-                game.showDialogue('You found a glittering coin!');
-                game.playSound('collect');
-            } else if (tile === 7) { // Gem
-                game.gems++;
-                maps[game.scene][gridY][gridX] = 0;
-                game.showDialogue('A dazzling gem shines in your hand!');
-                game.playSound('collect');
-            } else if (tile === 8) { // Potion
-                game.potions++;
-                maps[game.scene][gridY][gridX] = 0;
-                game.showDialogue('You found a glowing potion of healing!');
-                game.playSound('collect');
-            } else if (tile === 9) { // NPC
-                if (game.scene === 'town' && !game.questStatus.townGuard) {
-                    game.showDialogue('Town Guard: Princess, the king needs a flower for his crown. Bring one to the castle!');
-                    game.questStatus.townGuard = true;
-                } else if (game.scene === 'town' && game.questStatus.townGuard) {
-                    game.showDialogue('Town Guard: Have you given the flower to the king?');
-                } else if (game.scene === 'castle' && !game.questStatus.castleKing && game.flowers > 0) {
-                    game.showDialogue('King: Thank you, princess! Here’s a gem as reward.');
-                    game.gems++;
-                    game.flowers--;
-                    game.questStatus.castleKing = true;
-                } else if (game.scene === 'castle' && game.questStatus.castleKing) {
-                    game.showDialogue('King: You’re a hero, princess!');
-                } else if (game.scene === 'house' && !game.questStatus.villagerQuest) {
-                    game.showDialogue('Villager: I lost my gem in the house. Find it, and I’ll give you a potion!');
-                    game.questStatus.villagerQuest = true;
-                    maps.house[7][8] = 7; // Hidden gem
-                } else if (game.scene === 'house' && game.questStatus.villagerQuest && game.gems > 0) {
-                    game.showDialogue('Villager: Thank you! Here’s a potion.');
-                    game.potions++;
-                    game.gems--;
-                    game.questStatus.villagerQuest = false;
-                }
-                game.playSound('dialogue');
-            } else if (tile === 11) { // Shop
-                if (game.coins >= 5) {
-                    game.coins -= 5;
-                    game.potions++;
-                    game.showDialogue('Shopkeeper: Here’s a potion for 5 coins!');
-                } else {
-                    game.showDialogue('Shopkeeper: Need 5 coins for a potion!');
-                }
-                game.playSound('dialogue');
-            } else if (tile === 12) { // Key
-                game.keys++;
-                maps[game.scene][gridY][gridX] = 0;
-                game.showDialogue('You found a golden key!');
-                game.playSound('collect');
-            } else if (tile === 13) { // Artifact
-                game.artifacts++;
-                maps[game.scene][gridY][gridX] = 0;
-                game.showDialogue('You discovered a mystical artifact!');
-                game.playSound('collect');
-            }
+            });
 
             if (Object.values(keys).some(k => k)) {
                 game.player.frame = (game.player.frame + 1) % 30;
@@ -652,35 +379,24 @@
             document.getElementById('coins').textContent = game.coins;
             document.getElementById('gems').textContent = game.gems;
             document.getElementById('potions').textContent = game.potions;
-            document.getElementById('keys').textContent = game.keys;
-            document.getElementById('artifacts').textContent = game.artifacts;
             document.getElementById('health').textContent = game.health;
-            document.getElementById('time').textContent = game.time;
             document.getElementById('location').textContent = game.scene.charAt(0).toUpperCase() + game.scene.slice(1);
         }
 
-        function draw() {
-            // Static day/night sky with stars (inspired by flight sim, but static and retro)
-            drawSky();
-
-            // Draw map (static pixel-art grid like border)
-            for (let y = 0; y < GRID_HEIGHT; y++) {
-                for (let x = 0; x < GRID_WIDTH; x++) {
-                    drawTile(maps[game.scene][y][x], x * TILE_SIZE, y * TILE_SIZE);
-                }
-            }
-
-            // Draw player
-            drawPlayer(game.player.x, game.player.y, game.player.frame, game.player.direction);
-        }
-
-        function gameLoop() {
+        function animate() {
+            requestAnimationFrame(animate);
             update();
-            draw();
-            requestAnimationFrame(gameLoop);
+            renderer.render(scene, camera);
         }
 
-        gameLoop();
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>
