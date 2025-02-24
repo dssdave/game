@@ -75,18 +75,6 @@
             z-index: 20;
             display: none;
         }
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #fff;
-            font-size: 18px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px;
-            border-radius: 5px;
-            z-index: 20;
-        }
         #joystickLeft, #joystickRight {
             position: absolute;
             width: 150px;
@@ -127,19 +115,16 @@
         <div id="joystickLeft"></div>
         <div id="joystickRight"></div>
         <div id="errorMessage">WebGL is not supported in your browser. Please use a modern browser like Chrome, Firefox, or Edge.</div>
-        <div id="loading">Loading game... Please wait.</div>
     </div>
 
     <script>
-        // Error handling for WebGL and loading state
+        // Error handling for WebGL
         try {
-            const loadingElement = document.getElementById('loading');
             const errorMessage = document.getElementById('errorMessage');
             const gameCanvas = document.getElementById('gameCanvas');
 
             if (!window.WebGLRenderingContext) {
                 errorMessage.style.display = 'block';
-                loadingElement.style.display = 'none';
                 gameCanvas.style.display = 'none';
                 document.getElementById('ui').style.display = 'none';
                 document.getElementById('ballCount').style.display = 'none';
@@ -163,8 +148,7 @@
                 throw new Error('Renderer initialization failed');
             }
 
-            // Hide loading and show canvas immediately
-            loadingElement.style.display = 'none';
+            // Show game canvas immediately
             gameCanvas.style.display = 'block';
 
             // Game state
@@ -472,10 +456,10 @@
 
                     const houseRoofGeometry = new THREE.ConeGeometry(4, 4, 32);
                     const houseRoofMaterial = new THREE.MeshStandardMaterial({ color: 0x800000, metalness: 0.2, roughness: 0.7 }); // Red roof
-                    const houseRoof = new THREE.Mesh(houseRoofGeometry, houseRoofMaterial);
-                    houseRoof.position.set(-40, 7, -40);
-                    houseRoof.castShadow = true;
-                    houseRoof.receiveShadow = true;
+                    const houseRoaf = new THREE.Mesh(houseRoafGeometry, houseRoafMaterial);
+                    houseRoaf.position.set(-40, 7, -40);
+                    houseRoaf.castShadow = true;
+                    houseRoaf.receiveShadow = true;
 
                     const windowGeometry = new THREE.PlaneGeometry(1, 1.5);
                     const windowMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 }); // Blue glass
@@ -488,7 +472,7 @@
                     houseBase.add(window1, window2);
 
                     const houseGroup = new THREE.Group();
-                    houseGroup.add(houseBase, houseRoof);
+                    houseGroup.add(houseBase, houseRoaf);
                     this.objects.push({ mesh: houseGroup, type: 'building', x: -40, z: -40 });
 
                     // Storybook-Style House (quaint cottage with stone walls, steep roof, chimney)
@@ -975,11 +959,11 @@
                         houseBase.castShadow = true;
                         houseBase.receiveShadow = true;
 
-                        const houseRoofGeometry = new THREE.ConeGeometry(4, 4, 32);
-                        const houseRoofMaterial = new THREE.MeshStandardMaterial({ color: 0x800000, metalness: 0.2, roughness: 0.7 });
-                        const houseRoof = new THREE.Mesh(houseRoofGeometry, houseRoofMaterial);
-                        houseRoof.position.set(-40, 7, -40);
-                        houseRoof.castShadow = true;
+                        const houseRoafGeometry = new THREE.ConeGeometry(4, 4, 32);
+                        const houseRoafMaterial = new THREE.MeshStandardMaterial({ color: 0x800000, metalness: 0.2, roughness: 0.7 });
+                        const houseRoaf = new THREE.Mesh(houseRoafGeometry, houseRoafMaterial);
+                        houseRoaf.position.set(-40, 7, -40);
+                        houseRoaf.castShadow = true;
                         houseRoaf.receiveShadow = true;
 
                         const windowGeometry = new THREE.PlaneGeometry(1, 1.5);
@@ -993,7 +977,7 @@
                         houseBase.add(window1, window2);
 
                         const houseGroup = new THREE.Group();
-                        houseGroup.add(houseBase, houseRoof);
+                        houseGroup.add(houseBase, houseRoaf);
                         objects.push({ mesh: houseGroup, type: 'building', x: -40, z: -40 });
 
                         const storybookBaseGeometry = new THREE.BoxGeometry(5, 4, 5);
@@ -1230,4 +1214,9 @@
                         objects.push({ mesh: tree2Group, type: 'decoration', x: -5, z: -5 });
 
                         const fountainBaseGeometry = new THREE.CylinderGeometry(2, 2, 1, 32);
-                        const fountainBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0
+                        const fountainBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
+                        const fountainBowlGeometry = new THREE.TorusGeometry(2, 0.5, 32, 32);
+                        const fountainBowlMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.3, roughness: 0.6 });
+                        const fountainWaterGeometry = new THREE.CylinderGeometry(1, 1, 0.1, 32);
+                        const fountainWaterMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.1, roughness: 0.7, transparent: true, opacity: 0.7 });
+                        const
