@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Enhanced 3D Princess RPG with Boundary, Joysticks, and Detailed Princess</title>
+    <title>Enhanced 3D Princess RPG with Fixes and Animations</title>
     <style>
         body {
             margin: 0;
@@ -187,8 +187,10 @@
                         castleKing: { active: false, completed: false },
                         villager: { active: false, completed: false }
                     };
-                    this.ballCount = 0; // Track ball throws
+                    this.ballCount = 0; // Track ball throws (up to 1,000)
+                    this.ballLimit = 1000; // Increased limit to 1,000
                     this.thrownBalls = []; // Track thrown balls
+                    this.collectionGlow = null; // For collection animation
                     this.joystickLeft = null;
                     this.joystickRight = null;
                     this.keys = {}; // Track keyboard input
@@ -205,22 +207,46 @@
                     this.time = this.dayNightCycle < 600 ? 'Day' : 'Night';
                 }
                 throwBall() {
-                    if (this.mana >= 5) {
+                    if (this.ballCount < this.ballLimit && this.mana >= 5) {
                         this.mana -= 5;
                         const ballGeometry = new THREE.SphereGeometry(0.3, 16, 16);
                         const ballMaterial = new THREE.MeshStandardMaterial({ color: 0xff4500, metalness: 0.1, roughness: 0.7 }); // Orange ball
                         const ball = new THREE.Mesh(ballGeometry, ballMaterial);
                         ball.position.copy(this.player.object.position);
                         ball.position.y += 1; // Throw from princess height
-                        ball.userData = { velocity: new THREE.Vector3(Math.sin(this.player.yaw) * 0.5, 0.3, Math.cos(this.player.yaw) * 0.5) };
+                        // Throw in direction princess is facing (opposite of camera direction)
+                        const direction = new THREE.Vector3(Math.cos(this.player.yaw), 0, Math.sin(this.player.yaw)).normalize();
+                        ball.userData = { velocity: direction.multiplyScalar(0.5).add(new THREE.Vector3(0, 0.3, 0)) }; // Forward with upward arc
                         scene.add(ball);
                         this.thrownBalls.push(ball);
                         this.ballCount++;
                         document.getElementById('ballCountValue').textContent = this.ballCount;
                         this.showDialogue('Threw a magic ball!');
+                    } else if (this.ballCount >= this.ballLimit) {
+                        this.showDialogue('Reached maximum ball throws (1,000)!');
                     } else {
                         this.showDialogue('Not enough mana to throw a ball!');
                     }
+                }
+                startCollectionGlow() {
+                    if (this.collectionGlow) scene.remove(this.collectionGlow);
+                    const glowGeometry = new THREE.SphereGeometry(1, 16, 16);
+                    const glowMaterial = new THREE.MeshBasicMaterial({ 
+                        color: 0xffff00, 
+                        transparent: true, 
+                        opacity: 0.5,
+                        side: THREE.BackSide 
+                    });
+                    this.collectionGlow = new THREE.Mesh(glowGeometry, glowMaterial);
+                    this.collectionGlow.position.copy(this.player.object.position);
+                    this.collectionGlow.position.y += 0.5; // Center around princess
+                    scene.add(this.collectionGlow);
+                    setTimeout(() => {
+                        if (this.collectionGlow) {
+                            scene.remove(this.collectionGlow);
+                            this.collectionGlow = null;
+                        }
+                    }, 1000); // Glow for 1 second
                 }
                 initScene() {
                     // Ground (detailed terrain with grass texture)
@@ -344,7 +370,7 @@
                     rightEarring.position.set(0.4, 1.5, 0.3);
                     princessGroup.add(necklaceCube, leftEarring, rightEarring);
 
-                    princessGroup.position.set(this.player.x, 0.5, this.player.z); // Lower position for blocky character
+                    princessGroup.position.set(this.player.x, 0.5, this.player.z); // Starting position
                     this.player.object = princessGroup;
                     scene.add(princessGroup);
 
@@ -626,7 +652,7 @@
                     const leaves1 = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial);
                     leaves1.position.y = 2.5;
                     tree1Group.add(trunk1, leaves1);
-                    tree1Group.position.set(5, 0, 5);
+                    tree1Group.position.set(5, 0, 5); // Moved away from starting position
                     tree1Group.castShadow = true;
                     this.objects.push({ mesh: tree1Group, type: 'decoration', x: 5, z: 5 });
 
@@ -635,7 +661,7 @@
                     const leaves2 = new THREE.Mesh(treeLeavesGeometry, treeLeavesMaterial.clone());
                     leaves2.position.y = 2.5;
                     tree2Group.add(trunk2, leaves2);
-                    tree2Group.position.set(-5, 0, -5);
+                    tree2Group.position.set(-5, 0, -5); // Moved away from starting position
                     tree2Group.castShadow = true;
                     this.objects.push({ mesh: tree2Group, type: 'decoration', x: -5, z: -5 });
 
@@ -653,9 +679,9 @@
                     fountainWater.position.y = 1.1;
                     const fountainGroup = new THREE.Group();
                     fountainGroup.add(fountainBase, fountainBowl, fountainWater);
-                    fountainGroup.position.set(0, 0, 0);
+                    fountainGroup.position.set(0, 0, 10); // Moved away from starting position
                     fountainGroup.castShadow = true;
-                    this.objects.push({ mesh: fountainGroup, type: 'decoration', x: 0, z: 0 });
+                    this.objects.push({ mesh: fountainGroup, type: 'decoration', x: 0, z: 10 });
 
                     // Town Boundary (dense shrubs and trees, hard boundary)
                     const shrubGeometry = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 32);
@@ -1062,7 +1088,7 @@
                     }
                 });
 
-                // Object interactions
+                // Object interactions with collection animation
                 game.objects.forEach(obj => {
                     const distX = Math.abs(obj.x - game.player.x);
                     const distZ = Math.abs(obj.z - game.player.z);
@@ -1072,32 +1098,38 @@
                             scene.remove(obj.mesh);
                             game.objects = game.objects.filter(o => o !== obj);
                             game.showDialogue('You picked a radiant flower! *Sparkle*');
+                            game.startCollectionGlow();
                         } else if (obj.type === 'coin') {
                             game.coins++;
                             scene.remove(obj.mesh);
                             game.objects = game.objects.filter(o => o !== obj);
                             game.showDialogue('You found a glittering coin!');
+                            game.startCollectionGlow();
                         } else if (obj.type === 'gem') {
                             game.gems++;
                             scene.remove(obj.mesh);
                             game.objects = game.objects.filter(o => o !== obj);
                             game.showDialogue('A dazzling gem shines in your hand!');
+                            game.startCollectionGlow();
                         } else if (obj.type === 'potion') {
                             game.potions++;
                             game.health = Math.min(100, game.health + 20);
                             scene.remove(obj.mesh);
                             game.objects = game.objects.filter(o => o !== obj);
                             game.showDialogue('You drank a potion! Health restored.');
+                            game.startCollectionGlow();
                         } else if (obj.type === 'key') {
                             game.keys++;
                             scene.remove(obj.mesh);
                             game.objects = game.objects.filter(o => o !== obj);
                             game.showDialogue('You found a golden key!');
+                            game.startCollectionGlow();
                         } else if (obj.type === 'artifact') {
                             game.artifacts++;
                             scene.remove(obj.mesh);
                             game.objects = game.objects.filter(o => o !== obj);
                             game.showDialogue('You discovered a mystical artifact!');
+                            game.startCollectionGlow();
                         } else if (obj.type === 'door') {
                             if (game.scene === 'town') {
                                 if (obj.building === 'castle' && game.keys > 0) {
