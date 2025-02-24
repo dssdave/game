@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Simplified 3D Princess RPG</title>
+    <title>Fixed 3D Princess RPG</title>
     <style>
         body {
             margin: 0;
@@ -399,7 +399,7 @@
                     directionalLight.shadow.camera.far = 50;
                     scene.add(directionalLight);
 
-                    // Simplified objects (fewer for performance)
+                    // Simplified objects
                     const castleGeometry = new THREE.BoxGeometry(10, 5, 10);
                     const castleMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
                     const castle = new THREE.Mesh(castleGeometry, castleMaterial);
@@ -453,7 +453,7 @@
                     });
 
                     this.joystickLeft.on('move', (evt, data) => {
-                        if (data.force > 0) {
+                        if (data && data.force > 0) {
                             const angle = data.angle.radian;
                             const speed = data.force * this.player.speed;
                             const dx = Math.cos(angle) * speed;
@@ -483,7 +483,7 @@
                     });
 
                     this.joystickRight.on('move', (evt, data) => {
-                        if (data.force > 0) {
+                        if (data && data.force > 0) {
                             const sensitivity = 0.002;
                             this.player.yaw += data.vector.x * sensitivity * data.force;
                             this.player.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.player.pitch + data.vector.y * sensitivity * data.force));
@@ -604,7 +604,7 @@
                 game.updateDayNight();
 
                 let dx = 0, dz = 0;
-                if (game.keys['ArrowUp'] || (game.joystickLeft && game.joystickLeft.getActiveIds().length > 0)) {
+                if (game.keys['ArrowUp'] || (game.joystickLeft && game.joystickLeft.active)) {
                     dz -= game.player.speed;
                 }
                 if (game.keys['ArrowDown']) {
@@ -632,7 +632,7 @@
                 game.player.object.position.set(game.player.x, 0.5, game.player.z);
                 game.player.object.rotation.y = -game.player.yaw;
 
-                if (Object.values(game.keys).some(k => k) || (game.joystickLeft && game.joystickLeft.getActiveIds().length > 0)) {
+                if (Object.values(game.keys).some(k => k) || (game.joystickLeft && game.joystickLeft.active)) {
                     game.player.object.traverse(child => {
                         if (child.isMesh && child.material.color.equals(new THREE.Color(0xff69b4))) {
                             child.rotation.z = Math.sin(Date.now() * 0.005) * 0.1;
