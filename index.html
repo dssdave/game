@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Enhanced 3D Princess RPG with Fixes and Storybook House</title>
+    <title>Enhanced 3D Princess RPG with Fixes</title>
     <style>
         body {
             margin: 0;
@@ -131,10 +131,14 @@
     </div>
 
     <script>
-        // Error handling for WebGL
+        // Error handling for WebGL and loading state
         try {
+            const loadingElement = document.getElementById('loading');
+            const errorMessage = document.getElementById('errorMessage');
+
             if (!window.WebGLRenderingContext) {
-                document.getElementById('errorMessage').style.display = 'block';
+                errorMessage.style.display = 'block';
+                loadingElement.style.display = 'none';
                 document.getElementById('gameCanvas').style.display = 'none';
                 document.getElementById('ui').style.display = 'none';
                 document.getElementById('ballCount').style.display = 'none';
@@ -152,7 +156,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            document.getElementById('loading').style.display = 'none';
 
             // Game state
             let game;
@@ -185,7 +188,8 @@
                     this.quests = {
                         townGuard: { active: false, completed: false },
                         castleKing: { active: false, completed: false },
-                        villager: { active: false, completed: false }
+                        villager: { active: false, completed: false },
+                        storyteller: { active: false, completed: false }
                     };
                     this.ballCount = 0; // Track ball throws (up to 1,000,000)
                     this.ballLimit = 1000000; // Increased limit to 1,000,000
@@ -197,6 +201,7 @@
                     this.initScene();
                     this.initJoysticks();
                     this.initKeyboardMouse();
+                    loadingElement.style.display = 'none'; // Hide loading once game initializes
                 }
                 showDialogue(text) {
                     this.dialogue = text;
@@ -1075,6 +1080,13 @@
                         guard.position.set(0, 1, 0);
                         guard.castShadow = true;
                         npcs.push({ mesh: guard, x: 0, z: 0, role: 'guard' });
+                    } else if (scene === 'storybook') {
+                        const npcGeometry = new THREE.CylinderGeometry(0.4, 0.4, 1.5, 32);
+                        const npcMaterial = new THREE.MeshStandardMaterial({ color: 0x00008b, metalness: 0.3, roughness: 0.6 });
+                        const storyteller = new THREE.Mesh(npcGeometry, npcMaterial);
+                        storyteller.position.set(0, 0.75, 5);
+                        storyteller.castShadow = true;
+                        npcs.push({ mesh: storyteller, x: 0, z: 5, role: 'storyteller' });
                     }
                     return npcs;
                 }
@@ -1260,4 +1272,15 @@
                                 this.player.z = obj.z;
                                 this.player.yaw = 0;
                                 this.updateObjects();
-                                this.showDialogue('Returned to
+                                this.showDialogue('Returned to the town!');
+                            }
+                        } else if (obj.type === 'shop') {
+                            if (game.coins >= 5) {
+                                game.coins -= 5;
+                                game.potions++;
+                                game.health = Math.min(100, game.health + 20);
+                                game.showDialogue('Shopkeeper: Bought a potion! Health restored.');
+                            } else {
+                                game.showDialogue('Shopkeeper: Need 5 coins for a potion!');
+                            }
+                        } else if (obj.type === 'decoration
