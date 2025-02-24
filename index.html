@@ -87,7 +87,7 @@
         <div id="dialogue"></div>
         <div id="errorMessage">WebGL is not supported in your browser. Please use a modern browser like Chrome, Firefox, or Edge.</div>
         <div id="loading">Loading game... Please wait.</div>
-    </script>
+    </div>
 
     <script>
         // Error handling for WebGL
@@ -105,9 +105,13 @@
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas') });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             document.getElementById('loading').style.display = 'none';
 
             // Game state
+            let game;
+
             class Game {
                 constructor() {
                     this.scene = 'town';
@@ -162,7 +166,8 @@
                         side: THREE.BackSide
                     });
                     const sky = new THREE.Mesh(skyGeometry, skyMaterial);
-                    sky.material.color.set(game.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
+                    sky.material.color.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
+                    sky.name = 'sky';
                     scene.add(sky);
 
                     // Player (princess, detailed model)
@@ -385,6 +390,14 @@
                         door.position.set(-9, 2, -9); // Bottom-left exit
                         door.rotation.y = Math.PI / 2;
                         objects.push({ mesh: door, type: 'door', x: -9, z: -9, building: 'town' });
+
+                        // Hidden gem (cyan octahedron)
+                        const gemGeometry = new THREE.OctahedronGeometry(0.5, 0);
+                        const gemMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.5, roughness: 0.5 });
+                        const gem = new THREE.Mesh(gemGeometry, gemMaterial);
+                        gem.position.set(0, 0.5, 0);
+                        gem.castShadow = true;
+                        objects.push({ mesh: gem, type: 'gem', x: 0, z: 0 });
                     }
                     return objects;
                 }
@@ -425,7 +438,8 @@
                 }
             }
 
-            let game = new Game();
+            // Initialize game after scene setup
+            game = new Game();
 
             // Camera setup
             camera.position.set(0, 10, 20);
@@ -653,38 +667,17 @@
                     game.player.frame = (game.player.frame + 1) % 30;
                 }
 
-                // Update dialogue
-                if (game.dialogueTimer > 0) {
-                    game.dialogueTimer--;
-                    if (game.dialogueTimer === 0) {
-                        game.dialogue = '';
-                    }
+                // Update sky color for day/night
+                const sky = scene.getObjectByName('sky');
+                if (sky) {
+                    sky.material.color.set(this.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
                 }
-                document.getElementById('dialogue').textContent = game.dialogue;
-
-                // Update UI
-                document.getElementById('flowers').textContent = game.flowers;
-                document.getElementById('coins').textContent = game.coins;
-                document.getElementById('gems').textContent = game.gems;
-                document.getElementById('potions').textContent = game.potions;
-                document.getElementById('keys').textContent = game.keys;
-                document.getElementById('artifacts').textContent = game.artifacts;
-                document.getElementById('health').textContent = game.health;
-                document.getElementById('mana').textContent = game.mana;
-                document.getElementById('time').textContent = game.time;
-                document.getElementById('location').textContent = game.scene.charAt(0).toUpperCase() + game.scene.slice(1);
             }
 
             function animate() {
                 requestAnimationFrame(animate);
                 update();
                 renderer.render(scene, camera);
-
-                // Update sky color for day/night
-                const sky = scene.getObjectByName('sky');
-                if (sky) {
-                    sky.material.color.set(game.time === 'Day' ? 0x87ceeb : 0x2f4f4f);
-                }
             }
 
             animate();
