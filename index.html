@@ -166,7 +166,6 @@
         // Show game canvas
         gameCanvas.style.display = 'block';
 
-        // Main game object
         let game;
 
         class Game {
@@ -183,11 +182,11 @@
             this.time = 'Day';
             this.dayNightCycle = 0;
 
-            // Slower speed to avoid "wild" joystick movement
+            // Slower speed to ensure calmer joystick movement
             this.player = {
               x: 0,
               z: 0,
-              speed: 0.2, // reduced from 0.5
+              speed: 0.2,
               yaw: 0,
               pitch: 0,
               object: null
@@ -197,19 +196,15 @@
             this.dialogueTimer = 0;
             this.objects = [];
             this.npcs = [];
-            this.quests = {
-              townGuard: { active: false, completed: false },
-              castleKing: { active: false, completed: false },
-              villager: { active: false, completed: false },
-              storyteller: { active: false, completed: false }
-            };
+            this.quests = {};
+            // Throw limit 1000x higher (1 billion)
             this.ballCount = 0;
-            this.ballLimit = 1000000;
+            this.ballLimit = 1000000000; 
             this.thrownBalls = [];
             this.collectionGlow = null;
             this.joystickLeft = null;
             this.joystickRight = null;
-            this.keys = {}; // Keyboard input state
+            this.keys = {};
             this.sceneObj = scene;
             this.camera = camera;
             this.renderer = renderer;
@@ -265,14 +260,13 @@
               this.showDialogue('Threw a magic ball!');
               document.getElementById('mana').textContent = this.mana;
             } else if (this.ballCount >= this.ballLimit) {
-              this.showDialogue('Reached maximum ball throws (1,000,000)!');
+              this.showDialogue('Reached maximum ball throws (1,000,000,000)!');
             } else {
               this.showDialogue('Not enough mana to throw a ball!');
             }
           }
 
           startCollectionGlow() {
-            // Brief glow effect when picking up items
             if (this.collectionGlow) this.sceneObj.remove(this.collectionGlow);
             const glowGeometry = new THREE.SphereGeometry(1, 16, 16);
             const glowMaterial = new THREE.MeshBasicMaterial({
@@ -300,13 +294,6 @@
               if (game && game.renderer && game.sceneObj && game.camera) {
                 game.update();
                 game.renderer.render(game.sceneObj, game.camera);
-              } else {
-                console.error('Game, renderer, scene, or camera not properly initialized.', {
-                  game,
-                  renderer,
-                  scene,
-                  camera
-                });
               }
             };
             animate();
@@ -316,8 +303,7 @@
             this.updateDayNight();
 
             // Movement from arrow keys or left joystick
-            let dx = 0,
-              dz = 0;
+            let dx = 0, dz = 0;
             if (this.keys['ArrowUp'] || (this.joystickLeft && this.joystickLeft.active)) {
               dz -= this.player.speed;
             }
@@ -331,27 +317,27 @@
               dx += this.player.speed;
             }
 
-            // Calculate new position
-            const newX =
-              this.player.x + dx * Math.cos(this.player.yaw) + dz * Math.sin(this.player.yaw);
-            const newZ =
-              this.player.z -
-              dx * Math.sin(this.player.yaw) +
-              dz * Math.cos(this.player.yaw);
+            // Calculate new potential position
+            const newX = this.player.x + dx * Math.cos(this.player.yaw) + dz * Math.sin(this.player.yaw);
+            const newZ = this.player.z - dx * Math.sin(this.player.yaw) + dz * Math.cos(this.player.yaw);
 
-            // Check collisions (buildings, walls, boundaries)
-            const blocked = this.objects.some(obj => {
-              const distX = Math.abs(obj.x - newX);
-              const distZ = Math.abs(obj.z - newZ);
-              return (
-                (obj.type === 'building' ||
-                  obj.type === 'wall' ||
-                  obj.type === 'boundary') &&
-                distX < 5 &&
-                distZ < 5
-              );
-            });
+            // Check collisions with any blocking object
+            let blocked = false;
+            for (const obj of this.objects) {
+              if (obj.type === 'building' || obj.type === 'wall' || obj.type === 'boundary') {
+                // Simple bounding-circle collision
+                const dxObj = newX - obj.x;
+                const dzObj = newZ - obj.z;
+                const distSq = dxObj * dxObj + dzObj * dzObj;
+                const r = (obj.boundingRadius || 1) + 0.5; // +0.5 for player's radius
+                if (distSq < r * r) {
+                  blocked = true;
+                  break;
+                }
+              }
+            }
 
+            // Only move if not blocked
             if (!blocked) {
               this.player.x = newX;
               this.player.z = newZ;
@@ -361,26 +347,20 @@
             this.player.object.position.set(this.player.x, 0.5, this.player.z);
             this.player.object.rotation.y = -this.player.yaw;
 
-            // Simple walking animation
+            // Simple "walking" sway if moving
             const isMoving =
               Object.values(this.keys).some(k => k) ||
               (this.joystickLeft && this.joystickLeft.active);
             if (isMoving) {
               this.player.object.traverse(child => {
-                if (
-                  child.isMesh &&
-                  child.material.color.equals(new THREE.Color(0xff69b4))
-                ) {
+                if (child.isMesh && child.userData.isBodyPart) {
                   child.rotation.z = Math.sin(Date.now() * 0.005) * 0.1;
                 }
               });
             } else {
               this.player.object.traverse(child => {
-                if (
-                  child.isMesh &&
-                  child.material.color.equals(new THREE.Color(0xff69b4))
-                ) {
-                  child.rotation.copy(child.userData.originalRotation || new THREE.Euler());
+                if (child.isMesh && child.userData.isBodyPart) {
+                  child.rotation.set(0, 0, 0);
                 }
               });
             }
@@ -393,7 +373,7 @@
             );
             this.camera.lookAt(this.player.x, 0.5, this.player.z);
 
-            // Update thrown balls (gravity + removal)
+            // Update thrown balls
             this.thrownBalls.forEach((ball, index) => {
               ball.position.add(ball.userData.velocity);
               ball.userData.velocity.y -= 0.01; // gravity
@@ -403,34 +383,34 @@
               }
             });
 
-            // Check for picking up items
-            this.objects.forEach(obj => {
-              const distX = Math.abs(obj.x - this.player.x);
-              const distZ = Math.abs(obj.z - this.player.z);
-              // If close enough, "pick up" certain objects
-              if (distX < 1 && distZ < 1) {
-                if (obj.type === 'flower') {
-                  this.flowers++;
-                  document.getElementById('flowers').textContent = this.flowers;
+            // Check for item pickups
+            for (const obj of this.objects) {
+              if (obj.type === 'flower' || obj.type === 'coin') {
+                const dxObj = this.player.x - obj.x;
+                const dzObj = this.player.z - obj.z;
+                const distSq = dxObj * dxObj + dzObj * dzObj;
+                // If close enough, pick up
+                if (distSq < 1) {
+                  if (obj.type === 'flower') {
+                    this.flowers++;
+                    document.getElementById('flowers').textContent = this.flowers;
+                    this.showDialogue('You picked a flower!');
+                  } else if (obj.type === 'coin') {
+                    this.coins++;
+                    document.getElementById('coins').textContent = this.coins;
+                    this.showDialogue('You picked up a coin!');
+                  }
                   this.sceneObj.remove(obj.mesh);
                   this.objects = this.objects.filter(o => o !== obj);
-                  this.showDialogue('You picked a flower!');
-                  this.startCollectionGlow();
-                } else if (obj.type === 'coin') {
-                  this.coins++;
-                  document.getElementById('coins').textContent = this.coins;
-                  this.sceneObj.remove(obj.mesh);
-                  this.objects = this.objects.filter(o => o !== obj);
-                  this.showDialogue('You picked up a coin!');
                   this.startCollectionGlow();
                 }
               }
-            });
+            }
           }
 
           initScene() {
             // Ground
-            const groundGeometry = new THREE.PlaneGeometry(100, 100, 50, 50);
+            const groundGeometry = new THREE.PlaneGeometry(200, 200, 50, 50);
             const groundMaterial = new THREE.MeshStandardMaterial({
               color: 0x6bb26b,
               side: THREE.DoubleSide,
@@ -439,11 +419,10 @@
             });
             const ground = new THREE.Mesh(groundGeometry, groundMaterial);
             ground.rotation.x = Math.PI / 2;
-            ground.castShadow = true;
             ground.receiveShadow = true;
             this.sceneObj.add(ground);
 
-            // Skybox (with offset as vec3 fix)
+            // Skybox
             const skyGeometry = new THREE.SphereGeometry(500, 60, 40);
             const skyMaterial = new THREE.ShaderMaterial({
               uniforms: {
@@ -480,250 +459,286 @@
             sky.name = 'sky';
             this.sceneObj.add(sky);
 
-            // Basic lighting
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
             this.sceneObj.add(ambientLight);
 
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
             directionalLight.position.set(10, 20, 10);
             directionalLight.castShadow = true;
-            directionalLight.shadow.mapSize.width = 4096;
-            directionalLight.shadow.mapSize.height = 4096;
-            directionalLight.shadow.camera.near = 0.5;
-            directionalLight.shadow.camera.far = 100;
-            directionalLight.shadow.camera.left = -50;
-            directionalLight.shadow.camera.right = 50;
-            directionalLight.shadow.camera.top = 50;
-            directionalLight.shadow.camera.bottom = -50;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
             this.sceneObj.add(directionalLight);
 
-            // Create the princess (player character)
+            // Player
             this.createPlayerModel();
 
-            // Add boundary shrubs/trees around edges
+            // Boundary
             this.createBoundary();
 
-            // Add a simple castle with collision
+            // Castle with towers + door
             this.createCastle();
 
-            // Add a simple house with collision
+            // House with door + roof
             this.createHouse();
 
-            // Add some flowers and coins to pick up
-            this.createPickups();
+            // Flowers (multiple)
+            this.createFlowers();
+
+            // Coins (let's drop a few)
+            this.createCoins();
           }
 
           createBoundary() {
-            // Large square boundary at +/- 50
-            const boundaryGroup = new THREE.Group();
-            const boundarySize = 50;
-
-            // Helper function to create a single shrub or small tree
-            const createShrub = () => {
-              const geometry = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 8);
-              const material = new THREE.MeshStandardMaterial({ color: 0x228b22 });
-              const mesh = new THREE.Mesh(geometry, material);
-              mesh.castShadow = true;
-              mesh.receiveShadow = true;
-              return mesh;
-            };
-
-            // Top & bottom edges
-            for (let x = -boundarySize; x <= boundarySize; x += 2) {
-              const shrubTop = createShrub();
-              shrubTop.position.set(x, 0.75, -boundarySize);
-              boundaryGroup.add(shrubTop);
-
-              const shrubBottom = createShrub();
-              shrubBottom.position.set(x, 0.75, boundarySize);
-              boundaryGroup.add(shrubBottom);
+            // We'll create shrubs around the edges at +/- 90 for a big area
+            // Each shrub is an object with boundingRadius ~1
+            for (let x = -90; x <= 90; x += 4) {
+              // top row
+              this.addShrub(x, -90);
+              // bottom row
+              this.addShrub(x, 90);
             }
-
-            // Left & right edges
-            for (let z = -boundarySize; z <= boundarySize; z += 2) {
-              const shrubLeft = createShrub();
-              shrubLeft.position.set(-boundarySize, 0.75, z);
-              boundaryGroup.add(shrubLeft);
-
-              const shrubRight = createShrub();
-              shrubRight.position.set(boundarySize, 0.75, z);
-              boundaryGroup.add(shrubRight);
+            for (let z = -90; z <= 90; z += 4) {
+              // left col
+              this.addShrub(-90, z);
+              // right col
+              this.addShrub(90, z);
             }
+          }
 
-            boundaryGroup.position.set(0, 0, 0);
+          addShrub(x, z) {
+            const shrubGeo = new THREE.CylinderGeometry(1, 1, 2, 8);
+            const shrubMat = new THREE.MeshStandardMaterial({ color: 0x228b22 });
+            const shrubMesh = new THREE.Mesh(shrubGeo, shrubMat);
+            shrubMesh.position.set(x, 1, z);
+            shrubMesh.castShadow = true;
+            shrubMesh.receiveShadow = true;
+            this.sceneObj.add(shrubMesh);
 
-            // Push into objects with type 'boundary' so collisions block movement
-            this.objects.push({ mesh: boundaryGroup, type: 'boundary', x: 0, z: 0 });
-            this.sceneObj.add(boundaryGroup);
+            this.objects.push({
+              mesh: shrubMesh,
+              type: 'boundary',
+              x: x,
+              z: z,
+              boundingRadius: 2 // bigger radius so you can't slip through
+            });
           }
 
           createCastle() {
-            // Simple big box as a "castle" with collision
-            const castleGeometry = new THREE.BoxGeometry(10, 10, 10);
-            const castleMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
-            const castleMesh = new THREE.Mesh(castleGeometry, castleMaterial);
-            // Center is at y=5 because box is 10 high
-            castleMesh.position.set(20, 5, 20);
-            castleMesh.castShadow = true;
-            castleMesh.receiveShadow = true;
+            // We'll create a group with a main keep, four towers, and a door plane
+            const castleGroup = new THREE.Group();
 
-            // Add to objects with type 'building'
-            this.objects.push({ mesh: castleMesh, type: 'building', x: 20, z: 20 });
-            this.sceneObj.add(castleMesh);
+            // Main keep (big box)
+            const keepGeo = new THREE.BoxGeometry(20, 10, 20);
+            const keepMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+            const keep = new THREE.Mesh(keepGeo, keepMat);
+            keep.position.set(0, 5, 0);
+            keep.castShadow = true;
+            keep.receiveShadow = true;
+            castleGroup.add(keep);
+
+            // Four towers (cylinders) at corners
+            const towerGeo = new THREE.CylinderGeometry(3, 3, 15, 16);
+            const towerMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+            const towerPositions = [
+              [10, 7.5, 10],
+              [-10, 7.5, 10],
+              [10, 7.5, -10],
+              [-10, 7.5, -10]
+            ];
+            towerPositions.forEach(pos => {
+              const tower = new THREE.Mesh(towerGeo, towerMat);
+              tower.position.set(pos[0], pos[1], pos[2]);
+              tower.castShadow = true;
+              tower.receiveShadow = true;
+              castleGroup.add(tower);
+            });
+
+            // Door (plane) at the front (z = 10 side)
+            const doorGeo = new THREE.PlaneGeometry(4, 6);
+            const doorMat = new THREE.MeshStandardMaterial({ color: 0x553300, side: THREE.DoubleSide });
+            const door = new THREE.Mesh(doorGeo, doorMat);
+            door.position.set(0, 3, 10.01); // slightly in front
+            castleGroup.add(door);
+
+            // Position entire castle group
+            castleGroup.position.set(40, 0, 40);
+            this.sceneObj.add(castleGroup);
+
+            // Single bounding object for collisions
+            this.objects.push({
+              mesh: castleGroup,
+              type: 'building',
+              x: 40,
+              z: 40,
+              boundingRadius: 15 // so you can't walk through the walls
+            });
           }
 
           createHouse() {
-            // Simple box as a "house" with collision
-            const houseGeometry = new THREE.BoxGeometry(6, 6, 6);
-            const houseMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
-            const houseMesh = new THREE.Mesh(houseGeometry, houseMaterial);
-            // Center is y=3 because box is 6 high
-            houseMesh.position.set(-20, 3, -20);
-            houseMesh.castShadow = true;
-            houseMesh.receiveShadow = true;
+            // Group with a box base, a triangular roof, and a door
+            const houseGroup = new THREE.Group();
 
-            // Add to objects with type 'building'
-            this.objects.push({ mesh: houseMesh, type: 'building', x: -20, z: -20 });
-            this.sceneObj.add(houseMesh);
+            // Base
+            const baseGeo = new THREE.BoxGeometry(10, 6, 8);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.set(0, 3, 0);
+            base.castShadow = true;
+            base.receiveShadow = true;
+            houseGroup.add(base);
+
+            // Roof (triangular prism or a simple wedge)
+            // We'll use a simple wedge by combining a box + rotation, or we can do a custom geometry.
+            // Let's do a box rotated at 45 degrees:
+            const roofGeo = new THREE.CylinderGeometry(1, 6, 10, 4, 1); 
+            // Or do a simpler approach with a Cone
+            const roofConeGeo = new THREE.ConeGeometry(6, 4, 4);
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0x800000 });
+            const roof = new THREE.Mesh(roofConeGeo, roofMat);
+            roof.position.set(0, 7, 0); 
+            roof.rotation.y = Math.PI / 4; // rotate so corners line up
+            roof.castShadow = true;
+            roof.receiveShadow = true;
+            houseGroup.add(roof);
+
+            // Door
+            const doorGeo = new THREE.PlaneGeometry(2, 4);
+            const doorMat = new THREE.MeshStandardMaterial({ color: 0x553300, side: THREE.DoubleSide });
+            const door = new THREE.Mesh(doorGeo, doorMat);
+            door.position.set(0, 2, 4.01); // front side
+            houseGroup.add(door);
+
+            // Position the house group
+            houseGroup.position.set(-40, 0, -40);
+            this.sceneObj.add(houseGroup);
+
+            // Single bounding object
+            this.objects.push({
+              mesh: houseGroup,
+              type: 'building',
+              x: -40,
+              z: -40,
+              boundingRadius: 10
+            });
           }
 
-          createPickups() {
-            // Flower pickup
-            const flowerGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.3, 8);
-            const flowerMaterial = new THREE.MeshStandardMaterial({ color: 0xff00ff });
-            const flowerMesh = new THREE.Mesh(flowerGeometry, flowerMaterial);
-            // Put it near origin
-            flowerMesh.position.set(0, 0.15, 0);
-            this.objects.push({ mesh: flowerMesh, type: 'flower', x: 0, z: 0 });
-            this.sceneObj.add(flowerMesh);
+          createFlowers() {
+            // Each flower: thin green stem + red bloom (small sphere).
+            // Place ~10 flowers at random spots near center
+            for (let i = 0; i < 10; i++) {
+              const fx = Math.random() * 40 - 20; // from -20 to 20
+              const fz = Math.random() * 40 - 20;
 
-            // Coin pickup
-            const coinGeometry = new THREE.CircleGeometry(0.2, 16);
-            const coinMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00 });
-            const coinMesh = new THREE.Mesh(coinGeometry, coinMaterial);
-            coinMesh.position.set(5, 0.01, 5);
-            // Lay flat
-            coinMesh.rotation.x = -Math.PI / 2;
-            this.objects.push({ mesh: coinMesh, type: 'coin', x: 5, z: 5 });
-            this.sceneObj.add(coinMesh);
+              // Stem
+              const stemGeo = new THREE.CylinderGeometry(0.05, 0.05, 1, 8);
+              const stemMat = new THREE.MeshStandardMaterial({ color: 0x008000 });
+              const stem = new THREE.Mesh(stemGeo, stemMat);
+              stem.position.set(0, 0.5, 0);
+
+              // Bloom
+              const bloomGeo = new THREE.SphereGeometry(0.2, 8, 8);
+              const bloomMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+              const bloom = new THREE.Mesh(bloomGeo, bloomMat);
+              bloom.position.set(0, 1, 0);
+
+              const flowerGroup = new THREE.Group();
+              flowerGroup.add(stem, bloom);
+              flowerGroup.position.set(fx, 0, fz);
+              flowerGroup.castShadow = true;
+              flowerGroup.receiveShadow = true;
+
+              this.sceneObj.add(flowerGroup);
+              this.objects.push({
+                mesh: flowerGroup,
+                type: 'flower',
+                x: fx,
+                z: fz
+              });
+            }
+          }
+
+          createCoins() {
+            // Drop a few coins around
+            for (let i = 0; i < 5; i++) {
+              const cx = Math.random() * 40 - 20;
+              const cz = Math.random() * 40 - 20;
+
+              const coinGeo = new THREE.CircleGeometry(0.3, 16);
+              const coinMat = new THREE.MeshStandardMaterial({ color: 0xffff00 });
+              const coinMesh = new THREE.Mesh(coinGeo, coinMat);
+              coinMesh.rotation.x = -Math.PI / 2; // lay flat
+              coinMesh.position.set(cx, 0.01, cz);
+              coinMesh.castShadow = true;
+              coinMesh.receiveShadow = true;
+
+              this.sceneObj.add(coinMesh);
+              this.objects.push({
+                mesh: coinMesh,
+                type: 'coin',
+                x: cx,
+                z: cz
+              });
+            }
           }
 
           createPlayerModel() {
-            // A low-poly "princess" made of basic shapes
-            const princessGroup = new THREE.Group();
+            // More cohesive "humanoid" approach
+            const playerGroup = new THREE.Group();
 
-            // Materials
-            const bodyMaterial = new THREE.MeshStandardMaterial({
-              color: 0xff69b4,
-              metalness: 0.1,
-              roughness: 0.5
-            }); // Pink
-            const skinMaterial = new THREE.MeshStandardMaterial({
-              color: 0xffe4c4,
-              metalness: 0.1,
-              roughness: 0.5
-            }); // Skin
-            const goldMaterial = new THREE.MeshStandardMaterial({
-              color: 0xffd700,
-              metalness: 0.9,
-              roughness: 0.2
-            }); // Gold
+            // Body (cylinder)
+            const bodyGeo = new THREE.CylinderGeometry(0.4, 0.5, 1.2, 16);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x993366 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.set(0, 0.6, 0);
+            body.userData.isBodyPart = true;
+            playerGroup.add(body);
 
-            // Torso segments
-            for (let i = 0; i < 3; i++) {
-              const torsoSegment = new THREE.Mesh(
-                new THREE.BoxGeometry(0.5, 0.4, 0.5),
-                bodyMaterial
-              );
-              torsoSegment.position.y = 0.6 + i * 0.4;
-              princessGroup.add(torsoSegment);
-            }
+            // Head (sphere)
+            const headGeo = new THREE.SphereGeometry(0.3, 16, 16);
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0xffddc1 });
+            const head = new THREE.Mesh(headGeo, skinMat);
+            head.position.set(0, 1.4, 0);
+            head.userData.isBodyPart = true;
+            playerGroup.add(head);
 
-            // Head
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), skinMaterial);
-            head.position.y = 1.5;
-            princessGroup.add(head);
+            // Hair (another sphere, slightly bigger, half-clipped?)
+            const hairGeo = new THREE.SphereGeometry(0.31, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+            const hairMat = new THREE.MeshStandardMaterial({ color: 0x553322 });
+            const hair = new THREE.Mesh(hairGeo, hairMat);
+            hair.position.set(0, 1.4, 0);
+            hair.rotation.x = Math.PI; // "cap" on top
+            hair.userData.isBodyPart = true;
+            playerGroup.add(hair);
 
-            // Facial features
-            const eyeSize = 0.05;
-            const leftEye = new THREE.Mesh(
-              new THREE.BoxGeometry(eyeSize, eyeSize, eyeSize),
-              new THREE.MeshStandardMaterial({ color: 0x000000 })
-            );
-            leftEye.position.set(-0.15, 1.6, 0.3);
-            const rightEye = new THREE.Mesh(
-              new THREE.BoxGeometry(eyeSize, eyeSize, eyeSize),
-              new THREE.MeshStandardMaterial({ color: 0x000000 })
-            );
-            rightEye.position.set(0.15, 1.6, 0.3);
-            const mouth = new THREE.Mesh(
-              new THREE.BoxGeometry(0.1, 0.05, 0.05),
-              new THREE.MeshStandardMaterial({ color: 0xff0000 })
-            );
-            mouth.position.set(0, 1.45, 0.3);
-            const leftBlush = new THREE.Mesh(
-              new THREE.BoxGeometry(0.1, 0.05, 0.05),
-              new THREE.MeshStandardMaterial({ color: 0xff8c8c })
-            );
-            leftBlush.position.set(-0.15, 1.5, 0.3);
-            const rightBlush = new THREE.Mesh(
-              new THREE.BoxGeometry(0.1, 0.05, 0.05),
-              new THREE.MeshStandardMaterial({ color: 0xff8c8c })
-            );
-            rightBlush.position.set(0.15, 1.5, 0.3);
-            head.add(leftEye, rightEye, mouth, leftBlush, rightBlush);
-
-            // Arms
-            const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.5, 0.2), bodyMaterial);
+            // Arms (two cylinders)
+            const armGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
+            const leftArm = new THREE.Mesh(armGeo, skinMat);
             leftArm.position.set(-0.5, 1.0, 0);
-            const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.5, 0.2), bodyMaterial);
+            leftArm.userData.isBodyPart = true;
+            playerGroup.add(leftArm);
+
+            const rightArm = new THREE.Mesh(armGeo, skinMat);
             rightArm.position.set(0.5, 1.0, 0);
-            princessGroup.add(leftArm, rightArm);
+            rightArm.userData.isBodyPart = true;
+            playerGroup.add(rightArm);
 
-            // Legs
-            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.4, 0.15), bodyMaterial);
-            leftLeg.position.set(-0.2, 0.3, 0);
-            const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.4, 0.15), bodyMaterial);
-            rightLeg.position.set(0.2, 0.3, 0);
-            princessGroup.add(leftLeg, rightLeg);
+            // Legs (two cylinders)
+            const legGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.8, 8);
+            const leftLeg = new THREE.Mesh(legGeo, skinMat);
+            leftLeg.position.set(-0.2, 0.2, 0);
+            leftLeg.userData.isBodyPart = true;
+            playerGroup.add(leftLeg);
 
-            // Crown
-            const crownSize = 0.05;
-            const crownBase = new THREE.Mesh(new THREE.BoxGeometry(0.5, crownSize, 0.5), goldMaterial);
-            crownBase.position.y = 1.9;
-            const crownSpike1 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.3, crownSize), goldMaterial);
-            crownSpike1.position.set(0, 2.05, 0.25);
-            const crownSpike2 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.3, crownSize), goldMaterial);
-            crownSpike2.position.set(0, 2.05, -0.25);
-            const crownSpike3 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.3, crownSize), goldMaterial);
-            crownSpike3.position.set(0.25, 2.05, 0);
-            const crownSpike4 = new THREE.Mesh(new THREE.BoxGeometry(crownSize, 0.3, crownSize), goldMaterial);
-            crownSpike4.position.set(-0.25, 2.05, 0);
-            princessGroup.add(crownBase, crownSpike1, crownSpike2, crownSpike3, crownSpike4);
+            const rightLeg = new THREE.Mesh(legGeo, skinMat);
+            rightLeg.position.set(0.2, 0.2, 0);
+            rightLeg.userData.isBodyPart = true;
+            playerGroup.add(rightLeg);
 
-            // Jewelry
-            const necklaceCube = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, 0.05), goldMaterial);
-            necklaceCube.position.set(0, 1.0, 0.3);
-            const leftEarring = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.1, 0.05), goldMaterial);
-            leftEarring.position.set(-0.5, 1.5, 0.3);
-            const rightEarring = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.1, 0.05), goldMaterial);
-            rightEarring.position.set(0.5, 1.5, 0.3);
-            princessGroup.add(necklaceCube, leftEarring, rightEarring);
-
-            // Position princess at (0,0)
-            princessGroup.position.set(this.player.x, 0.5, this.player.z);
-            this.player.object = princessGroup;
-            this.sceneObj.add(princessGroup);
-
-            // Save original rotation for walking animation reset
-            this.player.object.traverse(child => {
-              if (
-                child.isMesh &&
-                child.material.color.equals(new THREE.Color(0xff69b4))
-              ) {
-                child.userData.originalRotation = child.rotation.clone();
-              }
-            });
+            // Position player at ground level
+            playerGroup.position.set(this.player.x, 0.5, this.player.z);
+            this.player.object = playerGroup;
+            this.sceneObj.add(playerGroup);
           }
 
           initJoysticks() {
@@ -739,26 +754,27 @@
             this.joystickLeft.on('move', (evt, data) => {
               if (data && data.force > 0) {
                 const angle = data.angle.radian;
-                // Slower speed based on player.speed
+                // scale movement by player.speed
                 const speed = data.force * this.player.speed;
                 const dx = Math.cos(angle) * speed;
                 const dz = Math.sin(angle) * speed;
                 const newX = this.player.x + dx;
                 const newZ = this.player.z - dz;
 
-                // Collision check
-                const blocked = this.objects.some(obj => {
-                  const distX = Math.abs(obj.x - newX);
-                  const distZ = Math.abs(obj.z - newZ);
-                  return (
-                    (obj.type === 'building' ||
-                      obj.type === 'wall' ||
-                      obj.type === 'boundary') &&
-                    distX < 5 &&
-                    distZ < 5
-                  );
-                });
-
+                // Check collisions
+                let blocked = false;
+                for (const obj of this.objects) {
+                  if (obj.type === 'building' || obj.type === 'wall' || obj.type === 'boundary') {
+                    const dxObj = newX - obj.x;
+                    const dzObj = newZ - obj.z;
+                    const distSq = dxObj * dxObj + dzObj * dzObj;
+                    const r = (obj.boundingRadius || 1) + 0.5;
+                    if (distSq < r * r) {
+                      blocked = true;
+                      break;
+                    }
+                  }
+                }
                 if (!blocked) {
                   this.player.x = newX;
                   this.player.z = newZ;
@@ -837,51 +853,6 @@
                 );
               }
             });
-          }
-
-          createNPCs(scene) {
-            // Example: create a guard NPC in town
-            const npcs = [];
-            if (scene === 'town') {
-              const npcGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 32);
-              const npcMaterial = new THREE.MeshStandardMaterial({
-                color: 0x00008b,
-                metalness: 0.3,
-                roughness: 0.6
-              });
-              const guard = new THREE.Mesh(npcGeometry, npcMaterial);
-              guard.position.set(0, 1, 0);
-              guard.castShadow = true;
-              npcs.push({ mesh: guard, x: 0, z: 0, role: 'guard' });
-            }
-            return npcs;
-          }
-
-          updateObjects() {
-            // For switching scenes, remove existing objects and re-add new ones
-            this.sceneObj.remove(...this.objects.map(obj => obj.mesh));
-            this.sceneObj.remove(...this.npcs.map(npc => npc.mesh));
-
-            this.objects = this.createObjects(this.scene);
-            this.npcs = this.createNPCs(this.scene);
-
-            this.objects.forEach(obj => this.sceneObj.add(obj.mesh));
-            this.npcs.forEach(npc => this.sceneObj.add(npc.mesh));
-          }
-
-          createObjects(scene) {
-            // Example of re-creating objects for different scenes
-            const objects = [];
-            // Always push the player so they remain in the scene
-            objects.push({ mesh: this.player.object, type: 'player', x: this.player.x, z: this.player.z });
-
-            // If we wanted to conditionally add objects based on scene:
-            if (scene === 'town') {
-              // Town objects (castle, house, pickups) are already created in initScene for now
-            } else if (scene === 'castle') {
-              // Possibly add interior objects
-            }
-            return objects;
           }
         }
 
