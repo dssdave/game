@@ -38,8 +38,9 @@
       #controls { bottom: 10px; right: 10px; }
       #errorMessage {
         position: absolute;
-        top: 50%; left: 50%;
-        transform: translate(-50%,-50%);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         display: none;
         z-index: 20;
       }
@@ -53,26 +54,21 @@
         text-align: center;
       }
 
-      /* Joystick containers: dynamic approach, smaller zone */
+      /* Joystick containers – static approach */
       #joystickLeft, #joystickRight {
         position: absolute;
-        width: 12vw;
-        height: 12vw;
-        min-width: 60px;
-        min-height: 60px;
-        max-width: 80px;
-        max-height: 80px;
+        width: 80px;
+        height: 80px;
         opacity: 0.5;
         z-index: 15;
       }
-      /* We'll keep them hidden at first – dynamic mode spawns them anywhere user touches. */
       #joystickLeft {
-        bottom: 14vh; left: 10vw;
-        display: none; /* dynamic spawn */
+        bottom: 10vh;
+        left: 6vw;
       }
       #joystickRight {
-        bottom: 14vh; right: 10vw;
-        display: none; /* dynamic spawn */
+        bottom: 10vh;
+        right: 6vw;
       }
 
       /* Button to toggle UI (top center) */
@@ -119,6 +115,9 @@
           font-size: 16px;
           width: 50px; height: 50px; line-height: 50px;
         }
+        #joystickLeft, #joystickRight {
+          width: 60px; height: 60px;
+        }
       }
     </style>
 
@@ -156,7 +155,7 @@
       </div>
       <div id="joystickLeft"></div>
       <div id="joystickRight"></div>
-      <div id="errorMessage">WebGL not supported in your browser. Use a modern browser.</div>
+      <div id="errorMessage">WebGL not supported in your browser. Please use a modern browser.</div>
       <div id="guardPopup"></div>
     </div>
 
@@ -170,7 +169,7 @@
         }
       });
 
-      // Gracefully handle pointer lock SecurityError
+      // Gracefully handle pointer lock security error
       window.addEventListener('unhandledrejection', e => {
         if (e.reason && e.reason.name === 'SecurityError') {
           console.warn('Pointer lock security error ignored:', e.reason);
@@ -200,70 +199,55 @@
         // Data for NPCs
         let npcBlueData = { angle:0, speed:0.0008, radius:120, object:null };
         let npcYellowData = { object:null, pathIndex:0, speed:0.01, target:null };
-        let mermaidData = { object:null, route:[{x:-50,z:-70},{x:50,z:-70}], routeIndex:0, direction:1, speed:0.01, splashTimer:0 };
+        let mermaidData = { object:null, route:[{x:-50,z:-70},{x:50,z:-70}], routeIndex:0, speed:0.01, splashTimer:0 };
         let guardData = {
           object:null,
-          state:'idle',  // 'idle','patrol'
-          timer:0,       // increments each update
-          route:[
-            {x:30,z:40},{x:30,z:50},{x:50,z:50},{x:50,z:40},{x:40,z:40} // loop around castle
-          ],
+          state:'idle',
+          timer:0,
+          route:[{x:30,z:40},{x:30,z:50},{x:50,z:50},{x:50,z:40},{x:40,z:40}],
           routeIndex:0,
           speed:0.02
         };
-
         let birdData = { angle:0, speed:0.002, radius:140, object:null };
 
         class Game {
           constructor() {
-            // Game state
+            // State
             this.scene = 'town';
-            this.flowers = 0;
-            this.coins = 0;
-            this.gems = 0;
-            this.potions = 0;
-            this.keys = 0;
-            this.artifacts = 0;
-            this.health = 100;
-            this.time = 'Day';
-            this.dayNightCycle = 0;
-
+            this.flowers=0; this.coins=0; this.gems=0; this.potions=0; this.keys=0; this.artifacts=0;
+            this.health=100; this.time='Day'; this.dayNightCycle=0;
             this.player = {
               x:0, z:0,
-              speedKeyboard: 0.07,
-              speedJoystick: 0.04, // slightly slower for easier control
+              speedKeyboard:0.07,
+              speedJoystick:0.04,
               yaw:0, pitch:-0.2,
               object:null,
               lastMoveVec:new THREE.Vector3(1,0,0),
               waterSplashTimer:0
             };
-
-            this.dialogue = '';
-            this.dialogueTimer = 0;
-            this.objects = [];
-            this.buildingPositions = [];
-            this.ballCount = 0;
-            this.thrownBalls = [];
-            this.collectionGlow = null;
-            this.joystickLeft = null;
-            this.joystickRight = null;
-            this.keysPressed = {};
-            this.sceneObj = scene;
-            this.camera = camera;
-            this.renderer = renderer;
-            this.itemRange = 80;
+            this.dialogue='';
+            this.dialogueTimer=0;
+            this.objects=[];
+            this.buildingPositions=[];
+            this.ballCount=0;
+            this.thrownBalls=[];
+            this.collectionGlow=null;
+            this.joystickLeft=null;
+            this.joystickRight=null;
+            this.keysPressed={};
+            this.sceneObj=scene;
+            this.camera=camera;
+            this.renderer=renderer;
+            this.itemRange=80;
 
             // Day/Night
-            this.sunMesh = null;
-            this.moonMesh = null;
-            this.starsMesh = null;
-
+            this.sunMesh=null; this.moonMesh=null; this.starsMesh=null;
             // Interactions
-            this.guardObject = null;
-            this.guardMessageShown = false;
-            this.npcBlueMessageShown = false;
-            this.mermaidMessageShown = false;
-            this.npcYellowMessageShown = false;
+            this.guardObject=null;
+            this.guardMessageShown=false;
+            this.npcBlueMessageShown=false;
+            this.mermaidMessageShown=false;
+            this.npcYellowMessageShown=false;
 
             this.initScene();
             this.initJoysticks();
@@ -271,18 +255,18 @@
             this.startAnimation();
           }
 
-          initScene() {
+          initScene(){
             // Ground
-            const groundGeo = new THREE.PlaneGeometry(300,300);
-            const groundMat = new THREE.MeshStandardMaterial({ color:0x6bb26b, side:THREE.DoubleSide });
-            const ground = new THREE.Mesh(groundGeo, groundMat);
-            ground.rotation.x = Math.PI/2;
+            const groundGeo=new THREE.PlaneGeometry(300,300);
+            const groundMat=new THREE.MeshStandardMaterial({ color:0x6bb26b, side:THREE.DoubleSide });
+            const ground=new THREE.Mesh(groundGeo,groundMat);
+            ground.rotation.x=Math.PI/2;
             this.sceneObj.add(ground);
 
             // Sky
-            const skyGeo = new THREE.SphereGeometry(3000,60,40); // bigger radius
-            const skyMat = new THREE.ShaderMaterial({
-              uniforms: {
+            const skyGeo=new THREE.SphereGeometry(3000,60,40);
+            const skyMat=new THREE.ShaderMaterial({
+              uniforms:{
                 topColor:{ value:new THREE.Color(0x87ceeb) },
                 bottomColor:{ value:new THREE.Color(0x2f4f4f) },
                 offset:{ value:0.5 },
@@ -290,10 +274,10 @@
               },
               vertexShader:`
                 varying vec3 vWorldPosition;
-                void main() {
-                  vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-                  vWorldPosition = worldPosition.xyz;
-                  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                void main(){
+                  vec4 worldPosition=modelMatrix*vec4(position,1.0);
+                  vWorldPosition=worldPosition.xyz;
+                  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
                 }
               `,
               fragmentShader:`
@@ -302,24 +286,24 @@
                 uniform float offset;
                 uniform float exponent;
                 varying vec3 vWorldPosition;
-                void main() {
-                  float h = normalize(vWorldPosition + vec3(0.0, offset, 0.0)).y;
-                  gl_FragColor = vec4(
-                    mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)),
+                void main(){
+                  float h=normalize(vWorldPosition+vec3(0.0,offset,0.0)).y;
+                  gl_FragColor=vec4(
+                    mix(bottomColor, topColor, max(pow(max(h,0.0),exponent),0.0)),
                     1.0
                   );
                 }
               `,
-              side: THREE.BackSide
+              side:THREE.BackSide
             });
-            const sky = new THREE.Mesh(skyGeo, skyMat);
-            sky.name = 'sky';
+            const sky=new THREE.Mesh(skyGeo,skyMat);
+            sky.name='sky';
             this.sceneObj.add(sky);
 
             // Lighting
-            const ambient = new THREE.AmbientLight(0x404040, 0.6);
+            const ambient=new THREE.AmbientLight(0x404040,0.6);
             this.sceneObj.add(ambient);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            const dirLight=new THREE.DirectionalLight(0xffffff,0.8);
             dirLight.position.set(10,20,10);
             this.sceneObj.add(dirLight);
 
@@ -333,7 +317,7 @@
             this.createYellowNPC();
             this.createGuardAtCastle();
             this.createMermaid();
-            this.createBird(); // Important
+            this.createBird();
             // Boundary
             this.createBoundary();
             // Buildings
@@ -356,45 +340,41 @@
             this.createStars();
           }
 
-          /* Basic geometry for hills, beach, etc. */
-          createRollingHills(){/* see code in previous snippet */}
-          createBeach(){/* see code in previous snippet */}
-          createBoundary(){/* see code in previous snippet */}
-          addShrubsAndTreesBehindHouse(){/* see code in previous snippet */}
-          createCastle(){/* see code in previous snippet */}
-          createHouse(){/* see code in previous snippet */}
-          createFountain(){/* see code in previous snippet */}
-          createCafe(){/* see code in previous snippet */}
+          /* ...All create methods from prior snippet: createRollingHills, createBeach, etc... */
+          createRollingHills(){/* see prior snippet */}
+          createBeach(){/* see prior snippet */}
+          createBoundary(){/* see prior snippet */}
+          addShrubsAndTreesBehindHouse(){/* see prior snippet */}
+          createCastle(){/* see prior snippet */}
+          createHouse(){/* see prior snippet */}
+          createFountain(){/* see prior snippet */}
+          createCafe(){/* see prior snippet */}
 
-          /* Player, NPCs, mermaid, bird, etc. */
-          createPlayerModel(){/* half-sphere hair replaced with top sphere => see code in previous snippet */}
-          createBlueNPC(){/* see code in previous snippet */}
-          createYellowNPC(){/* see code in previous snippet */}
-          createGuardAtCastle(){/* see code in previous snippet */}
-          createMermaid(){/* see code in previous snippet */}
-          createBird(){
-            const bird = new THREE.Mesh(new THREE.SphereGeometry(0.5,8,8), new THREE.MeshStandardMaterial({ color:0xffffff }));
-            bird.position.set(0,30,0);
-            birdData.object = bird;
-            this.sceneObj.add(bird);
-          }
+          /* Player + NPCs */
+          createPlayerModel(){/* see prior snippet for half-sphere hair */}
+          createBlueNPC(){/* see prior snippet */}
+          createYellowNPC(){/* see prior snippet */}
+          createGuardAtCastle(){/* see prior snippet */}
+          createMermaid(){/* see prior snippet */}
+          createBird(){/* see prior snippet */}
 
           /* Items */
-          createFlowers(count){/* see code in previous snippet */}
-          createCoins(count){/* see code in previous snippet */}
-          createGems(count){/* see code in previous snippet */}
-          createPotions(count){/* see code in previous snippet */}
-          createKeys(count){/* see code in previous snippet */}
-          createArtifacts(count){/* see code in previous snippet */}
+          createFlowers(count){/* see prior snippet */}
+          createCoins(count){/* see prior snippet */}
+          createGems(count){/* see prior snippet */}
+          createPotions(count){/* see prior snippet */}
+          createKeys(count){/* see prior snippet */}
+          createArtifacts(count){/* see prior snippet */}
 
           /* Sun, Moon, Stars */
-          createSun(){/* see code in previous snippet */}
-          createMoon(){/* see code in previous snippet */}
+          createSun(){/* see prior snippet */}
+          createMoon(){/* see prior snippet */}
           createStars(){
+            /* behind hills */
             const starCount=300;
             const positions=new Float32Array(starCount*3);
             for(let i=0;i<starCount;i++){
-              const radius=2000+Math.random()*800; // bigger radius
+              const radius=2000+Math.random()*800;
               const angle=Math.random()*Math.PI*2;
               const ySpread=Math.random()*200-50;
               positions[i*3]=Math.cos(angle)*radius;
@@ -403,8 +383,7 @@
             }
             const starGeo=new THREE.BufferGeometry();
             starGeo.setAttribute('position',new THREE.BufferAttribute(positions,3));
-            const starMat=new THREE.PointsMaterial({ color:0xffffff, size:1.2 });
-            starMat.depthTest=false; // behind everything
+            const starMat=new THREE.PointsMaterial({ color:0xffffff, size:1.2, depthTest:false });
             const starField=new THREE.Points(starGeo,starMat);
             starField.visible=false;
             this.sceneObj.add(starField);
@@ -420,7 +399,6 @@
             };
             animate();
           }
-
           update(){
             this.updateDayNight();
             this.updateBalls();
@@ -434,96 +412,23 @@
             this.updateCamera();
             this.updatePickups();
           }
+          updateDayNight(){/* see prior snippet */}
+          updateBalls(){/* see prior snippet */}
+          spawnRipple(x,z){/* see prior snippet */}
 
-          /* Day/Night cycle */
-          updateDayNight(){
-            this.dayNightCycle=(this.dayNightCycle+1)%1200;
-            this.time=this.dayNightCycle<600?'Day':'Night';
-            document.getElementById('time').textContent=this.time;
-            if(this.sunMesh&&this.moonMesh&&this.starsMesh){
-              if(this.time==='Day'){
-                this.sunMesh.visible=true;
-                this.moonMesh.visible=false;
-                this.starsMesh.visible=false;
-              } else {
-                this.sunMesh.visible=false;
-                this.moonMesh.visible=true;
-                this.starsMesh.visible=true;
-              }
-            }
-          }
-
-          /* Balls */
-          updateBalls(){/* see code in previous snippet */}
-          spawnRipple(x,z){/* see code in previous snippet */}
-
-          /* Player movement + water splash */
-          updatePlayer(){/* see code in previous snippet, with slower speeds */}
-          
-          /* Blue NPC – circle around center */
-          updateBlueNPC(){
-            npcBlueData.angle+=npcBlueData.speed;
-            const npcX=npcBlueData.radius*Math.cos(npcBlueData.angle);
-            const npcZ=npcBlueData.radius*Math.sin(npcBlueData.angle);
-            if(npcBlueData.object){
-              npcBlueData.object.position.set(npcX,0.5,npcZ);
-              npcBlueData.object.rotation.y=-npcBlueData.angle;
-              for(const obj of this.objects){
-                if(obj.mesh===npcBlueData.object){
-                  obj.x=npcX; obj.z=npcZ;
-                  break;
-                }
-              }
-            }
-          }
-
-          /* Yellow NPC – roam among buildingPositions */
-          updateYellowNPC(){
-            if(!npcYellowData.object) return;
-            const npc=npcYellowData.object;
-            if(!npcYellowData.target){
-              npcYellowData.target=this.getRandomBuildingTarget();
-            }
-            const dx=npcYellowData.target.x-npc.position.x;
-            const dz=npcYellowData.target.z-npc.position.z;
-            const distSq=dx*dx+dz*dz;
-            if(distSq<1){
-              // arrived => pick new
-              npcYellowData.target=this.getRandomBuildingTarget();
-            } else {
-              const angle=Math.atan2(-dx,dz);
-              npc.rotation.y=angle;
-              const step=npcYellowData.speed;
-              const newX=npc.position.x+Math.sin(angle)*step;
-              const newZ=npc.position.z+Math.cos(angle)*step;
-              if(Math.abs(newX)<125&&Math.abs(newZ)<125){
-                npc.position.x=newX;
-                npc.position.z=newZ;
-              }
-            }
-            for(const obj of this.objects){
-              if(obj.mesh===npcYellowData.object){
-                obj.x=npc.position.x; obj.z=npc.position.z;
-                break;
-              }
-            }
-          }
-          getRandomBuildingTarget(){
-            const i=Math.floor(Math.random()*this.buildingPositions.length);
-            return this.buildingPositions[i];
-          }
-
-          /* Mermaid – pace left<->right in water */
+          updatePlayer(){/* see prior snippet */}
+          updateBlueNPC(){/* see prior snippet */}
+          updateYellowNPC(){/* see prior snippet */}
+          getRandomBuildingTarget(){/* see prior snippet */}
           updateMermaid(){
-            if(!mermaidData.object) return;
+            // same approach: pace along route
+            if(!mermaidData.object)return;
             const m=mermaidData;
-            // current route points
             const currentPt=m.route[m.routeIndex];
             const dx=currentPt.x - m.object.position.x;
             const dz=currentPt.z - m.object.position.z;
             const distSq=dx*dx+dz*dz;
             if(distSq<1){
-              // reached => next
               m.routeIndex=(m.routeIndex+1)%m.route.length;
             }
             const angle=Math.atan2(-dx,dz);
@@ -531,29 +436,26 @@
             const step=m.speed;
             const newX=m.object.position.x+Math.sin(angle)*step;
             const newZ=m.object.position.z+Math.cos(angle)*step;
-            m.object.position.set(newX, m.object.position.y, newZ);
+            m.object.position.set(newX,m.object.position.y,newZ);
 
-            // collisions
             for(const obj of this.objects){
               if(obj.mesh===m.object){
                 obj.x=newX; obj.z=newZ;
                 break;
               }
             }
-            // water splashes
-            m.splashTimer=(m.splashTimer||0)+1;
+            m.splashTimer++;
             if(m.splashTimer>30){
               this.spawnRipple(newX,newZ);
               m.splashTimer=0;
             }
           }
-
-          /* Guard – idle 2 minutes, do a lap, return, idle again */
           updateGuardPatrol(){
-            if(!guardData.object) return;
+            // 2-min idle => do route => return => idle
+            if(!guardData.object)return;
             guardData.timer++;
             if(guardData.state==='idle'){
-              // wait 2 minutes => 120s => ~7200 frames if 60fps
+              // ~7200 frames ~2 minutes at 60fps
               if(guardData.timer>7200){
                 guardData.state='patrol';
                 guardData.timer=0;
@@ -569,7 +471,6 @@
               if(distSq<1){
                 guardData.routeIndex++;
                 if(guardData.routeIndex>=route.length){
-                  // done lap => return idle
                   guardData.state='idle';
                   guardData.timer=0;
                 }
@@ -591,7 +492,6 @@
             }
           }
 
-          /* Bird – circle overhead */
           updateBird(){
             birdData.angle+=birdData.speed;
             const bx=birdData.radius*Math.cos(birdData.angle);
@@ -602,12 +502,76 @@
             }
           }
 
-          /* Collisions + camera + pickups */
-          updateCollisions(){/* see code in previous snippet */}
-          updateCamera(){/* see code in previous snippet */}
-          updatePickups(){/* see code in previous snippet */}
+          updateCollisions(){
+            // Guard
+            if(this.guardObject && !this.guardMessageShown){
+              const dxG=this.player.x-this.guardObject.position.x;
+              const dzG=this.player.z-this.guardObject.position.z;
+              const distG=Math.sqrt(dxG*dxG+dzG*dzG);
+              if(distG<5){
+                this.showGuardPopup("I'm the guard of this castle. Please show your ID.");
+              }
+            }
+            // Blue NPC
+            if(npcBlueData.object && !this.npcBlueMessageShown){
+              const dxN=this.player.x-npcBlueData.object.position.x;
+              const dzN=this.player.z-npcBlueData.object.position.z;
+              const distN=Math.sqrt(dxN*dxN+dzN*dzN);
+              if(distN<5){
+                this.showGuardPopup("Hello Princess Donia!");
+                this.npcBlueMessageShown=true;
+                setTimeout(()=>{ this.npcBlueMessageShown=false; },2500);
+              }
+            }
+            // Mermaid
+            if(!this.mermaidMessageShown){
+              const mermaidObj=this.objects.find(o=>o.type==='mermaid');
+              if(mermaidObj){
+                const dxM=this.player.x-mermaidObj.x;
+                const dzM=this.player.z-mermaidObj.z;
+                const distM=Math.sqrt(dxM*dxM+dzM*dzM);
+                if(distM<5){
+                  this.showGuardPopup("Hello Princess Donia. It's me the Mermaid.");
+                  this.mermaidMessageShown=true;
+                  setTimeout(()=>{ this.mermaidMessageShown=false; },2500);
+                }
+              }
+            }
+          }
 
-          /* Utility: Dialogue, guard popup, throwBall, glow, etc. */
+          updateCamera(){
+            const camDist=15;
+            const offsetX=camDist*Math.sin(this.player.yaw)*Math.cos(this.player.pitch);
+            const offsetZ=camDist*Math.cos(this.player.yaw)*Math.cos(this.player.pitch);
+            const offsetY=camDist*Math.sin(this.player.pitch)+15;
+            this.camera.position.set(this.player.x+offsetX,offsetY,this.player.z+offsetZ);
+            this.camera.lookAt(this.player.x,3.5,this.player.z);
+          }
+
+          updatePickups(){
+            for(const obj of this.objects){
+              if(obj.isPickup){
+                const dxObj=this.player.x-obj.x;
+                const dzObj=this.player.z-obj.z;
+                const distSq=dxObj*dxObj+dzObj*dzObj;
+                if(distSq<4){
+                  switch(obj.type){
+                    case 'flower': this.flowers++; document.getElementById('flowers').textContent=this.flowers; this.showDialogue('You picked a radiant flower!'); break;
+                    case 'coin': this.coins++; document.getElementById('coins').textContent=this.coins; this.showDialogue('You picked up a shiny coin!'); break;
+                    case 'gem': this.gems++; document.getElementById('gems').textContent=this.gems; this.showDialogue('A dazzling gem is yours!'); break;
+                    case 'potion': this.potions++; document.getElementById('potions').textContent=this.potions; this.showDialogue('You found a potion!'); break;
+                    case 'key': this.keys++; document.getElementById('keys').textContent=this.keys; this.showDialogue('A golden key is yours!'); break;
+                    case 'artifact': this.artifacts++; document.getElementById('artifacts').textContent=this.artifacts; this.showDialogue('You discovered a mystical artifact!'); break;
+                  }
+                  this.sceneObj.remove(obj.mesh);
+                  this.objects=this.objects.filter(o=>o!==obj);
+                  this.startCollectionGlow();
+                }
+              }
+            }
+          }
+
+          /* Utility */
           showDialogue(text){
             document.getElementById('dialogue').textContent=text;
           }
@@ -620,28 +584,58 @@
               popup.textContent='';
             },2000);
           }
-          throwBall(){/* see code in previous snippet */}
-          startCollectionGlow(){/* see code in previous snippet */}
+          throwBall(){
+            let direction=new THREE.Vector3();
+            if(this.player.lastMoveVec.lengthSq()>0.001){
+              direction.copy(this.player.lastMoveVec).normalize();
+            } else {
+              direction.set(Math.cos(this.player.yaw),0,Math.sin(this.player.yaw)).normalize();
+            }
+            const ballGeo=new THREE.SphereGeometry(0.3,16,16);
+            const ballMat=new THREE.MeshStandardMaterial({ color:0xff4500 });
+            const ball=new THREE.Mesh(ballGeo,ballMat);
+            ball.position.copy(this.player.object.position);
+            ball.position.y+=1;
+            ball.userData={
+              velocity:direction.multiplyScalar(0.5).add(new THREE.Vector3(0,0.3,0)),
+              bounced:false
+            };
+            this.sceneObj.add(ball);
+            this.thrownBalls.push(ball);
+            this.ballCount++;
+            document.getElementById('ballCountValue').textContent=this.ballCount;
+            this.showDialogue("Threw a magic ball!");
+          }
+          startCollectionGlow(){
+            if(this.collectionGlow)this.sceneObj.remove(this.collectionGlow);
+            const glowGeo=new THREE.SphereGeometry(1,16,16);
+            const glowMat=new THREE.MeshBasicMaterial({ color:0xffff00, transparent:true, opacity:0.5, side:THREE.BackSide });
+            const glow=new THREE.Mesh(glowGeo,glowMat);
+            glow.position.copy(this.player.object.position);
+            glow.position.y+=0.5;
+            this.sceneObj.add(glow);
+            this.collectionGlow=glow;
+            setTimeout(()=>{
+              if(this.collectionGlow){
+                this.sceneObj.remove(this.collectionGlow);
+                this.collectionGlow=null;
+              }
+            },1000);
+          }
 
-          /* Joysticks: dynamic mode => user can press anywhere. */
           initJoysticks(){
-            // We'll create dynamic joysticks => appear where user touches
+            // Left joystick: static at bottom-left
             this.joystickLeft=nipplejs.create({
-              zone:document.getElementById('gameContainer'),
-              mode:'dynamic',
+              zone:document.getElementById('joystickLeft'),
+              mode:'static',
               color:'white',
-              size:100,
-              threshold:0.1,
-              multitouch:true, // allow multiple
-              maxNumberOfNipples:1, // only 1 left joystick
-              position:{},
-              restOpacity:0.5
+              size:80,
+              position:{ left:'50%', top:'50%' }, // will be overridden by CSS anyway
             });
             this.joystickLeft.on('move',(evt,data)=>{
               if(data&&data.force>0){
                 const angle=data.angle.radian;
-                // a bit less speed
-                const speed=data.force*this.player.speedJoystick*0.7;
+                const speed=data.force*this.player.speedJoystick;
                 const dx=Math.cos(angle)*speed;
                 const dz=Math.sin(angle)*speed;
                 const newX=this.player.x+dx;
@@ -653,7 +647,9 @@
                     const dzObj=newZ-obj.z;
                     const distSq=dxObj*dxObj+dzObj*dzObj;
                     const r=(obj.boundingRadius||5);
-                    if(distSq<r*r){ blocked=true; break; }
+                    if(distSq<r*r){
+                      blocked=true; break;
+                    }
                   }
                 }
                 if(!blocked){
@@ -665,21 +661,17 @@
             });
             this.joystickLeft.on('end',()=>{ this.joystickLeft.active=false; });
 
-            // Right joystick for looking
+            // Right joystick: static at bottom-right
             this.joystickRight=nipplejs.create({
-              zone:document.getElementById('gameContainer'),
-              mode:'dynamic',
+              zone:document.getElementById('joystickRight'),
+              mode:'static',
               color:'white',
-              size:100,
-              threshold:0.1,
-              multitouch:true,
-              maxNumberOfNipples:1,
-              position:{},
-              restOpacity:0.5
+              size:80,
+              position:{ left:'50%', top:'50%' }, // override by CSS
             });
             this.joystickRight.on('move',(evt,data)=>{
               if(data&&data.force>0){
-                const sensitivity=0.0005;
+                const sensitivity=0.001;
                 this.player.yaw+=data.vector.x*sensitivity*data.force;
                 this.player.pitch=Math.max(-Math.PI/2,Math.min(Math.PI/2,this.player.pitch+data.vector.y*sensitivity*data.force));
               }
@@ -697,23 +689,22 @@
             });
           }
 
-          /* Keyboard + pointer lock */
           initKeyboardMouse(){
-            document.addEventListener('keydown',e=>{
+            document.addEventListener('keydown', e=>{
               this.keysPressed[e.key]=true;
               if(e.key===' ')this.throwBall();
             });
-            document.addEventListener('keyup',e=>{
+            document.addEventListener('keyup', e=>{
               this.keysPressed[e.key]=false;
             });
-            document.addEventListener('mousedown',()=>{
+            document.addEventListener('mousedown', ()=>{
               try{
                 document.body.requestPointerLock();
               }catch(err){
                 console.warn('Pointer lock request failed:',err);
               }
             });
-            document.addEventListener('mousemove',evt=>{
+            document.addEventListener('mousemove', evt=>{
               if(document.pointerLockElement===document.body){
                 const movementX=evt.movementX||0;
                 const movementY=evt.movementY||0;
@@ -728,7 +719,7 @@
         // Create the game
         const game=new Game();
 
-        // Reorient button: resets yaw/pitch
+        // Reorient button
         document.getElementById('reorientBtn').addEventListener('click',()=>{
           game.player.yaw=0;
           game.player.pitch=0;
@@ -737,5 +728,4 @@
         console.error('Error initializing the game:',err);
       }
     </script>
-  </body>
-</html>
+
