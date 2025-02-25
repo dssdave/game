@@ -1192,12 +1192,6 @@
           updateBlueNPC(){
             npcBlueData.angle+=npcBlueData.speed;
             const npcX=npcBlueData.radius*Math.cos(npcBlueData.angle);
-<!-- Continue the same file here -->
-<!-- (the line from updateBlueNPC onward) -->
-
-            updateBlueNPC(){
-              npcBlueData.angle += npcBlueData.speed;
-              const npcX = npcBlueData.radius * Math.cos(npcBlueData.angle);
               const npcZ = npcBlueData.radius * Math.sin(npcBlueData.angle);
               if (npcBlueData.object) {
                 npcBlueData.object.position.set(npcX, 0.5, npcZ);
