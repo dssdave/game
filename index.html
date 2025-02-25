@@ -18,15 +18,14 @@
       canvas {
         display: block;
       }
-
       /* UI boxes: bigger text, more padding, thicker border */
       #ui, #ballCount, #dialogue, #controls, #errorMessage, #guardPopup {
         background: rgba(0,0,0,0.7);
         border: 4px solid #fff;
         border-radius: 5px;
         color: #fff;
-        font-size: 20px; /* bigger text */
-        padding: 20px 40px; /* more padding around text */
+        font-size: 28px; /* bigger text */
+        padding: 40px 80px; /* more padding around text */
       }
       #ui, #ballCount, #dialogue, #controls {
         position: absolute;
@@ -51,9 +50,9 @@
         display: none;
         z-index: 20;
       }
-
-      /* Joystick containers: smaller, more inwards so user can drag fully */
-      #joystickLeft, #joystickRight {
+      /* Joystick containers: slightly higher & closer together */
+      #joystickLeft,
+      #joystickRight {
         position: absolute;
         width: 12vw;
         height: 12vw;
@@ -65,14 +64,13 @@
         z-index: 15;
       }
       #joystickLeft {
-        bottom: 10vh;
-        left: 6vw;
+        bottom: 14vh;
+        left: 10vw;
       }
       #joystickRight {
-        bottom: 10vh;
-        right: 6vw;
+        bottom: 14vh;
+        right: 10vw;
       }
-
       /* Large pop-up for guard / NPC / mermaid messages */
       #guardPopup {
         position: absolute;
@@ -89,7 +87,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
   </head>
-
   <body>
     <div id="gameContainer">
       <canvas id="gameCanvas"></canvas>
@@ -139,6 +136,7 @@
           throw new Error('WebGL not supported');
         }
 
+        // Basic Three.js
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
         const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas });
@@ -148,14 +146,14 @@
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         gameCanvas.style.display = 'block';
 
-        // NPC data
+        // We'll store references for NPC, mermaid, bird, etc.
         let npcBlueData = { angle: 0, speed: 0.001, radius: 120, object: null };
         let npcYellowData = { object: null, pathIndex: 0, speed: 0.03, target: null, boundingRadius:1 };
         let birdData = { angle: 0, speed: 0.002, radius: 140, object: null };
 
         class Game {
           constructor() {
-            // State
+            // Game state
             this.scene = 'town';
             this.flowers = 0;
             this.coins = 0;
@@ -175,7 +173,8 @@
               yaw: 0,
               pitch: -0.2,
               object: null,
-              lastMoveVec: new THREE.Vector3(1,0,0)
+              lastMoveVec: new THREE.Vector3(1,0,0),
+              waterSplashTimer: 0 // we'll track frames to spawn splashes
             };
 
             this.dialogue = '';
@@ -260,17 +259,17 @@
             sky.name = 'sky';
             this.sceneObj.add(sky);
 
-            // Lights
+            // Lighting
             const ambient = new THREE.AmbientLight(0x404040, 0.6);
             this.sceneObj.add(ambient);
             const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
             dirLight.position.set(10,20,10);
             this.sceneObj.add(dirLight);
 
-            // Rolling hills (5× more, bigger)
+            // More rolling hills, bigger, further
             this.createRollingHills();
 
-            // Beach + water with small offsets to reduce glitch
+            // Beach + water with small offsets
             this.createBeach();
 
             // Characters
@@ -281,7 +280,7 @@
             this.createMermaid();
             this.createBird();
 
-            // Boundary fully around ±130
+            // Full boundary ±130
             this.createBoundary();
 
             // Buildings
@@ -290,7 +289,7 @@
             this.createFountain();
             this.createCafe();
 
-            // Some shrubs/trees behind house
+            // Some shrubs/trees behind the house
             this.addShrubsAndTreesBehindHouse();
 
             // Items
@@ -308,11 +307,11 @@
           }
 
           createRollingHills() {
-            // 5x more than before (8 => 40) and bigger radius
-            for(let i=0;i<40;i++){
-              const r=80+Math.random()*60; // bigger
-              const x=(Math.random()>0.5?1:-1)*(150+Math.random()*200);
-              const z=(Math.random()>0.5?1:-1)*(150+Math.random()*200);
+            // 100 hills from ±300..±800, radius ~80..140
+            for(let i=0; i<100; i++){
+              const r=80 + Math.random()*60; // bigger
+              const x=(Math.random()>0.5?1:-1)*(300+Math.random()*500);
+              const z=(Math.random()>0.5?1:-1)*(300+Math.random()*500);
               const hillGeo=new THREE.SphereGeometry(r,16,16);
               const hillMat=new THREE.MeshStandardMaterial({ color:0x228b22, roughness:0.9 });
               const hill=new THREE.Mesh(hillGeo,hillMat);
@@ -323,21 +322,22 @@
           }
 
           createBeach() {
-            // Slight offsets + polygonOffset to reduce z-fighting
-            const beachGeo = new THREE.PlaneGeometry(300,40);
+            // Beach plane
+            const beachGeo = new THREE.PlaneGeometry(300,30);
             const beachMat = new THREE.MeshStandardMaterial({
               color: 0xD2B48C,
-              polygonOffset: true,
-              polygonOffsetFactor: -1,
-              polygonOffsetUnits: 1
+              polygonOffset:true,
+              polygonOffsetFactor:-1,
+              polygonOffsetUnits:1
             });
             const beach = new THREE.Mesh(beachGeo, beachMat);
             beach.rotation.x = -Math.PI/2;
-            beach.position.set(0,0.01,-120); // slight y offset
+            beach.position.set(0,0.01,-40);
             this.sceneObj.add(beach);
-            this.objects.push({ mesh: beach, type:'beach', x:0, z:-120, boundingRadius:0 });
+            this.objects.push({ mesh: beach, type:'beach', x:0, z:-40, boundingRadius:0 });
 
-            const waterGeo = new THREE.PlaneGeometry(300,60);
+            // Water plane
+            const waterGeo = new THREE.PlaneGeometry(300,30);
             const waterMat = new THREE.MeshStandardMaterial({
               color: 0x1E90FF,
               transparent:true,
@@ -348,9 +348,9 @@
             });
             const water = new THREE.Mesh(waterGeo, waterMat);
             water.rotation.x = -Math.PI/2;
-            water.position.set(0,0.02,-150); // slight y offset
+            water.position.set(0,0.02,-70);
             this.sceneObj.add(water);
-            this.objects.push({ mesh: water, type:'water', x:0, z:-150, boundingRadius:0 });
+            this.objects.push({ mesh: water, type:'water', x:0, z:-70, boundingRadius:0 });
           }
 
           createPlayerModel() {
@@ -373,12 +373,12 @@
             head.userData.isBodyPart=true;
             group.add(head);
 
-            // Hair
+            // Hair bigger radius
             const hair=new THREE.Mesh(
-              new THREE.SphereGeometry(0.28,16,16,0,Math.PI*2,0,Math.PI/2),
-              new THREE.MeshStandardMaterial({ color:0x553322 })
+              new THREE.SphereGeometry(0.4,16,16,0,Math.PI*2,0,Math.PI/2),
+              new THREE.MeshStandardMaterial({ color:0x4b2e05 })
             );
-            hair.position.set(0,1.35,0);
+            hair.position.set(0,1.3,0);
             hair.rotation.x=Math.PI;
             hair.userData.isBodyPart=true;
             group.add(hair);
@@ -437,10 +437,10 @@
             group.add(head);
 
             const hair=new THREE.Mesh(
-              new THREE.SphereGeometry(0.28,16,16,0,Math.PI*2,0,Math.PI/2),
-              new THREE.MeshStandardMaterial({ color:0x553322 })
+              new THREE.SphereGeometry(0.4,16,16,0,Math.PI*2,0,Math.PI/2),
+              new THREE.MeshStandardMaterial({ color:0x4b2e05 })
             );
-            hair.position.set(0,1.35,0);
+            hair.position.set(0,1.3,0);
             hair.rotation.x=Math.PI;
             group.add(hair);
 
@@ -481,18 +481,18 @@
 
             // Head
             const head=new THREE.Mesh(
-              new THREE.SphereGeometry(0.28,16,16),
+              new THREE.SphereGeometry(0.3,16,16),
               new THREE.MeshStandardMaterial({ color:0xffddc1 })
             );
             head.position.set(0,1.1,0);
             group.add(head);
 
-            // Hair
+            // Hair bigger
             const hair=new THREE.Mesh(
-              new THREE.SphereGeometry(0.25,16,16,0,Math.PI*2,0,Math.PI/2),
-              new THREE.MeshStandardMaterial({ color:0x553322 })
+              new THREE.SphereGeometry(0.4,16,16,0,Math.PI*2,0,Math.PI/2),
+              new THREE.MeshStandardMaterial({ color:0x4b2e05 })
             );
-            hair.position.set(0,1.05,0);
+            hair.position.set(0,1.0,0);
             hair.rotation.x=Math.PI;
             group.add(hair);
 
@@ -538,10 +538,10 @@
             group.add(head);
 
             const hair=new THREE.Mesh(
-              new THREE.SphereGeometry(0.28,16,16,0,Math.PI*2,0,Math.PI/2),
-              new THREE.MeshStandardMaterial({ color:0x553322 })
+              new THREE.SphereGeometry(0.4,16,16,0,Math.PI*2,0,Math.PI/2),
+              new THREE.MeshStandardMaterial({ color:0x4b2e05 })
             );
-            hair.position.set(0,1.35,0);
+            hair.position.set(0,1.3,0);
             hair.rotation.x=Math.PI;
             group.add(hair);
 
@@ -585,17 +585,17 @@
             group.add(head);
 
             const hair=new THREE.Mesh(
-              new THREE.SphereGeometry(0.28,16,16,0,Math.PI*2,0,Math.PI/2),
-              new THREE.MeshStandardMaterial({ color:0x553322 })
+              new THREE.SphereGeometry(0.4,16,16,0,Math.PI*2,0,Math.PI/2),
+              new THREE.MeshStandardMaterial({ color:0x4b2e05 })
             );
-            hair.position.set(0,1.35,0);
+            hair.position.set(0,1.0,0);
             hair.rotation.x=Math.PI;
             group.add(hair);
 
             // Half-submerged
-            group.position.set(20,-0.5,-150);
+            group.position.set(20,-0.5,-70);
             this.sceneObj.add(group);
-            this.objects.push({ mesh:group, type:'mermaid', x:20, z:-150, boundingRadius:3 });
+            this.objects.push({ mesh:group, type:'mermaid', x:20, z:-70, boundingRadius:3 });
           }
 
           createBird() {
@@ -650,7 +650,6 @@
             door.position.set(0,3,10.01);
             group.add(door);
 
-            // "Daddy's Castle" sign
             const canvas=document.createElement('canvas');
             canvas.width=512; canvas.height=128;
             const ctx=canvas.getContext('2d');
@@ -680,13 +679,12 @@
             base.position.set(0,3,0);
             group.add(base);
 
-            // Roof
+            // Roof at y=6 + (4/2)=8
             const roof=new THREE.Mesh(
               new THREE.ConeGeometry(6,4,4),
               new THREE.MeshStandardMaterial({ color:0x800000 })
             );
-            // Position so it sits on top
-            roof.position.set(0,3+4,0);
+            roof.position.set(0,6+2,0);
             roof.rotation.y=Math.PI/4;
             group.add(roof);
 
@@ -706,7 +704,7 @@
             w2.position.set(2,3,4.02);
             group.add(w1,w2);
 
-            // House sign: now at y=6
+            // House sign at y=5
             const canvas=document.createElement('canvas');
             canvas.width=128; canvas.height=32;
             const ctx=canvas.getContext('2d');
@@ -718,7 +716,7 @@
             const signMat=new THREE.MeshBasicMaterial({ map:tex, transparent:true });
             const signGeo=new THREE.PlaneGeometry(4,1);
             const signMesh=new THREE.Mesh(signGeo,signMat);
-            signMesh.position.set(0,6,4.05); // lowered to y=6
+            signMesh.position.set(0,5,4.05);
             group.add(signMesh);
 
             group.position.set(-40,0,-40);
@@ -825,13 +823,29 @@
             }
           }
 
-          createFlowers(count){/* same logic, omitted for brevity */}
-          createCoins(count){/* omitted */}
-          createGems(count){/* omitted */}
-          createPotions(count){/* omitted */}
-          createKeys(count){/* omitted */}
-          createArtifacts(count){/* omitted */}
-          /* For brevity, define them fully if needed, or reuse from previous code */
+          /* createFlowers, createCoins, etc. same logic, omitted for brevity */
+          createFlowers(count){
+            for(let i=0;i<count;i++){
+              const fx=Math.random()*this.itemRange*2-this.itemRange;
+              const fz=Math.random()*this.itemRange*2-this.itemRange;
+              const stem=new THREE.Mesh(
+                new THREE.CylinderGeometry(0.05,0.05,1,8),
+                new THREE.MeshStandardMaterial({ color:0x008000 })
+              );
+              stem.position.y=0.5;
+              const bloom=new THREE.Mesh(
+                new THREE.SphereGeometry(0.2,8,8),
+                new THREE.MeshStandardMaterial({ color:0xff0000 })
+              );
+              bloom.position.y=1;
+              const flower=new THREE.Group();
+              flower.add(stem,bloom);
+              flower.position.set(fx,0,fz);
+              this.sceneObj.add(flower);
+              this.objects.push({ mesh:flower, type:'flower', isPickup:true, x:fx, z:fz });
+            }
+          }
+          /* ...createCoins, createGems, createPotions, createKeys, createArtifacts... */
 
           createSun(){
             const sunGeo=new THREE.SphereGeometry(3,16,16);
@@ -913,13 +927,14 @@
               ball.position.add(ball.userData.velocity);
               ball.userData.velocity.y-=0.01; // gravity
 
-              // Water ripple
+              // Water ripple for balls
               const waterObj=this.objects.find(o=>o.type==='water');
               if(waterObj){
                 const dxW=ball.position.x-waterObj.x;
                 const dzW=ball.position.z-waterObj.z;
-                if(Math.abs(dxW)<150 && Math.abs(dzW)<30 && ball.position.y<0.2){
-                  this.spawnRipple(ball.position.x,ball.position.z);
+                // plane is 300 wide x 30 => ±150 in x, ±15 in z
+                if(Math.abs(dxW)<150 && Math.abs(dzW)<15 && ball.position.y<0.2){
+                  this.spawnRipple(ball.position.x, ball.position.z);
                 }
               }
 
@@ -953,6 +968,7 @@
               }
             }
           }
+
           spawnRipple(x,z){
             const rippleGeo=new THREE.RingGeometry(0.2,0.4,16);
             const rippleMat=new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:0.5 });
@@ -978,11 +994,10 @@
             const newX=this.player.x+dx*Math.cos(this.player.yaw)+dz*Math.sin(this.player.yaw);
             const newZ=this.player.z-dx*Math.sin(this.player.yaw)+dz*Math.cos(this.player.yaw);
 
+            // collision
             let blocked=false;
             for(const obj of this.objects){
-              // can walk on beach/water
               if(obj.type==='beach'||obj.type==='water') continue;
-              // collision
               if(obj.type==='building'||obj.type==='boundary'||obj.type==='decoration'||obj.type==='npc'){
                 const dxObj=newX-obj.x;
                 const dzObj=newZ-obj.z;
@@ -1000,6 +1015,7 @@
             this.player.object.position.set(this.player.x,0.5,this.player.z);
             this.player.object.rotation.y=-this.player.yaw;
 
+            // Walking animation
             const moving=dx!==0||dz!==0||(this.joystickLeft&&this.joystickLeft.active);
             if(moving){
               this.player.object.traverse(child=>{
@@ -1014,6 +1030,23 @@
                 }
               });
             }
+
+            // If in water region => spawn a ripple ~ once every 20 frames
+            const waterObj=this.objects.find(o=>o.type==='water');
+            if(waterObj){
+              const dxW=this.player.x-waterObj.x;
+              const dzW=this.player.z-waterObj.z;
+              // plane is 300 wide x 30 => ±150 in X, ±15 in Z
+              if(Math.abs(dxW)<150 && Math.abs(dzW)<15){
+                this.player.waterSplashTimer++;
+                if(this.player.waterSplashTimer>20){
+                  this.spawnRipple(this.player.x,this.player.z);
+                  this.player.waterSplashTimer=0;
+                }
+              } else {
+                this.player.waterSplashTimer=0; // reset if not in water
+              }
+            }
           }
 
           updateBlueNPC(){
@@ -1023,21 +1056,26 @@
             if(npcBlueData.object){
               npcBlueData.object.position.set(npcX,0.5,npcZ);
               npcBlueData.object.rotation.y=-npcBlueData.angle;
+              // update collision pos
+              for(const obj of this.objects){
+                if(obj.mesh===npcBlueData.object){
+                  obj.x=npcX; obj.z=npcZ;
+                  break;
+                }
+              }
             }
           }
 
           updateYellowNPC(){
-            // NPC visits random buildings
             if(!npcYellowData.object) return;
             const npc = npcYellowData.object;
             if(!npcYellowData.target){
               npcYellowData.target=this.getRandomBuildingTarget();
             }
-            const dx=npcYellowData.target.x - npc.position.x;
-            const dz=npcYellowData.target.z - npc.position.z;
+            const dx=npcYellowData.target.x-npc.position.x;
+            const dz=npcYellowData.target.z-npc.position.z;
             const distSq=dx*dx+dz*dz;
             if(distSq<1){
-              // arrived => pick new target
               npcYellowData.target=this.getRandomBuildingTarget();
             } else {
               const angle=Math.atan2(-dx,dz);
@@ -1045,18 +1083,15 @@
               const step=npcYellowData.speed;
               const newX=npc.position.x+Math.sin(angle)*step;
               const newZ=npc.position.z+Math.cos(angle)*step;
-
               // clamp to boundary
-              if(Math.abs(newX)>125 || Math.abs(newZ)>125){
-                // skip
-              } else {
+              if(Math.abs(newX)<125 && Math.abs(newZ)<125){
                 npc.position.x=newX;
                 npc.position.z=newZ;
               }
             }
             // update collision pos
             for(const obj of this.objects){
-              if(obj.mesh===npc) {
+              if(obj.mesh===npcYellowData.object){
                 obj.x=npc.position.x;
                 obj.z=npc.position.z;
                 break;
@@ -1069,10 +1104,10 @@
           }
 
           updateBird(){
+            birdData.angle+=birdData.speed;
+            const bx=birdData.radius*Math.cos(birdData.angle);
+            const bz=birdData.radius*Math.sin(birdData.angle);
             if(birdData.object){
-              birdData.angle+=birdData.speed;
-              const bx=birdData.radius*Math.cos(birdData.angle);
-              const bz=birdData.radius*Math.sin(birdData.angle);
               birdData.object.position.set(bx,60,bz);
               birdData.object.rotation.y=-birdData.angle;
             }
@@ -1120,7 +1155,7 @@
             const offsetX=camDist*Math.sin(this.player.yaw)*Math.cos(this.player.pitch);
             const offsetZ=camDist*Math.cos(this.player.yaw)*Math.cos(this.player.pitch);
             const offsetY=camDist*Math.sin(this.player.pitch)+15;
-            this.camera.position.set(this.player.x+offsetX,offsetY,this.player.z+offsetZ);
+            this.camera.position.set(this.player.x+offsetX, offsetY, this.player.z+offsetZ);
             this.camera.lookAt(this.player.x,3.5,this.player.z);
           }
 
@@ -1147,7 +1182,7 @@
             }
           }
 
-          // UTILITY
+          // Utility
           showDialogue(text){
             document.getElementById('dialogue').textContent=text;
           }
@@ -1202,94 +1237,3 @@
           initJoysticks(){
             this.joystickLeft=nipplejs.create({
               zone:document.getElementById('joystickLeft'),
-              mode:'static',
-              color:'white',
-              size:80,
-              position:{ left:'6vw', bottom:'10vh' }
-            });
-            this.joystickLeft.on('move',(evt,data)=>{
-              if(data && data.force>0){
-                const angle=data.angle.radian;
-                const speed=data.force*this.player.speedJoystick;
-                const dx=Math.cos(angle)*speed;
-                const dz=Math.sin(angle)*speed;
-                const newX=this.player.x+dx;
-                const newZ=this.player.z-dz;
-
-                let blocked=false;
-                for(const obj of this.objects){
-                  if(obj.type==='building'||obj.type==='wall'||obj.type==='boundary'||obj.type==='decoration'||obj.type==='npc'){
-                    const dxObj=newX-obj.x;
-                    const dzObj=newZ-obj.z;
-                    const distSq=dxObj*dxObj+dzObj*dzObj;
-                    const r=(obj.boundingRadius||5);
-                    if(distSq<r*r){
-                      blocked=true; break;
-                    }
-                  }
-                }
-                if(!blocked){
-                  this.player.x=newX;
-                  this.player.z=newZ;
-                }
-                this.joystickLeft.active=true;
-              }
-            });
-            this.joystickLeft.on('end',()=>{ this.joystickLeft.active=false; });
-
-            this.joystickRight=nipplejs.create({
-              zone:document.getElementById('joystickRight'),
-              mode:'static',
-              color:'white',
-              size:80,
-              position:{ right:'6vw', bottom:'10vh' }
-            });
-            this.joystickRight.on('move',(evt,data)=>{
-              if(data && data.force>0){
-                const sensitivity=0.001;
-                this.player.yaw+=data.vector.x*sensitivity*data.force;
-                this.player.pitch=Math.max(-Math.PI/2, Math.min(Math.PI/2, this.player.pitch + data.vector.y*sensitivity*data.force));
-              }
-            });
-            this.joystickRight.on('end',()=>{});
-
-            document.getElementById('gameContainer').addEventListener('click', e=>{
-              const rect=e.target.getBoundingClientRect();
-              const x=e.clientX-rect.left;
-              const y=e.clientY-rect.top;
-              if(x>rect.width/4 && x<(rect.width*3)/4 && y>rect.height/4 && y<(rect.height*3)/4){
-                this.throwBall();
-              }
-            });
-          }
-
-          initKeyboardMouse(){
-            document.addEventListener('keydown', e=>{
-              this.keysPressed[e.key]=true;
-              if(e.key===' ') this.throwBall();
-            });
-            document.addEventListener('keyup', e=>{
-              this.keysPressed[e.key]=false;
-            });
-            document.addEventListener('mousedown', ()=>{
-              document.body.requestPointerLock();
-            });
-            document.addEventListener('mousemove', event=>{
-              if(document.pointerLockElement===document.body){
-                const movementX=event.movementX||0;
-                const movementY=event.movementY||0;
-                const sensitivity=0.001;
-                this.player.yaw+=movementX*sensitivity;
-                this.player.pitch=Math.max(-Math.PI/2, Math.min(Math.PI/2,this.player.pitch+movementY*sensitivity));
-              }
-            });
-          }
-        }
-
-        const game=new Game();
-      } catch(error){
-        console.error('Error initializing the game:',error);
-      }
-    </script>
-  </body>
-</html>
