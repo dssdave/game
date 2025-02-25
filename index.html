@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Princess Donia’s Town - Enhanced 3D RPG</title>
+    <title>Simplified Princess Donia Town</title>
     <style>
       body {
         margin: 0;
@@ -18,8 +18,7 @@
       canvas {
         display: block;
       }
-
-      /* UI boxes – large style for desktop; smaller on mobile */
+      /* UI boxes */
       #ui,
       #ballCount,
       #dialogue,
@@ -48,7 +47,7 @@
         position: absolute;
         top: 50%;
         left: 50%;
-        transform: translate(-50%, -50%);
+        transform: translate(-50%,-50%);
         display: none;
         z-index: 20;
       }
@@ -56,13 +55,12 @@
         position: absolute;
         bottom: 50%;
         left: 50%;
-        transform: translate(-50%, 50%);
+        transform: translate(-50%,50%);
         display: none;
         z-index: 50;
         text-align: center;
       }
-
-      /* Joystick containers – static approach */
+      /* Joysticks: static corners */
       #joystickLeft,
       #joystickRight {
         position: absolute;
@@ -71,16 +69,9 @@
         opacity: 0.5;
         z-index: 15;
       }
-      #joystickLeft {
-        bottom: 10vh;
-        left: 6vw;
-      }
-      #joystickRight {
-        bottom: 10vh;
-        right: 6vw;
-      }
-
-      /* Button to toggle UI (top center) */
+      #joystickLeft { bottom: 10vh; left: 6vw; }
+      #joystickRight { bottom: 10vh; right: 6vw; }
+      /* Toggle UI button: top center */
       #toggleUIBtn {
         position: absolute;
         top: 10px;
@@ -95,15 +86,13 @@
         border-radius: 5px;
         cursor: pointer;
       }
-
-      /* Reorient button – small circle at bottom center */
+      /* Reorient button: bottom center */
       #reorientBtn {
         position: absolute;
         bottom: 16vh;
         left: 50%;
         transform: translateX(-50%);
-        width: 60px;
-        height: 60px;
+        width: 60px; height: 60px;
         border-radius: 50%;
         background: #666;
         color: #fff;
@@ -114,8 +103,7 @@
         z-index: 12;
         cursor: pointer;
       }
-
-      /* Smaller UI on narrower screens */
+      /* Smaller UI on narrow screens */
       @media (max-width: 768px) {
         #ui,
         #ballCount,
@@ -129,14 +117,11 @@
         #toggleUIBtn,
         #reorientBtn {
           font-size: 16px;
-          width: 50px;
-          height: 50px;
-          line-height: 50px;
+          width: 50px; height: 50px; line-height: 50px;
         }
         #joystickLeft,
         #joystickRight {
-          width: 60px;
-          height: 60px;
+          width: 60px; height: 60px;
         }
       }
     </style>
@@ -145,6 +130,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
   </head>
+
   <body>
     <div id="gameContainer">
       <canvas id="gameCanvas"></canvas>
@@ -163,11 +149,9 @@
         Time: <span id="time">Day</span> |
         Location: <span id="location">Town</span>
       </div>
-
       <div id="ballCount">
         Balls Thrown: <span id="ballCountValue">0</span>
       </div>
-
       <div id="dialogue"></div>
       <div id="controls">
         Controls:<br>
@@ -215,7 +199,11 @@
 
         // Basic Three.js
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
+        // Place camera at (0,20,50) so you see the town from above
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera.position.set(0,20,50);
+        camera.lookAt(0,0,0);
+
         const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -223,37 +211,40 @@
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         gameCanvas.style.display = 'block';
 
-        // NPC data
-        let npcBlueData = { angle:0, speed:0.0008, radius:120, object:null };
-        let npcYellowData = { object:null, pathIndex:0, speed:0.01, target:null };
-        let mermaidData = { object:null, route:[{x:-50,z:-70},{x:50,z:-70}], routeIndex:0, speed:0.01, splashTimer:0 };
+        // Minimal color background
+        renderer.setClearColor(0x87ceeb,1); // a sky-blue color
+
+        // Data for NPCs
+        let npcBlueData = { angle:0, speed:0.001, radius:20, object:null };
+        let npcYellowData = { object:null, pathIndex:0, speed:0.02, target:null };
+        let mermaidData = { object:null, route:[{x:-15,z:-25},{x:15,z:-25}], routeIndex:0, speed:0.02, splashTimer:0 };
         let guardData = {
           object:null,
           state:'idle',
           timer:0,
-          route:[{x:30,z:40},{x:30,z:50},{x:50,z:50},{x:50,z:40},{x:40,z:40}],
+          route:[{x:-10,z:10},{x:-10,z:20},{x:10,z:20},{x:10,z:10},{x:0,z:10}],
           routeIndex:0,
-          speed:0.02
+          speed:0.03
         };
-        let birdData = { angle:0, speed:0.002, radius:140, object:null };
 
         class Game {
           constructor() {
-            // Game state
-            this.scene = 'town';
-            this.flowers=0; this.coins=0; this.gems=0; this.potions=0; this.keys=0; this.artifacts=0;
-            this.health=100; this.time='Day'; this.dayNightCycle=0;
+            this.scene = scene;
+            this.camera = camera;
+            this.renderer = renderer;
+
+            // Player
             this.player = {
               x:0, z:0,
-              speedKeyboard:0.07,
-              speedJoystick:0.04,
-              yaw:0, pitch:-0.2,
-              object:null,    // Will be assigned by createPlayerModel()
-              lastMoveVec:new THREE.Vector3(1,0,0),
+              speedKeyboard:0.1,
+              speedJoystick:0.06,
+              yaw:0, pitch:0,
+              object:null,
+              lastMoveVec:new THREE.Vector3(0,0,0),
               waterSplashTimer:0
             };
-            this.dialogue='';
-            this.dialogueTimer=0;
+
+            // Track items, objects
             this.objects=[];
             this.buildingPositions=[];
             this.ballCount=0;
@@ -262,23 +253,21 @@
             this.joystickLeft=null;
             this.joystickRight=null;
             this.keysPressed={};
-            this.sceneObj=scene;
-            this.camera=camera;
-            this.renderer=renderer;
-            this.itemRange=80;
 
-            // Day/Night
-            this.sunMesh=null;
-            this.moonMesh=null;
-            this.starsMesh=null;
+            // For NPC states
+            this.npcBlueData = npcBlueData;
+            this.npcYellowData = npcYellowData;
+            this.mermaidData = mermaidData;
+            this.guardData = guardData;
 
-            // Interactions
-            this.guardObject=null;
-            this.guardMessageShown=false;
-            this.npcBlueMessageShown=false;
-            this.mermaidMessageShown=false;
-            this.npcYellowMessageShown=false;
+            // UI
+            this.flowers=0; this.coins=0; this.gems=0; this.potions=0; this.keys=0; this.artifacts=0;
+            this.health=100; 
+            // Hardcode "Day" in UI for now
+            this.time='Day';
+            document.getElementById('time').textContent=this.time;
 
+            // Initialize scene
             this.initScene();
             this.initJoysticks();
             this.initKeyboardMouse();
@@ -286,137 +275,80 @@
           }
 
           initScene(){
-            // Ground
-            const groundGeo=new THREE.PlaneGeometry(300,300);
+            // Basic ground
+            const groundGeo=new THREE.PlaneGeometry(100,100);
             const groundMat=new THREE.MeshStandardMaterial({ color:0x6bb26b, side:THREE.DoubleSide });
             const ground=new THREE.Mesh(groundGeo,groundMat);
-            ground.rotation.x=Math.PI/2;
-            this.sceneObj.add(ground);
+            ground.rotation.x=-Math.PI/2;
+            this.scene.add(ground);
 
-            // Sky
-            const skyGeo=new THREE.SphereGeometry(3000,60,40);
-            const skyMat=new THREE.ShaderMaterial({
-              uniforms:{
-                topColor:{ value:new THREE.Color(0x87ceeb) },
-                bottomColor:{ value:new THREE.Color(0x2f4f4f) },
-                offset:{ value:0.5 },
-                exponent:{ value:0.6 }
-              },
-              vertexShader:`
-                varying vec3 vWorldPosition;
-                void main(){
-                  vec4 worldPosition=modelMatrix*vec4(position,1.0);
-                  vWorldPosition=worldPosition.xyz;
-                  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
-                }
-              `,
-              fragmentShader:`
-                uniform vec3 topColor;
-                uniform vec3 bottomColor;
-                uniform float offset;
-                uniform float exponent;
-                varying vec3 vWorldPosition;
-                void main(){
-                  float h=normalize(vWorldPosition+vec3(0.0,offset,0.0)).y;
-                  gl_FragColor=vec4(
-                    mix(bottomColor, topColor, max(pow(max(h,0.0),exponent),0.0)),
-                    1.0
-                  );
-                }
-              `,
-              side:THREE.BackSide
-            });
-            const sky=new THREE.Mesh(skyGeo,skyMat);
-            sky.name='sky';
-            this.sceneObj.add(sky);
-
-            // Lighting
+            // Minimal ambient & directional
             const ambient=new THREE.AmbientLight(0x404040,0.6);
-            this.sceneObj.add(ambient);
+            this.scene.add(ambient);
             const dirLight=new THREE.DirectionalLight(0xffffff,0.8);
             dirLight.position.set(10,20,10);
-            this.sceneObj.add(dirLight);
+            this.scene.add(dirLight);
 
-            // Rolling hills
-            this.createRollingHills();
-            // Beach + water
-            this.createBeach();
-            // Characters
-            this.createPlayerModel();  // ensures this.player.object is assigned
+            // Create a boundary around ±50
+            this.createBoundary();
+
+            // Player
+            this.createPlayerModel();
+
+            // Buildings
+            this.createCastle();
+            this.createHouse();
+            this.createCafe();
+            this.createFountain();
+
+            // NPCs
             this.createBlueNPC();
             this.createYellowNPC();
             this.createGuardAtCastle();
             this.createMermaid();
-            this.createBird();
-            // Boundary
-            this.createBoundary();
-            // Buildings
-            this.createCastle();
-            this.createHouse();
-            this.createFountain();
-            this.createCafe();
-            // Shrubs behind house
-            this.addShrubsAndTreesBehindHouse();
-            // Items
-            this.createFlowers(10);
-            this.createCoins(8);
-            this.createGems(4);
-            this.createPotions(3);
-            this.createKeys(2);
-            this.createArtifacts(2);
-            // Day/Night
-            this.createSun();
-            this.createMoon();
-            this.createStars();
           }
 
-          /* Rolling hills, beach, boundary, buildings, items, day/night – same as previous snippets */
-          createRollingHills(){/* same */}
-          createBeach(){/* same */}
-          createBoundary(){/* same */}
-          addShrubsAndTreesBehindHouse(){/* same */}
-          createCastle(){/* same */}
-          createHouse(){/* same */}
-          createFountain(){/* same */}
-          createCafe(){/* same */}
-          createFlowers(count){/* same */}
-          createCoins(count){/* same */}
-          createGems(count){/* same */}
-          createPotions(count){/* same */}
-          createKeys(count){/* same */}
-          createArtifacts(count){/* same */}
-          createSun(){/* same */}
-          createMoon(){/* same */}
-          createStars(){/* same with starMat.depthTest=false */}
+          /* Minimal boundary at ±50 */
+          createBoundary(){
+            for(let x=-50;x<=50;x+=4){
+              this.addShrub(x,-50);
+              this.addShrub(x,50);
+            }
+            for(let z=-50;z<=50;z+=4){
+              this.addShrub(-50,z);
+              this.addShrub(50,z);
+            }
+          }
+          addShrub(x,z){
+            const geo=new THREE.CylinderGeometry(1,1,2,8);
+            const mat=new THREE.MeshStandardMaterial({ color:0x228b22 });
+            const shrub=new THREE.Mesh(geo,mat);
+            shrub.position.set(x,1,z);
+            this.scene.add(shrub);
+            this.objects.push({ mesh:shrub, type:'boundary', x, z, boundingRadius:2 });
+          }
 
           createPlayerModel(){
-            // A simple body with hair on top
             const group=new THREE.Group();
-
             // Body
             const body=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,1.2,16), new THREE.MeshStandardMaterial({ color:0xff69b4 }));
             body.position.set(0,0.6,0);
             body.userData={ isBodyPart:true };
             group.add(body);
-
             // Head
             const head=new THREE.Mesh(new THREE.SphereGeometry(0.3,16,16), new THREE.MeshStandardMaterial({ color:0xffddc1 }));
             head.position.set(0,1.4,0);
             head.userData={ isBodyPart:true };
             group.add(head);
-
-            // Hair on top
+            // Hair
             const hair=new THREE.Mesh(new THREE.SphereGeometry(0.4,16,16), new THREE.MeshStandardMaterial({ color:0x4b2e05 }));
             hair.position.set(0,1.75,0);
-            // not using half-sphere so it's easy
             group.add(hair);
-
             // Crown
             const crown=new THREE.Mesh(new THREE.TorusGeometry(0.25,0.09,8,16), new THREE.MeshStandardMaterial({ color:0xffd700 }));
             crown.rotation.x=Math.PI/2;
             crown.position.set(0,1.95,0);
             group.add(crown);
-
             // Arms
             const armGeo=new THREE.CylinderGeometry(0.1,0.1,0.8,8);
             const skinMat=new THREE.MeshStandardMaterial({ color:0xffddc1 });
@@ -428,7 +360,6 @@
             rightArm.position.set(0.5,1.0,0);
             rightArm.userData={ isBodyPart:true };
             group.add(rightArm);
-
             // Legs
             const legGeo=new THREE.CylinderGeometry(0.12,0.12,0.8,8);
             const leftLeg=new THREE.Mesh(legGeo,skinMat);
@@ -440,123 +371,390 @@
             rightLeg.userData={ isBodyPart:true };
             group.add(rightLeg);
 
-            group.position.set(0,0.5,0);
-            this.player.object=group; // assigned so throwBall won't be null
-            this.sceneObj.add(group);
+            group.position.set(0,0,0); // center of map
+            this.player.object=group;
+            this.scene.add(group);
           }
 
-          createBlueNPC(){/* same */}
-          createYellowNPC(){/* same */}
-          createGuardAtCastle(){/* same */}
-          createMermaid(){/* same */}
-          createBird(){/* same */}
+          createCastle(){
+            // Just a small box for demonstration
+            const group=new THREE.Group();
+            const base=new THREE.Mesh(new THREE.BoxGeometry(6,4,6), new THREE.MeshStandardMaterial({ color:0xcccccc }));
+            base.position.set(0,2,0);
+            group.add(base);
+            // Door
+            const door=new THREE.Mesh(new THREE.PlaneGeometry(2,3), new THREE.MeshStandardMaterial({ color:0x553300, side:THREE.DoubleSide }));
+            door.position.set(0,1,3.01);
+            group.add(door);
+            // Label
+            const canvas=document.createElement('canvas');
+            canvas.width=256; canvas.height=64;
+            const ctx=canvas.getContext('2d');
+            ctx.fillStyle='black'; ctx.fillRect(0,0,256,64);
+            ctx.fillStyle='white'; ctx.font='30px Arial';
+            ctx.fillText("Castle",50,40);
+            const tex=new THREE.Texture(canvas);
+            tex.needsUpdate=true;
+            const sign=new THREE.Mesh(new THREE.PlaneGeometry(4,1), new THREE.MeshBasicMaterial({ map:tex, transparent:true }));
+            sign.position.set(0,3,3.05);
+            group.add(sign);
 
-          /* Animation loop, day/night, collisions, camera, pickups – same as prior snippet */
+            group.position.set(-10,0,10);
+            this.scene.add(group);
+            this.objects.push({ mesh:group, type:'building', x:-10, z:10, boundingRadius:4 });
+            this.buildingPositions.push({ x:-10, z:10 });
+          }
+          createHouse(){
+            const group=new THREE.Group();
+            const base=new THREE.Mesh(new THREE.BoxGeometry(6,4,6), new THREE.MeshStandardMaterial({ color:0x8b4513 }));
+            base.position.set(0,2,0);
+            group.add(base);
+            const roof=new THREE.Mesh(new THREE.ConeGeometry(4,3,4), new THREE.MeshStandardMaterial({ color:0x800000 }));
+            roof.position.set(0,4,0);
+            group.add(roof);
+            // Door
+            const door=new THREE.Mesh(new THREE.PlaneGeometry(2,3), new THREE.MeshStandardMaterial({ color:0x553300, side:THREE.DoubleSide }));
+            door.position.set(0,1,3.01);
+            group.add(door);
+            // Label
+            const canvas=document.createElement('canvas');
+            canvas.width=256; canvas.height=64;
+            const ctx=canvas.getContext('2d');
+            ctx.fillStyle='black'; ctx.fillRect(0,0,256,64);
+            ctx.fillStyle='white'; ctx.font='30px Arial';
+            ctx.fillText("House",80,40);
+            const tex=new THREE.Texture(canvas);
+            tex.needsUpdate=true;
+            const sign=new THREE.Mesh(new THREE.PlaneGeometry(4,1), new THREE.MeshBasicMaterial({ map:tex, transparent:true }));
+            sign.position.set(0,3,3.05);
+            group.add(sign);
+
+            group.position.set(10,0,10);
+            this.scene.add(group);
+            this.objects.push({ mesh:group, type:'building', x:10, z:10, boundingRadius:4 });
+            this.buildingPositions.push({ x:10, z:10 });
+          }
+          createCafe(){
+            const group=new THREE.Group();
+            const base=new THREE.Mesh(new THREE.BoxGeometry(6,4,6), new THREE.MeshStandardMaterial({ color:0x888888 }));
+            base.position.set(0,2,0);
+            group.add(base);
+            // Door
+            const door=new THREE.Mesh(new THREE.PlaneGeometry(2,3), new THREE.MeshStandardMaterial({ color:0x553300, side:THREE.DoubleSide }));
+            door.position.set(0,1,3.01);
+            group.add(door);
+            // Label
+            const canvas=document.createElement('canvas');
+            canvas.width=256; canvas.height=64;
+            const ctx=canvas.getContext('2d');
+            ctx.fillStyle='black'; ctx.fillRect(0,0,256,64);
+            ctx.fillStyle='white'; ctx.font='30px Arial'; ctx.fillText("Cafe",90,40);
+            const tex=new THREE.Texture(canvas);
+            tex.needsUpdate=true;
+            const sign=new THREE.Mesh(new THREE.PlaneGeometry(4,1), new THREE.MeshBasicMaterial({ map:tex, transparent:true }));
+            sign.position.set(0,3,3.05);
+            group.add(sign);
+
+            group.position.set(10,0,-10);
+            this.scene.add(group);
+            this.objects.push({ mesh:group, type:'building', x:10, z:-10, boundingRadius:4 });
+            this.buildingPositions.push({ x:10, z:-10 });
+          }
+          createFountain(){
+            const group=new THREE.Group();
+            const base=new THREE.Mesh(new THREE.CylinderGeometry(2,2,1,16), new THREE.MeshStandardMaterial({ color:0x808080 }));
+            base.position.set(0,0.5,0);
+            group.add(base);
+            const water=new THREE.Mesh(new THREE.CylinderGeometry(1.8,1.8,0.2,16), new THREE.MeshStandardMaterial({ color:0x00ffff, transparent:true, opacity:0.6 }));
+            water.position.set(0,1,0);
+            group.add(water);
+
+            group.position.set(-10,0,-10);
+            this.scene.add(group);
+            this.objects.push({ mesh:group, type:'decoration', x:-10, z:-10, boundingRadius:3 });
+            this.buildingPositions.push({ x:-10, z:-10 });
+          }
+
+          createBlueNPC(){
+            const group=new THREE.Group();
+            const body=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,1.2,16), new THREE.MeshStandardMaterial({ color:0x0000ff }));
+            body.position.set(0,0.6,0);
+            group.add(body);
+            const head=new THREE.Mesh(new THREE.SphereGeometry(0.3,16,16), new THREE.MeshStandardMaterial({ color:0xffddc1 }));
+            head.position.set(0,1.4,0);
+            group.add(head);
+            // place near origin
+            group.position.set(0,0,5);
+            this.scene.add(group);
+            this.objects.push({ mesh:group, type:'npc', x:0, z:5, boundingRadius:1 });
+            this.npcBlueData.object=group;
+          }
+          createYellowNPC(){
+            const group=new THREE.Group();
+            const body=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,1.0,16), new THREE.MeshStandardMaterial({ color:0xffff00 }));
+            body.position.set(0,0.5,0);
+            group.add(body);
+            const head=new THREE.Mesh(new THREE.SphereGeometry(0.3,16,16), new THREE.MeshStandardMaterial({ color:0xffddc1 }));
+            head.position.set(0,1.1,0);
+            group.add(head);
+
+            group.position.set(0,0,-5);
+            this.scene.add(group);
+            this.objects.push({ mesh:group, type:'npc', x:0, z:-5, boundingRadius:1 });
+            this.npcYellowData.object=group;
+          }
+          createGuardAtCastle(){
+            const group=new THREE.Group();
+            const body=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,1.2,16), new THREE.MeshStandardMaterial({ color:0x000000 }));
+            body.position.set(0,0.6,0);
+            group.add(body);
+            const head=new THREE.Mesh(new THREE.SphereGeometry(0.3,16,16), new THREE.MeshStandardMaterial({ color:0xffddc1 }));
+            head.position.set(0,1.4,0);
+            group.add(head);
+
+            group.position.set(-10,0,10);
+            this.scene.add(group);
+            this.objects.push({ mesh:group, type:'guard', x:-10, z:10, boundingRadius:2 });
+            this.guardData.object=group;
+          }
+          createMermaid(){
+            const group=new THREE.Group();
+            const body=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,0.6,16), new THREE.MeshStandardMaterial({ color:0xff69b4 }));
+            body.position.set(0,0.9,0);
+            group.add(body);
+            const head=new THREE.Mesh(new THREE.SphereGeometry(0.3,16,16), new THREE.MeshStandardMaterial({ color:0xffddc1 }));
+            head.position.set(0,1.4,0);
+            group.add(head);
+            group.position.set(-15,0,-25);
+            this.scene.add(group);
+            this.objects.push({ mesh:group, type:'mermaid', x:-15, z:-25, boundingRadius:1 });
+            this.mermaidData.object=group;
+          }
+
           startAnimation(){
             const animate=()=>{
               requestAnimationFrame(animate);
               this.update();
-              this.renderer.render(this.sceneObj,this.camera);
+              this.renderer.render(this.scene,this.camera);
             };
             animate();
           }
-
           update(){
-            this.updateDayNight();
+            // minimal updates
             this.updateBalls();
             this.updatePlayer();
             this.updateBlueNPC();
             this.updateYellowNPC();
             this.updateMermaid();
             this.updateGuardPatrol();
-            this.updateBird();
             this.updateCollisions();
-            this.updateCamera();
             this.updatePickups();
           }
+          updateBalls(){
+            for(let i=this.thrownBalls.length-1;i>=0;i--){
+              const ball=this.thrownBalls[i];
+              ball.position.add(ball.userData.velocity);
+              ball.userData.velocity.y-=0.01;
+              // ground bounce
+              if(ball.position.y<0){
+                if(!ball.userData.bounced){
+                  ball.position.y=0;
+                  ball.userData.velocity.y*=-0.7;
+                  ball.userData.bounced=true;
+                } else if(ball.position.y<-0.5){
+                  this.scene.remove(ball);
+                  this.thrownBalls.splice(i,1);
+                }
+              }
+            }
+          }
+          updatePlayer(){
+            let dx=0, dz=0;
+            if(this.keysPressed['ArrowUp'])dz-=this.player.speedKeyboard;
+            if(this.keysPressed['ArrowDown'])dz+=this.player.speedKeyboard;
+            if(this.keysPressed['ArrowLeft'])dx-=this.player.speedKeyboard;
+            if(this.keysPressed['ArrowRight'])dx+=this.player.speedKeyboard;
+            if(dx!==0||dz!==0){
+              this.player.lastMoveVec.set(dx,0,dz);
+            }
+            const newX=this.player.x+dx;
+            const newZ=this.player.z+dz;
+            // boundary collision
+            let blocked=false;
+            for(const obj of this.objects){
+              if(obj.type==='building'||obj.type==='boundary'||obj.type==='npc'){
+                const dxObj=newX-obj.x;
+                const dzObj=newZ-obj.z;
+                const distSq=dxObj*dxObj+dzObj*dzObj;
+                const r=(obj.boundingRadius||2);
+                if(distSq<r*r){ blocked=true; break; }
+              }
+            }
+            if(!blocked){
+              this.player.x=newX; this.player.z=newZ;
+            }
+            if(this.player.object){
+              this.player.object.position.set(this.player.x,0,this.player.z);
+            }
+          }
+          updateBlueNPC(){
+            this.npcBlueData.angle+=this.npcBlueData.speed;
+            const x=this.npcBlueData.radius*Math.cos(this.npcBlueData.angle);
+            const z=this.npcBlueData.radius*Math.sin(this.npcBlueData.angle);
+            if(this.npcBlueData.object){
+              this.npcBlueData.object.position.set(x,0.5,z+5);
+              for(const obj of this.objects){
+                if(obj.mesh===this.npcBlueData.object){
+                  obj.x=x; obj.z=z+5; break;
+                }
+              }
+            }
+          }
+          updateYellowNPC(){
+            if(!this.npcYellowData.object)return;
+            if(!this.npcYellowData.target){
+              this.npcYellowData.target=this.getRandomBuildingTarget();
+            }
+            const dx=this.npcYellowData.target.x-this.npcYellowData.object.position.x;
+            const dz=this.npcYellowData.target.z-this.npcYellowData.object.position.z;
+            const distSq=dx*dx+dz*dz;
+            if(distSq<1){
+              this.npcYellowData.target=this.getRandomBuildingTarget();
+            } else {
+              const angle=Math.atan2(-dx,dz);
+              this.npcYellowData.object.rotation.y=angle;
+              const step=this.npcYellowData.speed;
+              const newX=this.npcYellowData.object.position.x+Math.sin(angle)*step;
+              const newZ=this.npcYellowData.object.position.z+Math.cos(angle)*step;
+              if(Math.abs(newX)<48 && Math.abs(newZ)<48){
+                this.npcYellowData.object.position.set(newX,0,newZ);
+              }
+            }
+            for(const obj of this.objects){
+              if(obj.mesh===this.npcYellowData.object){
+                obj.x=this.npcYellowData.object.position.x;
+                obj.z=this.npcYellowData.object.position.z;
+                break;
+              }
+            }
+          }
+          getRandomBuildingTarget(){
+            const i=Math.floor(Math.random()*this.buildingPositions.length);
+            return this.buildingPositions[i];
+          }
+          updateMermaid(){
+            if(!this.mermaidData.object)return;
+            const m=this.mermaidData;
+            const currentPt=m.route[m.routeIndex];
+            const dx=currentPt.x - m.object.position.x;
+            const dz=currentPt.z - m.object.position.z;
+            const distSq=dx*dx+dz*dz;
+            if(distSq<1){
+              m.routeIndex=(m.routeIndex+1)%m.route.length;
+            }
+            const angle=Math.atan2(-dx,dz);
+            m.object.rotation.y=angle;
+            const step=m.speed;
+            const newX=m.object.position.x+Math.sin(angle)*step;
+            const newZ=m.object.position.z+Math.cos(angle)*step;
+            m.object.position.set(newX,0,newZ);
 
-          updateDayNight(){/* same */}
-          updateBalls(){/* same */}
-          spawnRipple(x,z){/* same */}
-          updatePlayer(){/* same */}
-          updateBlueNPC(){/* same */}
-          updateYellowNPC(){/* same */}
-          getRandomBuildingTarget(){/* same */}
-          updateMermaid(){/* same */}
-          updateGuardPatrol(){/* same */}
-          updateBird(){/* same */}
-          updateCollisions(){/* same */}
-          updateCamera(){/* same */}
-          updatePickups(){/* same */}
+            for(const obj of this.objects){
+              if(obj.mesh===m.object){
+                obj.x=newX; obj.z=newZ; break;
+              }
+            }
+          }
+          updateGuardPatrol(){
+            if(!this.guardData.object)return;
+            this.guardData.timer++;
+            if(this.guardData.state==='idle'){
+              if(this.guardData.timer>600){ // 600 frames ~ 10s
+                this.guardData.state='patrol';
+                this.guardData.timer=0;
+                this.guardData.routeIndex=0;
+              }
+            } else if(this.guardData.state==='patrol'){
+              const route=this.guardData.route;
+              const guard=this.guardData.object;
+              const target=route[this.guardData.routeIndex];
+              const dx=target.x-guard.position.x;
+              const dz=target.z-guard.position.z;
+              const distSq=dx*dx+dz*dz;
+              if(distSq<1){
+                this.guardData.routeIndex++;
+                if(this.guardData.routeIndex>=route.length){
+                  this.guardData.state='idle';
+                  this.guardData.timer=0;
+                }
+              } else {
+                const angle=Math.atan2(-dx,dz);
+                guard.rotation.y=angle;
+                const step=this.guardData.speed;
+                const newX=guard.position.x+Math.sin(angle)*step;
+                const newZ=guard.position.z+Math.cos(angle)*step;
+                guard.position.set(newX,0,newZ);
+                for(const obj of this.objects){
+                  if(obj.mesh===guard){
+                    obj.x=newX; obj.z=newZ; break;
+                  }
+                }
+              }
+            }
+          }
+          updateCollisions(){
+            // If near guard
+            for(const obj of this.objects){
+              if(obj.type==='guard'){
+                const dxG=this.player.x-obj.x;
+                const dzG=this.player.z-obj.z;
+                const distG=Math.sqrt(dxG*dxG+dzG*dzG);
+                if(distG<3){
+                  // guard message
+                  this.showDialogue("I'm the guard. Show your ID!");
+                }
+              }
+            }
+          }
+          updatePickups(){
+            // none in this simplified code
+          }
 
-          // Check if this.player.object is null in throwBall
           throwBall(){
+            // Check if player object is present
             if(!this.player.object){
-              console.warn('Player model not created yet, ignoring throwBall');
+              console.warn('No player object, ignoring throwBall.');
               return;
             }
-            let direction=new THREE.Vector3();
-            if(this.player.lastMoveVec.lengthSq()>0.001){
-              direction.copy(this.player.lastMoveVec).normalize();
-            } else {
-              direction.set(Math.cos(this.player.yaw),0,Math.sin(this.player.yaw)).normalize();
-            }
+            const direction=new THREE.Vector3(
+              Math.sin(this.player.yaw),
+              0,
+              Math.cos(this.player.yaw)
+            ).normalize();
             const ballGeo=new THREE.SphereGeometry(0.3,16,16);
             const ballMat=new THREE.MeshStandardMaterial({ color:0xff4500 });
             const ball=new THREE.Mesh(ballGeo,ballMat);
-
-            // If still no player object, bail
-            if(!this.player.object){
-              console.warn('No player object, cannot place ball.'); 
-              return;
-            }
-
             ball.position.copy(this.player.object.position);
             ball.position.y+=1;
             ball.userData={
               velocity:direction.multiplyScalar(0.5).add(new THREE.Vector3(0,0.3,0)),
               bounced:false
             };
-            this.sceneObj.add(ball);
+            this.scene.add(ball);
             this.thrownBalls.push(ball);
             this.ballCount++;
             document.getElementById('ballCountValue').textContent=this.ballCount;
             this.showDialogue("Threw a magic ball!");
           }
-
           showDialogue(text){
             document.getElementById('dialogue').textContent=text;
           }
-          showGuardPopup(text){
-            const popup=document.getElementById('guardPopup');
-            popup.style.display='block';
-            popup.textContent=text;
-            setTimeout(()=>{
-              popup.style.display='none';
-              popup.textContent='';
-            },2000);
-          }
           startCollectionGlow(){
-            if(this.collectionGlow)this.sceneObj.remove(this.collectionGlow);
-            const glowGeo=new THREE.SphereGeometry(1,16,16);
-            const glowMat=new THREE.MeshBasicMaterial({ color:0xffff00, transparent:true, opacity:0.5, side:THREE.BackSide });
-            const glow=new THREE.Mesh(glowGeo,glowMat);
-            if(this.player.object){
-              glow.position.copy(this.player.object.position);
-              glow.position.y+=0.5;
-              this.sceneObj.add(glow);
-              this.collectionGlow=glow;
-              setTimeout(()=>{
-                if(this.collectionGlow){
-                  this.sceneObj.remove(this.collectionGlow);
-                  this.collectionGlow=null;
-                }
-              },1000);
-            }
+            // not used in this minimal version
           }
 
           initJoysticks(){
-            // Left joystick: static at bottom-left
+            // Left joystick
             this.joystickLeft=nipplejs.create({
               zone:document.getElementById('joystickLeft'),
               mode:'static',
@@ -572,13 +770,14 @@
                 const dz=Math.sin(angle)*speed;
                 const newX=this.player.x+dx;
                 const newZ=this.player.z-dz;
+                // boundary collision
                 let blocked=false;
                 for(const obj of this.objects){
-                  if(obj.type==='building'||obj.type==='wall'||obj.type==='boundary'||obj.type==='decoration'||obj.type==='npc'){
+                  if(obj.type==='building'||obj.type==='boundary'||obj.type==='npc'){
                     const dxObj=newX-obj.x;
                     const dzObj=newZ-obj.z;
                     const distSq=dxObj*dxObj+dzObj*dzObj;
-                    const r=(obj.boundingRadius||5);
+                    const r=(obj.boundingRadius||2);
                     if(distSq<r*r){ blocked=true; break; }
                   }
                 }
@@ -586,12 +785,15 @@
                   this.player.x=newX;
                   this.player.z=newZ;
                 }
+                if(this.player.object){
+                  this.player.object.position.set(this.player.x,0,this.player.z);
+                }
                 this.joystickLeft.active=true;
               }
             });
             this.joystickLeft.on('end',()=>{ this.joystickLeft.active=false; });
 
-            // Right joystick: static at bottom-right
+            // Right joystick
             this.joystickRight=nipplejs.create({
               zone:document.getElementById('joystickRight'),
               mode:'static',
@@ -603,7 +805,8 @@
               if(data&&data.force>0){
                 const sensitivity=0.001;
                 this.player.yaw+=data.vector.x*sensitivity*data.force;
-                this.player.pitch=Math.max(-Math.PI/2,Math.min(Math.PI/2,this.player.pitch+data.vector.y*sensitivity*data.force));
+                // optional pitch
+                //this.player.pitch=Math.max(-Math.PI/2,Math.min(Math.PI/2,this.player.pitch+data.vector.y*sensitivity*data.force));
               }
             });
             this.joystickRight.on('end',()=>{});
@@ -613,17 +816,15 @@
               const rect=e.target.getBoundingClientRect();
               const x=e.clientX-rect.left;
               const y=e.clientY-rect.top;
-              // If in center region => throw ball
               if(x>rect.width/4 && x<(rect.width*3)/4 && y>rect.height/4 && y<(rect.height*3)/4){
                 this.throwBall();
               }
             });
           }
-
           initKeyboardMouse(){
             document.addEventListener('keydown', e=>{
-              this.keysPressed[e.key]=true;
               if(e.key===' ')this.throwBall();
+              this.keysPressed[e.key]=true;
             });
             document.addEventListener('keyup', e=>{
               this.keysPressed[e.key]=false;
@@ -641,7 +842,8 @@
                 const movementY=evt.movementY||0;
                 const sensitivity=0.001;
                 this.player.yaw+=movementX*sensitivity;
-                this.player.pitch=Math.max(-Math.PI/2,Math.min(Math.PI/2,this.player.pitch+movementY*sensitivity));
+                // optional pitch
+                //this.player.pitch=Math.max(-Math.PI/2,Math.min(Math.PI/2,this.player.pitch+movementY*sensitivity));
               }
             });
           }
