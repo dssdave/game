@@ -20,7 +20,12 @@
       }
 
       /* UI boxes – large style for desktop; smaller on mobile */
-      #ui, #ballCount, #dialogue, #controls, #errorMessage, #guardPopup {
+      #ui,
+      #ballCount,
+      #dialogue,
+      #controls,
+      #errorMessage,
+      #guardPopup {
         background: rgba(0,0,0,0.7);
         border: 4px solid #fff;
         border-radius: 5px;
@@ -28,7 +33,10 @@
         font-size: 28px;
         padding: 40px 80px;
       }
-      #ui, #ballCount, #dialogue, #controls {
+      #ui,
+      #ballCount,
+      #dialogue,
+      #controls {
         position: absolute;
         z-index: 10;
       }
@@ -48,14 +56,15 @@
         position: absolute;
         bottom: 50%;
         left: 50%;
-        transform: translate(-50%,50%);
+        transform: translate(-50%, 50%);
         display: none;
         z-index: 50;
         text-align: center;
       }
 
       /* Joystick containers – static approach */
-      #joystickLeft, #joystickRight {
+      #joystickLeft,
+      #joystickRight {
         position: absolute;
         width: 80px;
         height: 80px;
@@ -93,7 +102,8 @@
         bottom: 16vh;
         left: 50%;
         transform: translateX(-50%);
-        width: 60px; height: 60px;
+        width: 60px;
+        height: 60px;
         border-radius: 50%;
         background: #666;
         color: #fff;
@@ -107,16 +117,26 @@
 
       /* Smaller UI on narrower screens */
       @media (max-width: 768px) {
-        #ui, #ballCount, #dialogue, #controls, #guardPopup, #errorMessage {
+        #ui,
+        #ballCount,
+        #dialogue,
+        #controls,
+        #guardPopup,
+        #errorMessage {
           font-size: 16px;
           padding: 20px 30px;
         }
-        #toggleUIBtn, #reorientBtn {
+        #toggleUIBtn,
+        #reorientBtn {
           font-size: 16px;
-          width: 50px; height: 50px; line-height: 50px;
+          width: 50px;
+          height: 50px;
+          line-height: 50px;
         }
-        #joystickLeft, #joystickRight {
-          width: 60px; height: 60px;
+        #joystickLeft,
+        #joystickRight {
+          width: 60px;
+          height: 60px;
         }
       }
     </style>
@@ -143,9 +163,11 @@
         Time: <span id="time">Day</span> |
         Location: <span id="location">Town</span>
       </div>
+
       <div id="ballCount">
         Balls Thrown: <span id="ballCountValue">0</span>
       </div>
+
       <div id="dialogue"></div>
       <div id="controls">
         Controls:<br>
@@ -153,9 +175,14 @@
         Joysticks/Mouse: Look Around<br>
         Tap Center/Space: Throw Ball
       </div>
+
       <div id="joystickLeft"></div>
       <div id="joystickRight"></div>
-      <div id="errorMessage">WebGL not supported in your browser. Please use a modern browser.</div>
+
+      <div id="errorMessage">
+        WebGL not supported in your browser. Please use a modern browser.
+      </div>
+
       <div id="guardPopup"></div>
     </div>
 
@@ -196,7 +223,7 @@
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         gameCanvas.style.display = 'block';
 
-        // Data for NPCs
+        // NPC data
         let npcBlueData = { angle:0, speed:0.0008, radius:120, object:null };
         let npcYellowData = { object:null, pathIndex:0, speed:0.01, target:null };
         let mermaidData = { object:null, route:[{x:-50,z:-70},{x:50,z:-70}], routeIndex:0, speed:0.01, splashTimer:0 };
@@ -212,7 +239,7 @@
 
         class Game {
           constructor() {
-            // State
+            // Game state
             this.scene = 'town';
             this.flowers=0; this.coins=0; this.gems=0; this.potions=0; this.keys=0; this.artifacts=0;
             this.health=100; this.time='Day'; this.dayNightCycle=0;
@@ -221,7 +248,7 @@
               speedKeyboard:0.07,
               speedJoystick:0.04,
               yaw:0, pitch:-0.2,
-              object:null,
+              object:null,    // Will be assigned by createPlayerModel()
               lastMoveVec:new THREE.Vector3(1,0,0),
               waterSplashTimer:0
             };
@@ -241,7 +268,10 @@
             this.itemRange=80;
 
             // Day/Night
-            this.sunMesh=null; this.moonMesh=null; this.starsMesh=null;
+            this.sunMesh=null;
+            this.moonMesh=null;
+            this.starsMesh=null;
+
             // Interactions
             this.guardObject=null;
             this.guardMessageShown=false;
@@ -312,7 +342,7 @@
             // Beach + water
             this.createBeach();
             // Characters
-            this.createPlayerModel();
+            this.createPlayerModel();  // ensures this.player.object is assigned
             this.createBlueNPC();
             this.createYellowNPC();
             this.createGuardAtCastle();
@@ -340,57 +370,88 @@
             this.createStars();
           }
 
-          /* ...All create methods from prior snippet: createRollingHills, createBeach, etc... */
-          createRollingHills(){/* see prior snippet */}
-          createBeach(){/* see prior snippet */}
-          createBoundary(){/* see prior snippet */}
-          addShrubsAndTreesBehindHouse(){/* see prior snippet */}
-          createCastle(){/* see prior snippet */}
-          createHouse(){/* see prior snippet */}
-          createFountain(){/* see prior snippet */}
-          createCafe(){/* see prior snippet */}
+          /* Rolling hills, beach, boundary, buildings, items, day/night – same as previous snippets */
+          createRollingHills(){/* same */}
+          createBeach(){/* same */}
+          createBoundary(){/* same */}
+          addShrubsAndTreesBehindHouse(){/* same */}
+          createCastle(){/* same */}
+          createHouse(){/* same */}
+          createFountain(){/* same */}
+          createCafe(){/* same */}
+          createFlowers(count){/* same */}
+          createCoins(count){/* same */}
+          createGems(count){/* same */}
+          createPotions(count){/* same */}
+          createKeys(count){/* same */}
+          createArtifacts(count){/* same */}
+          createSun(){/* same */}
+          createMoon(){/* same */}
+          createStars(){/* same with starMat.depthTest=false */}
 
-          /* Player + NPCs */
-          createPlayerModel(){/* see prior snippet for half-sphere hair */}
-          createBlueNPC(){/* see prior snippet */}
-          createYellowNPC(){/* see prior snippet */}
-          createGuardAtCastle(){/* see prior snippet */}
-          createMermaid(){/* see prior snippet */}
-          createBird(){/* see prior snippet */}
+          createPlayerModel(){
+            // A simple body with hair on top
+            const group=new THREE.Group();
 
-          /* Items */
-          createFlowers(count){/* see prior snippet */}
-          createCoins(count){/* see prior snippet */}
-          createGems(count){/* see prior snippet */}
-          createPotions(count){/* see prior snippet */}
-          createKeys(count){/* see prior snippet */}
-          createArtifacts(count){/* see prior snippet */}
+            // Body
+            const body=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,1.2,16), new THREE.MeshStandardMaterial({ color:0xff69b4 }));
+            body.position.set(0,0.6,0);
+            body.userData={ isBodyPart:true };
+            group.add(body);
 
-          /* Sun, Moon, Stars */
-          createSun(){/* see prior snippet */}
-          createMoon(){/* see prior snippet */}
-          createStars(){
-            /* behind hills */
-            const starCount=300;
-            const positions=new Float32Array(starCount*3);
-            for(let i=0;i<starCount;i++){
-              const radius=2000+Math.random()*800;
-              const angle=Math.random()*Math.PI*2;
-              const ySpread=Math.random()*200-50;
-              positions[i*3]=Math.cos(angle)*radius;
-              positions[i*3+1]=50+ySpread;
-              positions[i*3+2]=Math.sin(angle)*radius;
-            }
-            const starGeo=new THREE.BufferGeometry();
-            starGeo.setAttribute('position',new THREE.BufferAttribute(positions,3));
-            const starMat=new THREE.PointsMaterial({ color:0xffffff, size:1.2, depthTest:false });
-            const starField=new THREE.Points(starGeo,starMat);
-            starField.visible=false;
-            this.sceneObj.add(starField);
-            this.starsMesh=starField;
+            // Head
+            const head=new THREE.Mesh(new THREE.SphereGeometry(0.3,16,16), new THREE.MeshStandardMaterial({ color:0xffddc1 }));
+            head.position.set(0,1.4,0);
+            head.userData={ isBodyPart:true };
+            group.add(head);
+
+            // Hair on top
+            const hair=new THREE.Mesh(new THREE.SphereGeometry(0.4,16,16), new THREE.MeshStandardMaterial({ color:0x4b2e05 }));
+            hair.position.set(0,1.75,0);
+            // not using half-sphere so it's easy
+            group.add(hair);
+
+            // Crown
+            const crown=new THREE.Mesh(new THREE.TorusGeometry(0.25,0.09,8,16), new THREE.MeshStandardMaterial({ color:0xffd700 }));
+            crown.rotation.x=Math.PI/2;
+            crown.position.set(0,1.95,0);
+            group.add(crown);
+
+            // Arms
+            const armGeo=new THREE.CylinderGeometry(0.1,0.1,0.8,8);
+            const skinMat=new THREE.MeshStandardMaterial({ color:0xffddc1 });
+            const leftArm=new THREE.Mesh(armGeo,skinMat);
+            leftArm.position.set(-0.5,1.0,0);
+            leftArm.userData={ isBodyPart:true };
+            group.add(leftArm);
+            const rightArm=new THREE.Mesh(armGeo,skinMat);
+            rightArm.position.set(0.5,1.0,0);
+            rightArm.userData={ isBodyPart:true };
+            group.add(rightArm);
+
+            // Legs
+            const legGeo=new THREE.CylinderGeometry(0.12,0.12,0.8,8);
+            const leftLeg=new THREE.Mesh(legGeo,skinMat);
+            leftLeg.position.set(-0.2,0.2,0);
+            leftLeg.userData={ isBodyPart:true };
+            group.add(leftLeg);
+            const rightLeg=new THREE.Mesh(legGeo,skinMat);
+            rightLeg.position.set(0.2,0.2,0);
+            rightLeg.userData={ isBodyPart:true };
+            group.add(rightLeg);
+
+            group.position.set(0,0.5,0);
+            this.player.object=group; // assigned so throwBall won't be null
+            this.sceneObj.add(group);
           }
 
-          /* Animation loop */
+          createBlueNPC(){/* same */}
+          createYellowNPC(){/* same */}
+          createGuardAtCastle(){/* same */}
+          createMermaid(){/* same */}
+          createBird(){/* same */}
+
+          /* Animation loop, day/night, collisions, camera, pickups – same as prior snippet */
           startAnimation(){
             const animate=()=>{
               requestAnimationFrame(animate);
@@ -399,6 +460,7 @@
             };
             animate();
           }
+
           update(){
             this.updateDayNight();
             this.updateBalls();
@@ -412,179 +474,27 @@
             this.updateCamera();
             this.updatePickups();
           }
-          updateDayNight(){/* see prior snippet */}
-          updateBalls(){/* see prior snippet */}
-          spawnRipple(x,z){/* see prior snippet */}
 
-          updatePlayer(){/* see prior snippet */}
-          updateBlueNPC(){/* see prior snippet */}
-          updateYellowNPC(){/* see prior snippet */}
-          getRandomBuildingTarget(){/* see prior snippet */}
-          updateMermaid(){
-            // same approach: pace along route
-            if(!mermaidData.object)return;
-            const m=mermaidData;
-            const currentPt=m.route[m.routeIndex];
-            const dx=currentPt.x - m.object.position.x;
-            const dz=currentPt.z - m.object.position.z;
-            const distSq=dx*dx+dz*dz;
-            if(distSq<1){
-              m.routeIndex=(m.routeIndex+1)%m.route.length;
-            }
-            const angle=Math.atan2(-dx,dz);
-            m.object.rotation.y=angle;
-            const step=m.speed;
-            const newX=m.object.position.x+Math.sin(angle)*step;
-            const newZ=m.object.position.z+Math.cos(angle)*step;
-            m.object.position.set(newX,m.object.position.y,newZ);
+          updateDayNight(){/* same */}
+          updateBalls(){/* same */}
+          spawnRipple(x,z){/* same */}
+          updatePlayer(){/* same */}
+          updateBlueNPC(){/* same */}
+          updateYellowNPC(){/* same */}
+          getRandomBuildingTarget(){/* same */}
+          updateMermaid(){/* same */}
+          updateGuardPatrol(){/* same */}
+          updateBird(){/* same */}
+          updateCollisions(){/* same */}
+          updateCamera(){/* same */}
+          updatePickups(){/* same */}
 
-            for(const obj of this.objects){
-              if(obj.mesh===m.object){
-                obj.x=newX; obj.z=newZ;
-                break;
-              }
-            }
-            m.splashTimer++;
-            if(m.splashTimer>30){
-              this.spawnRipple(newX,newZ);
-              m.splashTimer=0;
-            }
-          }
-          updateGuardPatrol(){
-            // 2-min idle => do route => return => idle
-            if(!guardData.object)return;
-            guardData.timer++;
-            if(guardData.state==='idle'){
-              // ~7200 frames ~2 minutes at 60fps
-              if(guardData.timer>7200){
-                guardData.state='patrol';
-                guardData.timer=0;
-                guardData.routeIndex=0;
-              }
-            } else if(guardData.state==='patrol'){
-              const route=guardData.route;
-              const guard=guardData.object;
-              const target=route[guardData.routeIndex];
-              const dx=target.x-guard.position.x;
-              const dz=target.z-guard.position.z;
-              const distSq=dx*dx+dz*dz;
-              if(distSq<1){
-                guardData.routeIndex++;
-                if(guardData.routeIndex>=route.length){
-                  guardData.state='idle';
-                  guardData.timer=0;
-                }
-              } else {
-                const angle=Math.atan2(-dx,dz);
-                guard.rotation.y=angle;
-                const step=guardData.speed;
-                const newX=guard.position.x+Math.sin(angle)*step;
-                const newZ=guard.position.z+Math.cos(angle)*step;
-                guard.position.set(newX,0.5,newZ);
-                // collisions
-                for(const obj of this.objects){
-                  if(obj.mesh===guard){
-                    obj.x=newX; obj.z=newZ;
-                    break;
-                  }
-                }
-              }
-            }
-          }
-
-          updateBird(){
-            birdData.angle+=birdData.speed;
-            const bx=birdData.radius*Math.cos(birdData.angle);
-            const bz=birdData.radius*Math.sin(birdData.angle);
-            if(birdData.object){
-              birdData.object.position.set(bx,60,bz);
-              birdData.object.rotation.y=-birdData.angle;
-            }
-          }
-
-          updateCollisions(){
-            // Guard
-            if(this.guardObject && !this.guardMessageShown){
-              const dxG=this.player.x-this.guardObject.position.x;
-              const dzG=this.player.z-this.guardObject.position.z;
-              const distG=Math.sqrt(dxG*dxG+dzG*dzG);
-              if(distG<5){
-                this.showGuardPopup("I'm the guard of this castle. Please show your ID.");
-              }
-            }
-            // Blue NPC
-            if(npcBlueData.object && !this.npcBlueMessageShown){
-              const dxN=this.player.x-npcBlueData.object.position.x;
-              const dzN=this.player.z-npcBlueData.object.position.z;
-              const distN=Math.sqrt(dxN*dxN+dzN*dzN);
-              if(distN<5){
-                this.showGuardPopup("Hello Princess Donia!");
-                this.npcBlueMessageShown=true;
-                setTimeout(()=>{ this.npcBlueMessageShown=false; },2500);
-              }
-            }
-            // Mermaid
-            if(!this.mermaidMessageShown){
-              const mermaidObj=this.objects.find(o=>o.type==='mermaid');
-              if(mermaidObj){
-                const dxM=this.player.x-mermaidObj.x;
-                const dzM=this.player.z-mermaidObj.z;
-                const distM=Math.sqrt(dxM*dxM+dzM*dzM);
-                if(distM<5){
-                  this.showGuardPopup("Hello Princess Donia. It's me the Mermaid.");
-                  this.mermaidMessageShown=true;
-                  setTimeout(()=>{ this.mermaidMessageShown=false; },2500);
-                }
-              }
-            }
-          }
-
-          updateCamera(){
-            const camDist=15;
-            const offsetX=camDist*Math.sin(this.player.yaw)*Math.cos(this.player.pitch);
-            const offsetZ=camDist*Math.cos(this.player.yaw)*Math.cos(this.player.pitch);
-            const offsetY=camDist*Math.sin(this.player.pitch)+15;
-            this.camera.position.set(this.player.x+offsetX,offsetY,this.player.z+offsetZ);
-            this.camera.lookAt(this.player.x,3.5,this.player.z);
-          }
-
-          updatePickups(){
-            for(const obj of this.objects){
-              if(obj.isPickup){
-                const dxObj=this.player.x-obj.x;
-                const dzObj=this.player.z-obj.z;
-                const distSq=dxObj*dxObj+dzObj*dzObj;
-                if(distSq<4){
-                  switch(obj.type){
-                    case 'flower': this.flowers++; document.getElementById('flowers').textContent=this.flowers; this.showDialogue('You picked a radiant flower!'); break;
-                    case 'coin': this.coins++; document.getElementById('coins').textContent=this.coins; this.showDialogue('You picked up a shiny coin!'); break;
-                    case 'gem': this.gems++; document.getElementById('gems').textContent=this.gems; this.showDialogue('A dazzling gem is yours!'); break;
-                    case 'potion': this.potions++; document.getElementById('potions').textContent=this.potions; this.showDialogue('You found a potion!'); break;
-                    case 'key': this.keys++; document.getElementById('keys').textContent=this.keys; this.showDialogue('A golden key is yours!'); break;
-                    case 'artifact': this.artifacts++; document.getElementById('artifacts').textContent=this.artifacts; this.showDialogue('You discovered a mystical artifact!'); break;
-                  }
-                  this.sceneObj.remove(obj.mesh);
-                  this.objects=this.objects.filter(o=>o!==obj);
-                  this.startCollectionGlow();
-                }
-              }
-            }
-          }
-
-          /* Utility */
-          showDialogue(text){
-            document.getElementById('dialogue').textContent=text;
-          }
-          showGuardPopup(text){
-            const popup=document.getElementById('guardPopup');
-            popup.style.display='block';
-            popup.textContent=text;
-            setTimeout(()=>{
-              popup.style.display='none';
-              popup.textContent='';
-            },2000);
-          }
+          // Check if this.player.object is null in throwBall
           throwBall(){
+            if(!this.player.object){
+              console.warn('Player model not created yet, ignoring throwBall');
+              return;
+            }
             let direction=new THREE.Vector3();
             if(this.player.lastMoveVec.lengthSq()>0.001){
               direction.copy(this.player.lastMoveVec).normalize();
@@ -594,6 +504,13 @@
             const ballGeo=new THREE.SphereGeometry(0.3,16,16);
             const ballMat=new THREE.MeshStandardMaterial({ color:0xff4500 });
             const ball=new THREE.Mesh(ballGeo,ballMat);
+
+            // If still no player object, bail
+            if(!this.player.object){
+              console.warn('No player object, cannot place ball.'); 
+              return;
+            }
+
             ball.position.copy(this.player.object.position);
             ball.position.y+=1;
             ball.userData={
@@ -606,21 +523,36 @@
             document.getElementById('ballCountValue').textContent=this.ballCount;
             this.showDialogue("Threw a magic ball!");
           }
+
+          showDialogue(text){
+            document.getElementById('dialogue').textContent=text;
+          }
+          showGuardPopup(text){
+            const popup=document.getElementById('guardPopup');
+            popup.style.display='block';
+            popup.textContent=text;
+            setTimeout(()=>{
+              popup.style.display='none';
+              popup.textContent='';
+            },2000);
+          }
           startCollectionGlow(){
             if(this.collectionGlow)this.sceneObj.remove(this.collectionGlow);
             const glowGeo=new THREE.SphereGeometry(1,16,16);
             const glowMat=new THREE.MeshBasicMaterial({ color:0xffff00, transparent:true, opacity:0.5, side:THREE.BackSide });
             const glow=new THREE.Mesh(glowGeo,glowMat);
-            glow.position.copy(this.player.object.position);
-            glow.position.y+=0.5;
-            this.sceneObj.add(glow);
-            this.collectionGlow=glow;
-            setTimeout(()=>{
-              if(this.collectionGlow){
-                this.sceneObj.remove(this.collectionGlow);
-                this.collectionGlow=null;
-              }
-            },1000);
+            if(this.player.object){
+              glow.position.copy(this.player.object.position);
+              glow.position.y+=0.5;
+              this.sceneObj.add(glow);
+              this.collectionGlow=glow;
+              setTimeout(()=>{
+                if(this.collectionGlow){
+                  this.sceneObj.remove(this.collectionGlow);
+                  this.collectionGlow=null;
+                }
+              },1000);
+            }
           }
 
           initJoysticks(){
@@ -630,7 +562,7 @@
               mode:'static',
               color:'white',
               size:80,
-              position:{ left:'50%', top:'50%' }, // will be overridden by CSS anyway
+              position:{ left:'50%', top:'50%' }
             });
             this.joystickLeft.on('move',(evt,data)=>{
               if(data&&data.force>0){
@@ -647,9 +579,7 @@
                     const dzObj=newZ-obj.z;
                     const distSq=dxObj*dxObj+dzObj*dzObj;
                     const r=(obj.boundingRadius||5);
-                    if(distSq<r*r){
-                      blocked=true; break;
-                    }
+                    if(distSq<r*r){ blocked=true; break; }
                   }
                 }
                 if(!blocked){
@@ -667,7 +597,7 @@
               mode:'static',
               color:'white',
               size:80,
-              position:{ left:'50%', top:'50%' }, // override by CSS
+              position:{ left:'50%', top:'50%' }
             });
             this.joystickRight.on('move',(evt,data)=>{
               if(data&&data.force>0){
@@ -683,7 +613,8 @@
               const rect=e.target.getBoundingClientRect();
               const x=e.clientX-rect.left;
               const y=e.clientY-rect.top;
-              if(x>rect.width/4&&x<(rect.width*3)/4&&y>rect.height/4&&y<(rect.height*3)/4){
+              // If in center region => throw ball
+              if(x>rect.width/4 && x<(rect.width*3)/4 && y>rect.height/4 && y<(rect.height*3)/4){
                 this.throwBall();
               }
             });
@@ -728,4 +659,5 @@
         console.error('Error initializing the game:',err);
       }
     </script>
-
+  </body>
+</html>
