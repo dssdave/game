@@ -204,15 +204,19 @@
     setButtonListener('btnTurnLeft', 'turnLeft');
     setButtonListener('btnTurnRight', 'turnRight');
 
-    // Add button actions using "click" events in addition to mousedown
-    function addButtonAction(btnId, action) {
-      const btn = document.getElementById(btnId);
-      ["mousedown","touchstart", "click"].forEach(evt => {
-        btn.addEventListener(evt, e => { e.preventDefault(); action(); }, { passive:false });
-      });
-    }
-    addButtonAction("btnThrow", () => { game?.throwBall(); });
-    addButtonAction("btnBigThrow", () => { game?.jump(); });
+    // Replace your existing addButtonAction code with this:
+document.getElementById("btnThrow").addEventListener("pointerdown", function(e) {
+  e.preventDefault();
+  if (game && typeof game.throwBall === "function") {
+    game.throwBall();
+  }
+});
+document.getElementById("btnBigThrow").addEventListener("pointerdown", function(e) {
+  e.preventDefault();
+  if (game && typeof game.jump === "function") {
+    game.jump();
+  }
+});
 
     let game = null;
 
