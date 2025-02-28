@@ -239,6 +239,11 @@
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       gameCanvas.style.display = 'block';
+      // If on mobile, reduce pixel ratio and disable shadows for performance
+      if (/Mobi|Android/i.test(navigator.userAgent)) {
+        renderer.setPixelRatio(1);
+        renderer.shadowMap.enabled = false;
+      }
 
       const keysPressed = {};
 
