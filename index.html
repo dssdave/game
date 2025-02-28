@@ -1220,6 +1220,27 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
       }
 
       window.game = new Game();
+window.game = new Game();
+
+// Attach A and B button events after the game is created:
+["pointerdown", "click"].forEach(evt => {
+  document.getElementById("btnThrow").addEventListener(evt, e => {
+    e.preventDefault();
+    if (window.game && typeof window.game.throwBall === "function") {
+      window.game.throwBall();
+    }
+  }, { passive: false });
+});
+
+["pointerdown", "click"].forEach(evt => {
+  document.getElementById("btnBigThrow").addEventListener(evt, e => {
+    e.preventDefault();
+    if (window.game && typeof window.game.jump === "function") {
+      window.game.jump();
+    }
+  }, { passive: false });
+});
+
     } catch (err) {
       console.error('Error initializing the game:', err);
     }
