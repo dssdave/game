@@ -196,7 +196,6 @@
     }
     setButtonListener('btnUp', 'dpadUp');
     setButtonListener('btnDown', 'dpadDown');
-    // For strafe, left/right remain as-is (flip later if needed)
     setButtonListener('btnLeft', 'dpadLeft');
     setButtonListener('btnRight', 'dpadRight');
     setButtonListener('btnTurnLeft', 'turnLeft');
@@ -251,9 +250,10 @@
           this.time = 'Day';
           this.dayNightCycle = 0;
           // Player starting position and orientation
+          // Increase speedKeyboard from 0.1 to 0.25 (2.5x faster)
           this.player = {
             x: 0, y: 0.5, z: 0,
-            speedKeyboard: 0.1,
+            speedKeyboard: 0.25,
             yaw: 0, pitch: 0,
             jumpVelocity: 0,
             object: null
@@ -362,7 +362,7 @@
           this.createMermaid();
           this.createBird();
 
-          // (Empty stubs for items)
+          // Empty stubs for items
           this.createFlowers(10);
           this.createCoins(8);
           this.createGems(4);
@@ -966,7 +966,6 @@
             if (!ball.userData.timer) ball.userData.timer = 0;
             ball.userData.timer++;
             if (ball.userData.timer > 300) {
-              // Dispose geometry & material before removal
               ball.geometry.dispose();
               ball.material.dispose();
               this.scene.remove(ball);
