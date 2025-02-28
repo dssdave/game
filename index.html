@@ -56,7 +56,7 @@
       cursor: pointer;
     }
 
-    /* On-screen Controller */
+    /* On-screen Controller Panels */
     #dpadContainer, #turnContainer, #actionContainer {
       position: absolute; z-index: 15;
     }
@@ -72,7 +72,6 @@
     #btnDown  { grid-column: 2; grid-row: 3; }
     #btnLeft  { grid-column: 1; grid-row: 2; }
     #btnRight { grid-column: 3; grid-row: 2; }
-
     #dpadContainer button {
       width: 60px; height: 60px;
       background: rgba(255,255,255,0.3);
@@ -97,7 +96,6 @@
       bottom: 16vh; left: calc(5vw + 200px + 70px);
       display: flex; flex-direction: column; gap: 10px;
     }
-
     /* Smaller UI on narrower screens */
     @media (max-width: 768px) {
       #ui, #ballCount, #dialogue, #controls, #guardPopup, #errorMessage {
@@ -198,25 +196,31 @@
     }
     setButtonListener('btnUp', 'dpadUp');
     setButtonListener('btnDown', 'dpadDown');
-    // For strafe, we want left to move left, so we flip the sign later.
+    // For strafe, left/right remain as-is (flip later if needed)
     setButtonListener('btnLeft', 'dpadLeft');
     setButtonListener('btnRight', 'dpadRight');
     setButtonListener('btnTurnLeft', 'turnLeft');
     setButtonListener('btnTurnRight', 'turnRight');
 
-    // Replace your existing addButtonAction code with this:
-document.getElementById("btnThrow").addEventListener("pointerdown", function(e) {
-  e.preventDefault();
-  if (game && typeof game.throwBall === "function") {
-    game.throwBall();
-  }
-});
-document.getElementById("btnBigThrow").addEventListener("pointerdown", function(e) {
-  e.preventDefault();
-  if (game && typeof game.jump === "function") {
-    game.jump();
-  }
-});
+    // Attach A and B button events (after game is created)
+    function attachActionButtons() {
+      ["pointerdown", "click"].forEach(evt => {
+        document.getElementById("btnThrow").addEventListener(evt, e => {
+          e.preventDefault();
+          if (window.game && typeof window.game.throwBall === "function") {
+            window.game.throwBall();
+          }
+        }, { passive: false });
+      });
+      ["pointerdown", "click"].forEach(evt => {
+        document.getElementById("btnBigThrow").addEventListener(evt, e => {
+          e.preventDefault();
+          if (window.game && typeof window.game.jump === "function") {
+            window.game.jump();
+          }
+        }, { passive: false });
+      });
+    }
 
     let game = null;
 
@@ -246,7 +250,7 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
           this.renderer = renderer;
           this.time = 'Day';
           this.dayNightCycle = 0;
-          // Player with starting position and orientation
+          // Player starting position and orientation
           this.player = {
             x: 0, y: 0.5, z: 0,
             speedKeyboard: 0.1,
@@ -257,7 +261,7 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
           // Stats
           this.flowers = 0; this.coins = 0; this.gems = 0; this.potions = 0; this.keys = 0; this.artifacts = 0;
           this.health = 100;
-          this.objects = []; // contains buildings, boundaries, etc.
+          this.objects = [];
           this.buildingPositions = [];
           this.ballCount = 0;
           this.thrownBalls = [];
@@ -358,7 +362,7 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
           this.createMermaid();
           this.createBird();
 
-          // (Stubs for items)
+          // (Empty stubs for items)
           this.createFlowers(10);
           this.createCoins(8);
           this.createGems(4);
@@ -743,7 +747,7 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
           rightArm.userData = { isArm: true, side: 'right' };
           group.add(rightArm);
 
-          group.position.set(45, 0.5, 55.5); // Placed a bit further out
+          group.position.set(45, 0.5, 55.5);
           this.scene.add(group);
           this.objects.push({ mesh: group, type: 'guard', x: 45, z: 55.5, boundingRadius: 3 });
           this.guardData.object = group;
@@ -817,7 +821,7 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
           }
         }
 
-        // (Empty stubs for items)
+        // Empty stubs for items
         createFlowers(count) { }
         createCoins(count) { }
         createGems(count) { }
@@ -859,10 +863,9 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
           let touchForward = 0, touchStrafe = 0;
           if (controllerState.dpadUp) touchForward += 1;
           if (controllerState.dpadDown) touchForward -= 1;
-          if (controllerState.dpadLeft) touchStrafe += 1;  // FLIP: left now gives +1
-          if (controllerState.dpadRight) touchStrafe -= 1;  // FLIP: right now gives -1
+          if (controllerState.dpadLeft) touchStrafe += 1;
+          if (controllerState.dpadRight) touchStrafe -= 1;
 
-          // Use keyboard if present; otherwise use touch
           let finalForward = (keyboardForward !== 0 ? keyboardForward : touchForward);
           let finalStrafe = touchStrafe;
 
@@ -873,24 +876,20 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
 
           // Calculate movement vectors
           const forwardVec = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
-          // For strafe, use a vector perpendicular to forwardVec:
           const rightVec = new THREE.Vector3(Math.cos(this.player.yaw), 0, -Math.sin(this.player.yaw));
-          // Note: now finalStrafe is flipped already.
           const movement = forwardVec.clone().multiplyScalar(finalForward)
                           .add(rightVec.clone().multiplyScalar(finalStrafe));
           if (movement.length() > 1) movement.normalize();
           movement.multiplyScalar(this.player.speedKeyboard);
 
-          // Predict new position
           const newX = this.player.x + movement.x;
           const newZ = this.player.z + movement.z;
           let canMove = true;
-          // Check collisions with "solid" objects (buildings, boundaries, decorations, NPCs, guard)
           for (const obj of this.objects) {
             if (['building', 'boundary', 'decoration', 'npc', 'guard'].includes(obj.type)) {
               const dx = newX - obj.x;
               const dz = newZ - obj.z;
-              const minDist = (obj.boundingRadius || 5) + 1; // player radius ~1
+              const minDist = (obj.boundingRadius || 5) + 1;
               if ((dx * dx + dz * dz) < (minDist * minDist)) {
                 canMove = false;
                 break;
@@ -902,7 +901,6 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
             this.player.z = newZ;
           }
 
-          // Turn the player
           this.player.yaw += finalTurn * 0.02;
 
           // Jump physics
@@ -915,13 +913,11 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
             }
           }
 
-          // Update player object
           if (this.player.object) {
             this.player.object.position.set(this.player.x, this.player.y, this.player.z);
             this.player.object.rotation.y = this.player.yaw;
           }
 
-          // Animate arms if moving
           if (finalForward !== 0 || finalStrafe !== 0) {
             this.animateArms(this.player.object, true);
           } else {
@@ -952,12 +948,10 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
             ball.position.add(ball.userData.velocity);
             ball.userData.velocity.y -= 0.01; // gravity
 
-            // Check collision with buildings/decorations
             for (const obj of this.objects) {
               if (['building', 'decoration'].includes(obj.type)) {
                 const dx = ball.position.x - obj.x;
                 const dz = ball.position.z - obj.z;
-                // Consider ball radius ~0.3
                 const r = (obj.boundingRadius || 5) + 0.3;
                 if ((dx * dx + dz * dz) < (r * r) && ball.position.y < 10) {
                   const normal = new THREE.Vector3(dx, 0, dz).normalize();
@@ -969,21 +963,25 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
               }
             }
 
-            // Timer: remove ball after ~5s (300 frames)
             if (!ball.userData.timer) ball.userData.timer = 0;
             ball.userData.timer++;
             if (ball.userData.timer > 300) {
+              // Dispose geometry & material before removal
+              ball.geometry.dispose();
+              ball.material.dispose();
               this.scene.remove(ball);
               this.thrownBalls.splice(i, 1);
               continue;
             }
-            // Bounce off ground
+
             if (ball.position.y < 0) {
               if (!ball.userData.bounced) {
                 ball.position.y = 0;
                 ball.userData.velocity.y *= -0.7;
                 ball.userData.bounced = true;
               } else if (ball.position.y < -0.5) {
+                ball.geometry.dispose();
+                ball.material.dispose();
                 this.scene.remove(ball);
                 this.thrownBalls.splice(i, 1);
               }
@@ -995,7 +993,6 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
           if (!this.guardData.object) return;
           this.guardData.timer++;
           if (this.guardData.state === 'idle') {
-            // Wait 2 minutes (approx 7200 frames at 60fps)
             if (this.guardData.timer > 7200) {
               this.guardData.state = 'patrol';
               this.guardData.timer = 0;
@@ -1091,7 +1088,6 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
         }
 
         updateCollisions() {
-          // Guard dialogue trigger
           if (this.guardObject && !this.guardMessageShown) {
             const dx = this.player.x - this.guardObject.position.x;
             const dz = this.player.z - this.guardObject.position.z;
@@ -1101,7 +1097,6 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
               setTimeout(() => { this.guardMessageShown = false; }, 2500);
             }
           }
-          // Blue NPC dialogue trigger
           if (this.npcBlueData.object && !this.npcBlueMessageShown) {
             const dx = this.player.x - this.npcBlueData.object.position.x;
             const dz = this.player.z - this.npcBlueData.object.position.z;
@@ -1114,7 +1109,6 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
         }
 
         updateCamera() {
-          // 3rd-person camera behind player
           const camDist = 15;
           const offsetX = -Math.sin(this.player.yaw) * camDist;
           const offsetZ = -Math.cos(this.player.yaw) * camDist;
@@ -1137,11 +1131,7 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
           obj.traverse(child => {
             if (child.userData && child.userData.isArm) {
               if (isMoving) {
-                if (child.userData.side === 'left') {
-                  child.rotation.x = Math.sin(t) * 0.5;
-                } else {
-                  child.rotation.x = -Math.sin(t) * 0.5;
-                }
+                child.rotation.x = (child.userData.side === 'left') ? Math.sin(t) * 0.5 : -Math.sin(t) * 0.5;
               } else {
                 child.rotation.x = 0;
               }
@@ -1220,27 +1210,7 @@ document.getElementById("btnBigThrow").addEventListener("pointerdown", function(
       }
 
       window.game = new Game();
-window.game = new Game();
-
-// Attach A and B button events after the game is created:
-["pointerdown", "click"].forEach(evt => {
-  document.getElementById("btnThrow").addEventListener(evt, e => {
-    e.preventDefault();
-    if (window.game && typeof window.game.throwBall === "function") {
-      window.game.throwBall();
-    }
-  }, { passive: false });
-});
-
-["pointerdown", "click"].forEach(evt => {
-  document.getElementById("btnBigThrow").addEventListener(evt, e => {
-    e.preventDefault();
-    if (window.game && typeof window.game.jump === "function") {
-      window.game.jump();
-    }
-  }, { passive: false });
-});
-
+      attachActionButtons();
     } catch (err) {
       console.error('Error initializing the game:', err);
     }
