@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1,user-scalable=no">
-  <title>Princess Donia’s Town - Full Revised Version</title>
+  <title>Princess Donia’s Town - Revised Full Game</title>
   <style>
     html, body {
-      margin: 0; 
-      padding: 0;
+      margin: 0; padding: 0;
       background: #000;
       font-family: Arial, sans-serif;
       overflow: hidden;
@@ -15,11 +14,9 @@
     }
     #gameContainer {
       position: relative;
-      width: 100vw; 
-      height: 100vh;
+      width: 100vw; height: 100vh;
     }
     canvas { display: block; }
-
     /* UI boxes */
     #ui, #ballCount, #dialogue, #controls, #errorMessage, #guardPopup, #fadeOverlay {
       background: rgba(0,0,0,0.7);
@@ -55,23 +52,18 @@
     }
     /* Toggle UI button */
     #toggleUIBtn {
-      position: absolute; 
-      top: 10px; 
-      left: 50%;
+      position: absolute; top: 10px; left: 50%;
       transform: translateX(-50%);
       z-index: 11;
       font-size: 24px;
       padding: 10px 20px;
-      background: #333; 
-      color: #fff;
-      border: 2px solid #fff; 
-      border-radius: 5px;
+      background: #333; color: #fff;
+      border: 2px solid #fff; border-radius: 5px;
       cursor: pointer;
     }
     /* On-screen Controller Panels */
     #dpadContainer, #turnContainer, #actionContainer {
-      position: absolute; 
-      z-index: 15;
+      position: absolute; z-index: 15;
     }
     /* D-Pad as a grid */
     #dpadContainer {
@@ -86,42 +78,33 @@
     #btnLeft  { grid-column: 1; grid-row: 2; }
     #btnRight { grid-column: 3; grid-row: 2; }
     #dpadContainer button {
-      width: 60px; 
-      height: 60px;
+      width: 60px; height: 60px;
       background: rgba(255,255,255,0.3);
       border: 2px solid #fff;
       border-radius: 5px;
-      font-size: 20px; 
-      color: #fff;
+      font-size: 20px; color: #fff;
       cursor: pointer;
     }
     #turnContainer {
       bottom: 16vh; left: calc(5vw + 200px);
-      display: flex; 
-      flex-direction: column; 
-      gap: 10px;
+      display: flex; flex-direction: column; gap: 10px;
     }
     #turnContainer button, #actionContainer button {
-      width: 60px; 
-      height: 60px;
+      width: 60px; height: 60px;
       background: rgba(255,255,255,0.3);
       border: 2px solid #fff;
       border-radius: 50%;
-      font-size: 16px; 
-      color: #fff;
+      font-size: 16px; color: #fff;
       cursor: pointer;
     }
     #actionContainer {
       bottom: 16vh; left: calc(5vw + 200px + 70px);
-      display: flex; 
-      flex-direction: column; 
-      gap: 10px;
+      display: flex; flex-direction: column; gap: 10px;
     }
     /* Responsive adjustments */
     @media (max-width: 768px) {
       #ui, #ballCount, #dialogue, #controls, #guardPopup, #errorMessage, #fadeOverlay {
-        font-size: 16px; 
-        padding: 20px 30px;
+        font-size: 16px; padding: 20px 30px;
       }
       #toggleUIBtn { font-size: 16px; }
       #dpadContainer {
@@ -129,14 +112,10 @@
         grid-template-rows: 50px 50px 50px;
       }
       #dpadContainer button {
-        width: 50px; 
-        height: 50px; 
-        font-size: 14px;
+        width: 50px; height: 50px; font-size: 14px;
       }
       #turnContainer button, #actionContainer button {
-        width: 50px; 
-        height: 50px; 
-        font-size: 14px;
+        width: 50px; height: 50px; font-size: 14px;
       }
     }
   </style>
@@ -248,10 +227,9 @@
     // Main Game class
     class Game {
       constructor() {
-        // Set scene state (outside or insideCastle)
-        this.currentScene = "outside";
+        this.currentScene = "outside"; // "outside" or "insideCastle"
         this.scene = new THREE.Scene();
-        // For day, we set the background to a light blue; for night, we’ll change it
+        // Set initial sky color (day)
         this.scene.background = new THREE.Color(0x87CEEB);
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
         this.renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas') });
@@ -261,25 +239,29 @@
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.getElementById('gameCanvas').style.display = 'block';
 
-        // Initial state variables
+        // State variables
         this.time = 'Day';
         this.dayNightCycle = 0;
+        // Player – note speed increased 2.5× (from 0.1 to 0.25)
         this.player = {
           x: 0, y: 0.5, z: 0,
-          speedKeyboard: 0.1,  // Use 0.1 (no extra multiplier)
+          speedKeyboard: 0.25,
           yaw: 0, pitch: 0,
           jumpVelocity: 0,
           object: null
         };
+        // Stats
         this.flowers = 0; this.coins = 0; this.gems = 0; this.potions = 0; this.keys = 0; this.artifacts = 0;
         this.health = 100;
-        this.objects = [];
+        this.objects = []; // For collision objects
         this.buildingPositions = [];
         this.ballCount = 0;
         this.thrownBalls = [];
         this.keysPressed = {};
         this.itemRange = 80;
+        // Lights
         this.sunMesh = null; this.moonMesh = null; this.starsMesh = null;
+        // NPC Data
         this.npcBlueData = { angle: 0, speed: 0.001, radius: 120, object: null };
         this.npcYellowData = { object: null, speed: 0.03, target: null };
         this.guardData = {
@@ -298,7 +280,7 @@
         this.mermaidMessageShown = false;
         this.npcYellowMessageShown = false;
 
-        // Cache fade overlay for scene transitions
+        // Cache fade overlay for transitions
         this.fadeOverlay = document.getElementById("fadeOverlay");
 
         // Bind methods
@@ -326,7 +308,7 @@
           const hillGeo = new THREE.SphereGeometry(r, 16, 16);
           const hillMat = new THREE.MeshStandardMaterial({ color: 0x228b22, roughness: 0.9 });
           const hill = new THREE.Mesh(hillGeo, hillMat);
-          hill.position.set(x, -r/2, z);
+          hill.position.set(x, -r / 2, z);
           this.scene.add(hill);
         }
 
@@ -358,7 +340,7 @@
         // Player model
         this.createPlayerModel();
 
-        // Buildings (using a generated texture for the castle)
+        // Buildings
         this.createCastle();
         this.createHouse();
         this.createCafe();
@@ -366,6 +348,9 @@
         this.buildingPositions.push({ x: 40, z: 40 });
         this.buildingPositions.push({ x: -40, z: -40 });
         this.buildingPositions.push({ x: 70, z: -30 });
+
+        // Add a piazza in the center
+        this.createPiazza();
 
         // NPCs
         this.createBlueNPC();
@@ -419,7 +404,6 @@
         this.objects.push({ mesh: water, type: 'water', x: 0, z: -70, boundingRadius: 0 });
       }
 
-      // Generate a simple castle texture using a canvas with random grey shades
       generateCastleTexture() {
         const canvas = document.createElement('canvas');
         canvas.width = 512;
@@ -427,7 +411,7 @@
         const ctx = canvas.getContext('2d');
         for (let y = 0; y < canvas.height; y += 10) {
           for (let x = 0; x < canvas.width; x += 10) {
-            const grey = Math.floor(200 + Math.random()*55);
+            const grey = Math.floor(200 + Math.random() * 55);
             ctx.fillStyle = `rgb(${grey},${grey},${grey})`;
             ctx.fillRect(x, y, 10, 10);
           }
@@ -532,7 +516,6 @@
 
       createCastle() {
         const group = new THREE.Group();
-        // Use a generated texture for a stone effect
         const texture = this.generateCastleTexture();
         const base = new THREE.Mesh(
           new THREE.BoxGeometry(20, 10, 20),
@@ -553,11 +536,11 @@
         );
         door.position.set(0, 3, 10.01);
         group.add(door);
-        // Add a lamp post outside the door (to the left)
+        // Add a lamp post outside (to the left of door)
         group.add(this.createLampPost(-3, 0, 10));
         group.position.set(40, 0, 40);
         this.scene.add(group);
-        // For castle collision, we use the door world position: (40,?, 40+10.01) ≈ (40,3,50)
+        // For collision, use door world position ~ (40,3,50)
         this.objects.push({ mesh: group, type: 'building', x: 40, z: 50, boundingRadius: 3 });
       }
 
@@ -582,7 +565,6 @@
         );
         door.position.set(0, 2, 5.01);
         group.add(door);
-        // Add a lamp post to the right of the door
         group.add(this.createLampPost(2, 0, 5));
         group.position.set(-40, 0, -40);
         this.scene.add(group);
@@ -641,31 +623,26 @@
           const radius = 130;
           const x = Math.cos(angle) * radius;
           const z = Math.sin(angle) * radius;
-          const post = this.createLampPost(x, 0, z); // position y=0 so bottom is at ground
+          const post = this.createLampPost(x, 0, z);
           this.scene.add(post);
         }
       }
 
       createLampPost(px, py, pz) {
-        // Create a group whose local coordinates are relative to its own origin.
         const group = new THREE.Group();
-        // Create the post so that its bottom is at y=0 and top at y=4 (center=2)
         const postGeo = new THREE.CylinderGeometry(0.2, 0.2, 4, 8);
         const postMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
         const post = new THREE.Mesh(postGeo, postMat);
-        post.position.set(0, 2, 0); 
+        post.position.set(0, 2, 0);
         group.add(post);
-        // Create the lamp sphere on top (placed at y=4)
         const lampGeo = new THREE.SphereGeometry(0.4, 8, 8);
         const lampMat = new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0xffff00, emissiveIntensity: 0.4 });
         const lamp = new THREE.Mesh(lampGeo, lampMat);
         lamp.position.set(0, 4, 0);
         group.add(lamp);
-        // Add a point light at the lamp position
         const light = new THREE.PointLight(0xffffaa, 0.7, 20);
         light.position.set(0, 4, 0);
         group.add(light);
-        // Position the entire group at (px, py, pz)
         group.position.set(px, py, pz);
         return group;
       }
@@ -687,6 +664,76 @@
         door.name = "insideCastleDoor";
         inside.add(door);
         this.insideCastleDoor = door;
+      }
+
+      // PIAZZA
+      createPiazza() {
+        const size = 67;
+        const geometry = new THREE.PlaneGeometry(size, size);
+        const canvas = document.createElement('canvas');
+        canvas.width = 256; canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        for (let y = 0; y < 256; y += 16) {
+          for (let x = 0; x < 256; x += 16) {
+            const grey = Math.floor(150 + Math.random() * 105);
+            ctx.fillStyle = `rgb(${grey},${grey},${grey})`;
+            ctx.fillRect(x, y, 16, 16);
+          }
+        }
+        const texture = new THREE.CanvasTexture(canvas);
+        const material = new THREE.MeshStandardMaterial({ map: texture });
+        const piazza = new THREE.Mesh(geometry, material);
+        piazza.rotation.x = -Math.PI / 2;
+        piazza.position.set(0, 0.02, 0);
+        this.scene.add(piazza);
+        this.objects.push({ mesh: piazza, type: 'piazza', x: 0, z: 0, boundingRadius: size / 2 });
+        // Four lamp posts at the corners (with slight inset)
+        const offset = size / 2;
+        const lamp1 = this.createLampPost(-offset + 2, 0, -offset + 2);
+        const lamp2 = this.createLampPost(offset - 2, 0, -offset + 2);
+        const lamp3 = this.createLampPost(-offset + 2, 0, offset - 2);
+        const lamp4 = this.createLampPost(offset - 2, 0, offset - 2);
+        this.scene.add(lamp1, lamp2, lamp3, lamp4);
+        // Two NPCs in the piazza
+        const npc1 = this.createPiazzaNPC("Hello Princess Donia, where are you going?", -10, 0, -10, 0xff00ff);
+        const npc2 = this.createPiazzaNPC("Hello Princess Donia, where have you been?", 10, 0, 10, 0x00ffff);
+      }
+
+      createPiazzaNPC(message, x, y, z, color) {
+        const group = new THREE.Group();
+        const body = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.4, 0.5, 1.2, 16),
+          new THREE.MeshStandardMaterial({ color: color })
+        );
+        body.position.set(0, 0.6, 0);
+        group.add(body);
+        const head = new THREE.Mesh(
+          new THREE.SphereGeometry(0.3, 16, 16),
+          new THREE.MeshStandardMaterial({ color: 0xffddc1 })
+        );
+        head.position.set(0, 1.4, 0);
+        group.add(head);
+        const hair = new THREE.Mesh(
+          new THREE.SphereGeometry(0.4, 16, 16),
+          new THREE.MeshStandardMaterial({ color: 0x4b2e05 })
+        );
+        hair.position.set(0, 1.75, 0);
+        group.add(hair);
+        const armGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
+        const skinMat = new THREE.MeshStandardMaterial({ color: 0xffddc1 });
+        const leftArm = new THREE.Mesh(armGeo, skinMat);
+        leftArm.position.set(-0.5, 1.0, 0);
+        leftArm.userData = { isArm: true, side: 'left' };
+        group.add(leftArm);
+        const rightArm = new THREE.Mesh(armGeo, skinMat);
+        rightArm.position.set(0.5, 1.0, 0);
+        rightArm.userData = { isArm: true, side: 'right' };
+        group.add(rightArm);
+        group.position.set(x, y, z);
+        this.scene.add(group);
+        this.objects.push({ mesh: group, type: 'npc', x: x, z: z, boundingRadius: 1 });
+        group.userData.piazzaMessage = message;
+        return group;
       }
 
       createBlueNPC() {
@@ -757,7 +804,7 @@
         group.add(rightArm);
         group.position.set(-30, 0.3, 30);
         this.scene.add(group);
-        this.objects.push({ mesh: group, type: 'npc', x: -30, z: 30, boundingRadius: 1 });
+        this.objects.push({ mesh: group, type: 'npc', x: -30, z: 30, boundingRadius: 2 });
         this.npcYellowData.object = group;
       }
 
@@ -844,127 +891,6 @@
         this.birdData.object = bird;
       }
 
-      createLampPosts() {
-        for (let i = 0; i < 20; i++) {
-          const angle = (i / 20) * Math.PI * 2;
-          const radius = 130;
-          const x = Math.cos(angle) * radius;
-          const z = Math.sin(angle) * radius;
-          const post = this.createLampPost(x, 0, z);
-          this.scene.add(post);
-        }
-      }
-
-      createInsideCastle() {
-        const insideGeo = new THREE.BoxGeometry(30, 10, 30);
-        const insideMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
-        const inside = new THREE.Mesh(insideGeo, insideMat);
-        inside.position.set(0, 5, 0);
-        inside.visible = false;
-        inside.name = "insideCastle";
-        this.scene.add(inside);
-        this.insideCastleMesh = inside;
-        const doorGeo = new THREE.PlaneGeometry(4, 6);
-        const doorMat = new THREE.MeshStandardMaterial({ color: 0x553300, side: THREE.DoubleSide });
-        const door = new THREE.Mesh(doorGeo, doorMat);
-        door.position.set(0, 3, 15.01);
-        door.visible = false;
-        door.name = "insideCastleDoor";
-        inside.add(door);
-        this.insideCastleDoor = door;
-      }
-
-      // ITEM METHODS
-      createFlowers(count) {
-        for (let i = 0; i < count; i++) {
-          const fx = Math.random()*this.itemRange*2 - this.itemRange;
-          const fz = Math.random()*this.itemRange*2 - this.itemRange;
-          const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1, 8),
-            new THREE.MeshStandardMaterial({ color: 0x008000 }));
-          stem.position.y = 0.5;
-          const bloom = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8),
-            new THREE.MeshStandardMaterial({ color: 0xff0000 }));
-          bloom.position.y = 1;
-          const flower = new THREE.Group();
-          flower.add(stem, bloom);
-          flower.position.set(fx, 0, fz);
-          this.scene.add(flower);
-          this.objects.push({ mesh: flower, type: 'flower', x: fx, z: fz, boundingRadius: 0.5 });
-        }
-      }
-      createCoins(count) {
-        for (let i = 0; i < count; i++) {
-          const cx = Math.random()*this.itemRange*2 - this.itemRange;
-          const cz = Math.random()*this.itemRange*2 - this.itemRange;
-          const coin = new THREE.Mesh(new THREE.CircleGeometry(0.3, 16),
-            new THREE.MeshStandardMaterial({ color: 0xffff00 }));
-          coin.rotation.x = -Math.PI/2;
-          coin.position.set(cx, 0.01, cz);
-          this.scene.add(coin);
-          this.objects.push({ mesh: coin, type: 'coin', x: cx, z: cz, boundingRadius: 0.3 });
-        }
-      }
-      createGems(count) {
-        for (let i = 0; i < count; i++) {
-          const gx = Math.random()*this.itemRange*2 - this.itemRange;
-          const gz = Math.random()*this.itemRange*2 - this.itemRange;
-          const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.5, 0),
-            new THREE.MeshStandardMaterial({ color: 0x00ffff }));
-          gem.position.set(gx, 0.5, gz);
-          this.scene.add(gem);
-          this.objects.push({ mesh: gem, type: 'gem', x: gx, z: gz, boundingRadius: 0.5 });
-        }
-      }
-      createPotions(count) {
-        for (let i = 0; i < count; i++) {
-          const px = Math.random()*this.itemRange*2 - this.itemRange;
-          const pz = Math.random()*this.itemRange*2 - this.itemRange;
-          const base = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.8, 16),
-            new THREE.MeshStandardMaterial({ color: 0xffffff }));
-          base.position.y = 0.4;
-          const liquid = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.6, 16),
-            new THREE.MeshStandardMaterial({ color: 0xff4500 }));
-          liquid.position.y = 0.4;
-          const potion = new THREE.Group();
-          potion.add(base, liquid);
-          potion.position.set(px, 0, pz);
-          this.scene.add(potion);
-          this.objects.push({ mesh: potion, type: 'potion', x: px, z: pz, boundingRadius: 0.5 });
-        }
-      }
-      createKeys(count) {
-        for (let i = 0; i < count; i++) {
-          const kx = Math.random()*this.itemRange*2 - this.itemRange;
-          const kz = Math.random()*this.itemRange*2 - this.itemRange;
-          const handle = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16),
-            new THREE.MeshStandardMaterial({ color: 0xffd700 }));
-          const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8),
-            new THREE.MeshStandardMaterial({ color: 0xffd700 }));
-          shaft.position.y = -0.4;
-          const key = new THREE.Group();
-          key.add(handle, shaft);
-          key.position.set(kx, 0.5, kz);
-          key.rotation.x = Math.PI/2;
-          this.scene.add(key);
-          this.objects.push({ mesh: key, type: 'key', x: kx, z: kz, boundingRadius: 0.5 });
-        }
-      }
-      createArtifacts(count) {
-        for (let i = 0; i < count; i++) {
-          const ax = Math.random()*this.itemRange*2 - this.itemRange;
-          const az = Math.random()*this.itemRange*2 - this.itemRange;
-          const artifact = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16),
-            new THREE.MeshStandardMaterial({ color: 0x9400d3 }));
-          const glow = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 16),
-            new THREE.MeshBasicMaterial({ color: 0xffeb3b, transparent: true, opacity: 0.5, side: THREE.BackSide }));
-          const group = new THREE.Group();
-          group.add(artifact, glow);
-          group.position.set(ax, 0.5, az);
-          this.scene.add(group);
-          this.objects.push({ mesh: group, type: 'artifact', x: ax, z: az, boundingRadius: 0.5 });
-        }
-      }
-
       startAnimation() {
         const animate = () => {
           requestAnimationFrame(animate);
@@ -985,11 +911,12 @@
         this.updateBird();
         this.updatePickups();
         this.updateCollisions();
+        this.updatePiazzaNPCs();
         this.updateCamera();
       }
 
       updateDayNight() {
-        this.dayNightCycle += 0.05;
+        this.dayNightCycle += 0.005;
         if (this.dayNightCycle >= 1200) this.dayNightCycle -= 1200;
         this.time = (this.dayNightCycle < 600) ? 'Day' : 'Night';
         document.getElementById('time').textContent = this.time;
@@ -1075,6 +1002,14 @@
             guard.position.x += Math.sin(angle) * step;
             guard.position.z += Math.cos(angle) * step;
           }
+          // Update guard collision info
+          for (const obj of this.objects) {
+            if (obj.mesh === this.guardData.object) {
+              obj.x = this.guardData.object.position.x;
+              obj.z = this.guardData.object.position.z;
+              break;
+            }
+          }
         }
       }
 
@@ -1086,6 +1021,13 @@
         this.npcBlueData.object.position.set(x, 0.5, z);
         this.npcBlueData.object.rotation.y = -this.npcBlueData.angle;
         this.animateArms(this.npcBlueData.object, true);
+        for (const obj of this.objects) {
+          if (obj.mesh === this.npcBlueData.object) {
+            obj.x = this.npcBlueData.object.position.x;
+            obj.z = this.npcBlueData.object.position.z;
+            break;
+          }
+        }
       }
 
       updateYellowNPC() {
@@ -1106,6 +1048,13 @@
           const step = this.npcYellowData.speed;
           npc.position.x += Math.sin(angle) * step;
           npc.position.z += Math.cos(angle) * step;
+        }
+        for (const obj of this.objects) {
+          if (obj.mesh === npc) {
+            obj.x = npc.position.x;
+            obj.z = npc.position.z;
+            break;
+          }
         }
       }
 
@@ -1131,7 +1080,6 @@
         const step = this.mermaidData.speed;
         mermaid.position.x += Math.sin(angle) * step;
         mermaid.position.z += Math.cos(angle) * step;
-        // Splash effect if in water
         const waterObj = this.objects.find(o => o.type === 'water');
         if (waterObj) {
           const dxW = mermaid.position.x - waterObj.x;
@@ -1196,73 +1144,67 @@
       }
 
       updateCollisions() {
-        // Guard dialogue
-        if (this.guardObject && !this.guardMessageShown && this.currentScene === "outside") {
-          const dx = this.player.x - this.guardObject.position.x;
-          const dz = this.player.z - this.guardObject.position.z;
-          if (dx*dx + dz*dz < 25) {
-            this.showGuardPopup("I'm the guard of this castle. Please show your ID.");
-            this.guardMessageShown = true;
-            setTimeout(() => { this.guardMessageShown = false; }, 2500);
-          }
-        }
-        // Blue NPC dialogue
-        if (this.npcBlueData.object && !this.npcBlueMessageShown && this.currentScene === "outside") {
-          const dx = this.player.x - this.npcBlueData.object.position.x;
-          const dz = this.player.z - this.npcBlueData.object.position.z;
-          if (dx*dx + dz*dz < 25) {
-            this.showGuardPopup("Hello Princess Donia!");
-            this.npcBlueMessageShown = true;
-            setTimeout(() => { this.npcBlueMessageShown = false; }, 2500);
-          }
-        }
-        // Castle door trigger (using door world position: approx (40,3,50))
+        // Castle door trigger (player near door of castle)
         if (this.currentScene === "outside") {
           const doorX = 40;
           const doorZ = 50;
           const dx = this.player.x - doorX;
           const dz = this.player.z - doorZ;
-          if (dx*dx + dz*dz < 9) { // within 3 units
+          if (dx*dx + dz*dz < 16) { // within 4 units
             this.enterCastle();
           }
         }
-        // Inside-castle door trigger to exit
+        // Inside castle door trigger (to exit)
         if (this.currentScene === "insideCastle") {
           const dx = this.player.x - 0;
           const dz = this.player.z - 15;
-          if (dx*dx + dz*dz < 9) {
+          if (dx*dx + dz*dz < 16) {
             this.exitCastle();
+          }
+        }
+        // Piazza NPC dialogue triggers
+        this.objects.forEach(obj => {
+          if (obj.type === 'npc' && obj.mesh.userData.piazzaMessage) {
+            const dx = this.player.x - obj.x;
+            const dz = this.player.z - obj.z;
+            if (dx*dx + dz*dz < 16) {
+              this.showGuardPopup(obj.mesh.userData.piazzaMessage);
+            }
+          }
+        });
+        // Update collision info for NPCs
+        if (this.npcBlueData.object) {
+          for (const obj of this.objects) {
+            if (obj.mesh === this.npcBlueData.object) { obj.x = this.npcBlueData.object.position.x; obj.z = this.npcBlueData.object.position.z; break; }
+          }
+        }
+        if (this.npcYellowData.object) {
+          for (const obj of this.objects) {
+            if (obj.mesh === this.npcYellowData.object) { obj.x = this.npcYellowData.object.position.x; obj.z = this.npcYellowData.object.position.z; break; }
+          }
+        }
+        if (this.guardData.object) {
+          for (const obj of this.objects) {
+            if (obj.mesh === this.guardData.object) { obj.x = this.guardData.object.position.x; obj.z = this.guardData.object.position.z; break; }
           }
         }
       }
 
-      enterCastle() {
-        this.fadeOverlay.style.opacity = "1";
-        setTimeout(() => {
-          this.currentScene = "insideCastle";
-          // Hide outside objects
-          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = false; });
-          if (this.insideCastleMesh) this.insideCastleMesh.visible = true;
-          if (this.insideCastleDoor) this.insideCastleDoor.visible = true;
-          this.player.x = 0; this.player.z = 0; this.player.y = 0.5;
-          this.fadeOverlay.style.opacity = "0";
-        }, 1000);
-      }
-
-      exitCastle() {
-        this.fadeOverlay.style.opacity = "1";
-        setTimeout(() => {
-          this.currentScene = "outside";
-          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = true; });
-          if (this.insideCastleMesh) this.insideCastleMesh.visible = false;
-          if (this.insideCastleDoor) this.insideCastleDoor.visible = false;
-          this.player.x = 39; this.player.z = 45; this.player.y = 0.5;
-          this.fadeOverlay.style.opacity = "0";
-        }, 1000);
+      updatePiazzaNPCs() {
+        // For each NPC with a piazza message, randomly move them a little.
+        this.objects.forEach(obj => {
+          if (obj.type === 'npc' && obj.mesh.userData.piazzaMessage) {
+            if (Math.random() < 0.01) {
+              obj.mesh.position.x += (Math.random()-0.5)*0.5;
+              obj.mesh.position.z += (Math.random()-0.5)*0.5;
+            }
+            obj.x = obj.mesh.position.x;
+            obj.z = obj.mesh.position.z;
+          }
+        });
       }
 
       updateMovement() {
-        // Gather keyboard and touch input:
         let keyboardForward = 0, keyboardTurn = 0;
         if (this.keysPressed['ArrowUp']) keyboardForward += 1;
         if (this.keysPressed['ArrowDown']) keyboardForward -= 1;
@@ -1278,19 +1220,17 @@
         let finalTurn = keyboardTurn;
         if (controllerState.turnLeft) finalTurn += 1;
         if (controllerState.turnRight) finalTurn -= 1;
-        // Compute movement vectors
         const forwardVec = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
         const rightVec = new THREE.Vector3(Math.cos(this.player.yaw), 0, -Math.sin(this.player.yaw));
         const movement = forwardVec.clone().multiplyScalar(finalForward)
                           .add(rightVec.clone().multiplyScalar(finalStrafe));
         if (movement.length() > 1) movement.normalize();
-        // (No extra multiplier; speed = this.player.speedKeyboard)
         movement.multiplyScalar(this.player.speedKeyboard);
         const newX = this.player.x + movement.x;
         const newZ = this.player.z + movement.z;
         let canMove = true;
         for (const obj of this.objects) {
-          if (['building','boundary','decoration','npc','guard','mermaid'].includes(obj.type)) {
+          if (['building','boundary','decoration','npc','guard','mermaid','piazza'].includes(obj.type)) {
             const dx = newX - obj.x;
             const dz = newZ - obj.z;
             const minDist = (obj.boundingRadius || 5) + 1;
@@ -1304,9 +1244,7 @@
           this.player.x = newX;
           this.player.z = newZ;
         }
-        // Update turning
         this.player.yaw += finalTurn * 0.02;
-        // Jump physics
         if (this.player.jumpVelocity !== 0 || this.player.y > 0.5) {
           this.player.jumpVelocity -= 0.02;
           this.player.y += this.player.jumpVelocity;
@@ -1319,13 +1257,11 @@
           this.player.object.position.set(this.player.x, this.player.y, this.player.z);
           this.player.object.rotation.y = this.player.yaw;
         }
-        // Animate arms if moving
         if (finalForward !== 0 || finalStrafe !== 0) {
           this.animateArms(this.player.object, true);
         } else {
           this.animateArms(this.player.object, false);
         }
-        // Player water ripple effect
         const waterObj = this.objects.find(o => o.type === 'water');
         if (waterObj) {
           const dxW = this.player.x - waterObj.x;
@@ -1354,11 +1290,9 @@
         const t = Date.now() * 0.002;
         obj.traverse(child => {
           if (child.userData && child.userData.isArm) {
-            if (isMoving) {
-              child.rotation.x = (child.userData.side === 'left') ? Math.sin(t) * 0.5 : -Math.sin(t) * 0.5;
-            } else {
-              child.rotation.x = 0;
-            }
+            child.rotation.x = isMoving 
+              ? (child.userData.side === 'left' ? Math.sin(t) * 0.5 : -Math.sin(t) * 0.5)
+              : 0;
           }
         });
       }
@@ -1371,7 +1305,7 @@
         ball.position.set(this.player.x, this.player.y, this.player.z);
         ball.position.y += 1;
         ball.userData = {
-          velocity: direction.multiplyScalar(0.5).add(new THREE.Vector3(0, 0.3, 0)),
+          velocity: direction.multiplyScalar(0.3).add(new THREE.Vector3(0, 0.2, 0)),
           bounced: false,
           timer: 0
         };
@@ -1409,7 +1343,76 @@
         }, 2000);
       }
 
-      initKeyboardMouse() {
+      enterCastle() {
+        this.fadeOverlay.style.opacity = "1";
+        setTimeout(() => {
+          this.currentScene = "insideCastle";
+          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = false; });
+          if (this.insideCastleMesh) this.insideCastleMesh.visible = true;
+          if (this.insideCastleDoor) this.insideCastleDoor.visible = true;
+          this.player.x = 0; this.player.z = 0; this.player.y = 0.5;
+          this.fadeOverlay.style.opacity = "0";
+        }, 1000);
+      }
+
+      exitCastle() {
+        this.fadeOverlay.style.opacity = "1";
+        setTimeout(() => {
+          this.currentScene = "outside";
+          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = true; });
+          if (this.insideCastleMesh) this.insideCastleMesh.visible = false;
+          if (this.insideCastleDoor) this.insideCastleDoor.visible = false;
+          this.player.x = 39; this.player.z = 45; this.player.y = 0.5;
+          this.fadeOverlay.style.opacity = "0";
+        }, 1000);
+      }
+
+      updateCollisions() {
+        if (this.currentScene === "outside") {
+          const doorX = 40, doorZ = 50;
+          const dx = this.player.x - doorX;
+          const dz = this.player.z - doorZ;
+          if (dx*dx + dz*dz < 16) {
+            this.enterCastle();
+          }
+        }
+        if (this.currentScene === "insideCastle") {
+          const dx = this.player.x - 0;
+          const dz = this.player.z - 15;
+          if (dx*dx + dz*dz < 16) {
+            this.exitCastle();
+          }
+        }
+        if (this.npcBlueData.object) {
+          for (const obj of this.objects) {
+            if (obj.mesh === this.npcBlueData.object) {
+              obj.x = this.npcBlueData.object.position.x;
+              obj.z = this.npcBlueData.object.position.z;
+              break;
+            }
+          }
+        }
+        if (this.npcYellowData.object) {
+          for (const obj of this.objects) {
+            if (obj.mesh === this.npcYellowData.object) {
+              obj.x = this.npcYellowData.object.position.x;
+              obj.z = this.npcYellowData.object.position.z;
+              break;
+            }
+          }
+        }
+        if (this.guardData.object) {
+          for (const obj of this.objects) {
+            if (obj.mesh === this.guardData.object) {
+              obj.x = this.guardData.object.position.x;
+              obj.z = this.guardData.object.position.z;
+              break;
+            }
+          }
+        }
+      }
+
+      updateKeyboardMouse() {
         document.addEventListener('keydown', e => {
           this.keysPressed[e.key] = true;
           if (e.key === ' ') this.throwBall();
@@ -1441,6 +1444,23 @@
     }
 
     window.game = new Game();
+    // Attach A and B button events
+    ["pointerdown", "click"].forEach(evt => {
+      document.getElementById("btnThrow").addEventListener(evt, e => {
+        e.preventDefault();
+        if (window.game && typeof window.game.throwBall === "function") {
+          window.game.throwBall();
+        }
+      }, { passive: false });
+    });
+    ["pointerdown", "click"].forEach(evt => {
+      document.getElementById("btnBigThrow").addEventListener(evt, e => {
+        e.preventDefault();
+        if (window.game && typeof window.game.jump === "function") {
+          window.game.jump();
+        }
+      }, { passive: false });
+    });
   </script>
 </body>
 </html>
