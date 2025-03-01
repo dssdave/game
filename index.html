@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1,user-scalable=no">
-  <title>Princess Donia - Exterior & Interior + Day/Night</title>
+  <title>Princess Donia - Exterior & Interior Castle</title>
   <style>
     html, body {
       margin: 0; padding: 0;
@@ -241,6 +241,26 @@ try{
 
   const keysPressed={};
 
+  /***************************************
+   * Utility for stone texture
+   ***************************************/
+  function generateStoneTexture(){
+    const c=document.createElement('canvas');
+    c.width=256; c.height=256;
+    const ctx=c.getContext('2d');
+    for(let y=0;y<256;y+=16){
+      for(let x=0;x<256;x+=16){
+        const shade=120+Math.floor(Math.random()*40);
+        ctx.fillStyle=`rgb(${shade},${shade},${shade})`;
+        ctx.fillRect(x,y,16,16);
+      }
+    }
+    const tex=new THREE.CanvasTexture(c);
+    tex.wrapS=THREE.RepeatWrapping;
+    tex.wrapT=THREE.RepeatWrapping;
+    return tex;
+  }
+
   class Game {
     constructor(){
       this.scene=scene;
@@ -264,7 +284,7 @@ try{
       this.flowers=0; this.coins=0; this.gems=0; this.potions=0; this.keys=0; this.artifacts=0;
       this.health=100;
 
-      this.objects=[];   // For collisions/pickups
+      this.objects=[];
       this.buildingPositions=[];
       this.ballCount=0;
       this.thrownBalls=[];
@@ -281,14 +301,13 @@ try{
       this.insideGroup=new THREE.Group();
       this.scene.add(this.outsideGroup,this.insideGroup);
 
-      // Colliders
+      // outside colliders / inside colliders
       this.outsideColliders=[];
       this.insideColliders=[];
 
-      // Castle door approach
+      // door approach
       this.castleDoorArea={ x:40, z:50, radius:2 };
-      // Inside door approach
-      this.insideDoorArea={ x:0, z:-28, radius:2 };
+      this.insideDoorArea={ x:0, z:-43, radius:2 };
 
       // NPC references
       this.npcBlueData={ angle:0, speed:0.001, radius:120, object:null };
@@ -329,7 +348,7 @@ try{
       const ground=new THREE.Mesh(groundGeo,groundMat);
       ground.rotation.x=-Math.PI/2;
       this.outsideGroup.add(ground);
-      this.outsideColliders.push({ mesh:ground, x:0,z:0, boundingRadius:9999, type:"ground" });
+      this.outsideColliders.push({ x:0,z:0, boundingRadius:9999, type:"ground" });
 
       // rolling hills
       for(let i=0;i<80;i++){
@@ -405,7 +424,7 @@ try{
       const shrub=new THREE.Mesh(geo,mat);
       shrub.position.set(x,1,z);
       this.outsideGroup.add(shrub);
-      this.outsideColliders.push({ mesh:shrub, x, z, boundingRadius:2, type:"boundary" });
+      this.outsideColliders.push({ x, z, boundingRadius:2, type:"boundary" });
     }
     createBeach(){
       const beachGeo=new THREE.PlaneGeometry(300,30);
@@ -414,7 +433,7 @@ try{
       beach.rotation.x=-Math.PI/2;
       beach.position.set(0,0.01,-40);
       this.outsideGroup.add(beach);
-      this.outsideColliders.push({ mesh:beach, x:0,z:-40, boundingRadius:0, type:"beach" });
+      this.outsideColliders.push({ x:0,z:-40, boundingRadius:0, type:"beach" });
 
       const waterGeo=new THREE.PlaneGeometry(300,30);
       const waterMat=new THREE.MeshStandardMaterial({ color:0x1E90FF, transparent:true, opacity:0.8 });
@@ -422,7 +441,7 @@ try{
       water.rotation.x=-Math.PI/2;
       water.position.set(0,0.02,-70);
       this.outsideGroup.add(water);
-      this.outsideColliders.push({ mesh:water, x:0,z:-70, boundingRadius:0, type:"water" });
+      this.outsideColliders.push({ x:0,z:-70, boundingRadius:0, type:"water" });
     }
     createSun(){
       const sunGeo=new THREE.SphereGeometry(9,16,16);
@@ -470,17 +489,27 @@ try{
       this.starsMesh=starField;
     }
     createCastle(){
-      // minimal
       const group=new THREE.Group();
+      const stoneTex=generateStoneTexture();
+      const castleMat=new THREE.MeshStandardMaterial({ map:stoneTex, roughness:0.6, metalness:0.1 });
 
+      // base
       const base=new THREE.Mesh(
         new THREE.BoxGeometry(20,10,20),
-        new THREE.MeshStandardMaterial({ color:0x999999 })
+        castleMat
       );
       base.position.set(40,5,40);
       group.add(base);
 
-      // door plane at z=50
+      // four towers
+      const towerGeo=new THREE.CylinderGeometry(3,3,15,16);
+      for(let coords of [[10,7.5,10],[-10,7.5,10],[10,7.5,-10],[-10,7.5,-10]]){
+        const tower=new THREE.Mesh(towerGeo,castleMat.clone());
+        tower.position.set(40+coords[0],coords[1],40+coords[2]);
+        group.add(tower);
+      }
+
+      // front door plane at z=50
       const door=new THREE.Mesh(
         new THREE.PlaneGeometry(4,6),
         new THREE.MeshStandardMaterial({ color:0x553300, side:THREE.DoubleSide })
@@ -488,8 +517,23 @@ try{
       door.position.set(40,3,50.01);
       group.add(door);
 
+      // sign
+      const signCanvas=document.createElement('canvas');
+      signCanvas.width=512; signCanvas.height=128;
+      const ctx=signCanvas.getContext('2d');
+      ctx.fillStyle='black'; ctx.fillRect(0,0,512,128);
+      ctx.fillStyle='white'; ctx.font='60px Arial';
+      ctx.fillText("Daddy's Castle",50,80);
+      const signTex=new THREE.Texture(signCanvas);
+      signTex.needsUpdate=true;
+      const signMat=new THREE.MeshBasicMaterial({ map:signTex });
+      const signGeo=new THREE.PlaneGeometry(12,3);
+      const signMesh=new THREE.Mesh(signGeo,signMat);
+      signMesh.position.set(40,8,50.1);
+      group.add(signMesh);
+
       this.outsideGroup.add(group);
-      this.outsideColliders.push({ mesh:base, x:40, z:40, boundingRadius:10, type:"building" });
+      this.outsideColliders.push({ x:40,z:40, boundingRadius:12, type:"building" });
     }
     createHouse(){
       const group=new THREE.Group();
@@ -517,7 +561,7 @@ try{
       group.add(door);
 
       this.outsideGroup.add(group);
-      this.outsideColliders.push({ mesh:base, x:-40,z:-40, boundingRadius:10, type:"building" });
+      this.outsideColliders.push({ x:-40,z:-40, boundingRadius:10, type:"building" });
     }
     createCafe(){
       const group=new THREE.Group();
@@ -536,17 +580,20 @@ try{
       group.add(door);
 
       this.outsideGroup.add(group);
-      this.outsideColliders.push({ mesh:base, x:70,z:-30, boundingRadius:10, type:"building" });
+      this.outsideColliders.push({ x:70,z:-30, boundingRadius:10, type:"building" });
     }
     createFountain(){
       const group=new THREE.Group();
+
+      // stone base
       const base=new THREE.Mesh(
         new THREE.CylinderGeometry(3,3,1,16),
         new THREE.MeshStandardMaterial({ color:0x808080 })
       );
-      base.position.set(0,0.5,20);
+      base.position.y=0.5;
       group.add(base);
 
+      // ring
       const bowl=new THREE.Mesh(
         new THREE.TorusGeometry(3,0.3,16,32),
         new THREE.MeshStandardMaterial({ color:0x808080 })
@@ -555,6 +602,7 @@ try{
       bowl.position.y=1;
       group.add(bowl);
 
+      // water
       const water=new THREE.Mesh(
         new THREE.CylinderGeometry(2.8,2.8,0.2,16),
         new THREE.MeshStandardMaterial({ color:0x00ffff, transparent:true, opacity:0.6 })
@@ -564,8 +612,9 @@ try{
 
       group.position.set(0,0,20);
       this.outsideGroup.add(group);
-      this.outsideColliders.push({ mesh:group, x:0,z:20, boundingRadius:5, type:"decoration" });
+      this.outsideColliders.push({ x:0,z:20, boundingRadius:5, type:"decoration" });
     }
+
     createBlueNPC(){
       const group=new THREE.Group();
       const body=new THREE.Mesh(
@@ -738,9 +787,9 @@ try{
     }
     createPiazza(){
       const size=15;
-      const canvas=document.createElement('canvas');
-      canvas.width=256; canvas.height=256;
-      const ctx=canvas.getContext('2d');
+      const c=document.createElement('canvas');
+      c.width=256; c.height=256;
+      const ctx=c.getContext('2d');
       for(let y=0;y<256;y+=16){
         for(let x=0;x<256;x+=16){
           const shade=150+Math.floor(Math.random()*50);
@@ -748,7 +797,7 @@ try{
           ctx.fillRect(x,y,16,16);
         }
       }
-      const texture=new THREE.CanvasTexture(canvas);
+      const texture=new THREE.CanvasTexture(c);
       texture.wrapS=THREE.RepeatWrapping;
       texture.wrapT=THREE.RepeatWrapping;
       texture.repeat.set(2,2);
@@ -835,57 +884,59 @@ try{
      * INSIDE SCENE
      ***************************************/
     initInside(){
-      // 3x bigger => 90x90 floor
+      // floor is 90 x 90
       const floorSize=90;
-      const half=floorSize/2; // 45
+      const half=floorSize/2;
+      const stoneTex=generateStoneTexture();
+      const insideMat=new THREE.MeshStandardMaterial({ map:stoneTex, roughness:0.7 });
+
+      // floor
       const floorGeo=new THREE.PlaneGeometry(floorSize,floorSize);
-      const floorMat=new THREE.MeshStandardMaterial({ color:0x888888 });
-      const floor=new THREE.Mesh(floorGeo,floorMat);
+      const floor=new THREE.Mesh(floorGeo,insideMat);
       floor.rotation.x=-Math.PI/2;
       this.insideGroup.add(floor);
-      this.insideColliders.push({ mesh:floor, x:0,z:0, boundingRadius:9999, type:"floor" });
+      this.insideColliders.push({ x:0,z:0, boundingRadius:9999, type:"floor" });
 
       // walls
-      const wallMat=new THREE.MeshStandardMaterial({ color:0x666666 });
       const wallHeight=12;
 
-      // front wall at z=+45
+      // front wall (z=+45)
       const frontWall=new THREE.Mesh(
         new THREE.BoxGeometry(floorSize,wallHeight,1),
-        wallMat
+        insideMat
       );
       frontWall.position.set(0,wallHeight/2,half);
       this.insideGroup.add(frontWall);
-      this.insideColliders.push({ mesh:frontWall, x:0,z:half, boundingRadius:1, type:"wall" });
+      this.insideColliders.push({ x:0,z:half, boundingRadius:0.5, type:"wall" });
 
-      // back wall at z=-45
+      // back wall (z=-45)
       const backWall=new THREE.Mesh(
         new THREE.BoxGeometry(floorSize,wallHeight,1),
-        wallMat
+        insideMat
       );
       backWall.position.set(0,wallHeight/2,-half);
       this.insideGroup.add(backWall);
-      this.insideColliders.push({ mesh:backWall, x:0,z:-half, boundingRadius:1, type:"wall" });
+      this.insideColliders.push({ x:0,z:-half, boundingRadius:0.5, type:"wall" });
 
-      // left wall at x=-45
+      // left wall (x=-45)
       const leftWall=new THREE.Mesh(
         new THREE.BoxGeometry(1,wallHeight,floorSize),
-        wallMat
+        insideMat
       );
       leftWall.position.set(-half,wallHeight/2,0);
       this.insideGroup.add(leftWall);
-      this.insideColliders.push({ mesh:leftWall, x:-half, z:0, boundingRadius:1, type:"wall" });
+      this.insideColliders.push({ x:-half,z:0, boundingRadius:0.5, type:"wall" });
 
-      // right wall at x=+45
+      // right wall (x=+45)
       const rightWall=new THREE.Mesh(
         new THREE.BoxGeometry(1,wallHeight,floorSize),
-        wallMat
+        insideMat
       );
       rightWall.position.set(half,wallHeight/2,0);
       this.insideGroup.add(rightWall);
-      this.insideColliders.push({ mesh:rightWall, x:half, z:0, boundingRadius:1, type:"wall" });
+      this.insideColliders.push({ x:half,z:0, boundingRadius:0.5, type:"wall" });
 
-      // door on back wall => near z=-45 => let's raise it so we can see it
+      // door on back wall => z=-45 => let's put it near center
       const interiorDoor=new THREE.Mesh(
         new THREE.PlaneGeometry(4,6),
         new THREE.MeshStandardMaterial({ color:0x553300, side:THREE.DoubleSide })
@@ -970,12 +1021,12 @@ try{
       this.outsideGroup.visible=false;
       this.insideGroup.visible=true;
       this.interior=true;
-      // place player near center
+      // place player near front (z=+30 let's say)
       this.player.x=0; 
-      this.player.z=20; 
+      this.player.z=30; 
       this.player.y=0.5;
       if(this.player.object){
-        this.player.object.position.set(0,0.5,20);
+        this.player.object.position.set(0,0.5,30);
       }
       document.getElementById("location").textContent="Castle";
     }
@@ -1060,15 +1111,6 @@ try{
         this.animateArms(mer,true);
         mer.position.x+=Math.sin(angle)*this.mermaidData.speed;
         mer.position.z+=Math.cos(angle)*this.mermaidData.speed;
-        // splash if near water
-        const waterObj=this.objects.find(o=>o.type==='water');
-        if(waterObj){
-          const dxW=mer.position.x-waterObj.x;
-          const dzW=mer.position.z-waterObj.z;
-          if(Math.abs(dzW)<15){
-            this.spawnRipple(mer.position.x,mer.position.z);
-          }
-        }
       }
       // Bird
       if(this.birdData.object){
@@ -1126,21 +1168,12 @@ try{
         }
       }
     }
-    spawnRipple(x,z){
-      const rippleGeo=new THREE.RingGeometry(0.2,0.4,16);
-      const rippleMat=new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:0.5 });
-      const ripple=new THREE.Mesh(rippleGeo,rippleMat);
-      ripple.rotation.x=-Math.PI/2;
-      ripple.position.set(x,0.05,z);
-      this.outsideGroup.add(ripple);
-      setTimeout(()=>{ this.outsideGroup.remove(ripple); },600);
-    }
+
     getRandomBuildingTarget(){
       const i=Math.floor(Math.random()*this.buildingPositions.length);
       return this.buildingPositions[i];
     }
 
-    /** items for pickup */
     createFlowers(count){
       for(let i=0;i<count;i++){
         const fx=Math.random()*160-80;
@@ -1247,12 +1280,29 @@ try{
       }
     }
 
+    startAnimation(){
+      const animate=()=>{
+        requestAnimationFrame(animate);
+        this.update();
+        this.renderer.render(this.scene,this.camera);
+      };
+      animate();
+    }
+    update(){
+      this.updateDayNight();
+      this.updateBalls();
+      this.updateNPCs();
+      this.updatePickups();
+      this.updateCollisions();
+      this.updateMovement();
+      this.updateCamera();
+    }
+
     updateBalls(){
       for(let i=this.thrownBalls.length-1;i>=0;i--){
         const ball=this.thrownBalls[i];
         ball.position.add(ball.userData.velocity);
         ball.userData.velocity.y-=0.01;
-        // collide with building or decoration
         for(const obj of this.objects){
           if(['building','decoration'].includes(obj.type)){
             const dx=ball.position.x-obj.x;
@@ -1286,49 +1336,24 @@ try{
         }
       }
     }
-
-    updatePickups(){
-      for(let i=this.objects.length-1;i>=0;i--){
-        const obj=this.objects[i];
-        if(["flower","coin","gem","potion","key","artifact"].includes(obj.type)){
-          const dx=this.player.x-obj.x;
-          const dz=this.player.z-obj.z;
-          if(dx*dx+dz*dz<1){
-            switch(obj.type){
-              case "flower": this.flowers++; document.getElementById('flowers').textContent=this.flowers; break;
-              case "coin":   this.coins++; document.getElementById('coins').textContent=this.coins; break;
-              case "gem":    this.gems++; document.getElementById('gems').textContent=this.gems; break;
-              case "potion": this.potions++; document.getElementById('potions').textContent=this.potions; break;
-              case "key":    this.keys++; document.getElementById('keys').textContent=this.keys; break;
-              case "artifact": this.artifacts++; document.getElementById('artifacts').textContent=this.artifacts; break;
-            }
-            this.outsideGroup.remove(obj.mesh);
-            this.objects.splice(i,1);
-            this.showDialogue("Picked up a "+obj.type+"!");
-          }
-        }
-      }
-    }
-
-    /** collisions with doors, guard, etc. */
     updateCollisions(){
       if(!this.interior){
         // approach castle door
         const dx=this.player.x-this.castleDoorArea.x;
         const dz=this.player.z-this.castleDoorArea.z;
-        if(dx*dx+dz*dz < this.castleDoorArea.radius*this.castleDoorArea.radius){
+        if(dx*dx+dz*dz< this.castleDoorArea.radius*this.castleDoorArea.radius){
           this.enterCastle();
         }
       } else {
         // approach inside door
         const dx=this.player.x-this.insideDoorArea.x;
         const dz=this.player.z-this.insideDoorArea.z;
-        if(dx*dx+dz*dz < this.insideDoorArea.radius*this.insideDoorArea.radius){
+        if(dx*dx+dz*dz< this.insideDoorArea.radius*this.insideDoorArea.radius){
           this.exitCastle();
         }
       }
 
-      // guard dialogue
+      // guard
       if(this.guardObject && !this.guardMessageShown){
         const dx=this.player.x-this.guardObject.position.x;
         const dz=this.player.z-this.guardObject.position.z;
@@ -1359,8 +1384,38 @@ try{
         }
       }
     }
+    updatePickups(){
+      for(let i=this.objects.length-1;i>=0;i--){
+        const obj=this.objects[i];
+        if(["flower","coin","gem","potion","key","artifact"].includes(obj.type)){
+          const dx=this.player.x-obj.x;
+          const dz=this.player.z-obj.z;
+          if(dx*dx+dz*dz<1){
+            switch(obj.type){
+              case "flower":   this.flowers++;   document.getElementById('flowers').textContent=this.flowers; break;
+              case "coin":     this.coins++;     document.getElementById('coins').textContent=this.coins; break;
+              case "gem":      this.gems++;      document.getElementById('gems').textContent=this.gems; break;
+              case "potion":   this.potions++;   document.getElementById('potions').textContent=this.potions; break;
+              case "key":      this.keys++;      document.getElementById('keys').textContent=this.keys; break;
+              case "artifact": this.artifacts++; document.getElementById('artifacts').textContent=this.artifacts; break;
+            }
+            if(this.outsideGroup.children.includes(obj.mesh)){
+              this.outsideGroup.remove(obj.mesh);
+            } else {
+              this.insideGroup.remove(obj.mesh);
+            }
+            this.objects.splice(i,1);
+            this.showDialogue("Picked up a "+obj.type+"!");
+          }
+        }
+      }
+    }
 
-    /** Movement + collisions inside/outside */
+    updateNPCs(){
+      // (already coded above, just left in same method to unify)
+      // merged into main
+    }
+
     updateMovement(){
       let keyboardForward=0, keyboardTurn=0;
       if(this.keysPressed["ArrowUp"])   keyboardForward+=1;
@@ -1380,8 +1435,8 @@ try{
       if(controllerState.turnLeft)  finalTurn+=1;
       if(controllerState.turnRight) finalTurn-=1;
 
-      // outside => 2.5x speed, inside => normal
-      const speedMult=(this.interior)?1.0:2.5;
+      // outside => 2.5x speed, inside => normal speed
+      const speedMult=this.interior?1.0:2.5;
       const forwardVec=new THREE.Vector3(Math.sin(this.player.yaw),0,Math.cos(this.player.yaw));
       const rightVec=new THREE.Vector3(Math.cos(this.player.yaw),0,-Math.sin(this.player.yaw));
       const movement=forwardVec.clone().multiplyScalar(finalForward)
@@ -1394,28 +1449,29 @@ try{
       let canMove=true;
 
       if(!this.interior){
-        for(const c of this.outsideColliders){
-          if(c.type==="ground") continue;
-          const dx=newX-(c.x||0);
-          const dz=newZ-(c.z||0);
-          const r=(c.boundingRadius||5)+1;
+        for(const obj of this.outsideColliders){
+          if(obj.type==="ground") continue;
+          const dx=newX-(obj.x||0);
+          const dz=newZ-(obj.z||0);
+          const r=(obj.boundingRadius||5)+1;
           if(dx*dx+dz*dz<r*r){
             canMove=false;
             break;
           }
         }
       } else {
-        for(const c of this.insideColliders){
-          if(c.type==="floor") continue;
-          const dx=newX-(c.x||0);
-          const dz=newZ-(c.z||0);
-          const r=(c.boundingRadius||1)+1;
+        for(const obj of this.insideColliders){
+          if(obj.type==="floor") continue;
+          const dx=newX-(obj.x||0);
+          const dz=newZ-(obj.z||0);
+          const r=(obj.boundingRadius||0.5)+1;
           if(dx*dx+dz*dz<r*r){
             canMove=false;
             break;
           }
         }
       }
+
       if(canMove){
         this.player.x=newX;
         this.player.z=newZ;
@@ -1436,14 +1492,12 @@ try{
         this.player.object.position.set(this.player.x,this.player.y,this.player.z);
         this.player.object.rotation.y=this.player.yaw;
       }
-
       if(finalForward!==0||finalStrafe!==0){
         this.animateArms(this.player.object,true);
       } else {
         this.animateArms(this.player.object,false);
       }
     }
-
     updateCamera(){
       const camDist=15;
       const offsetX=-Math.sin(this.player.yaw)*camDist;
@@ -1460,7 +1514,6 @@ try{
         this.player.z
       );
     }
-
     animateArms(obj,isMoving){
       if(!obj) return;
       const t=Date.now()*0.002;
