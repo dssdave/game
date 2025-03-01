@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1,user-scalable=no">
-  <title>Princess Donia’s Town - With updateDayNight()</title>
+  <title>Princess Donia - Interior & Exterior with Day/Night</title>
   <style>
     html, body {
       margin: 0; padding: 0;
@@ -24,8 +24,8 @@
       border: 4px solid #fff;
       border-radius: 5px;
       color: #fff;
-      font-size: 28px;
-      padding: 40px 80px;
+      font-size: 20px;
+      padding: 10px 15px;
       position: absolute;
       z-index: 10;
     }
@@ -49,8 +49,8 @@
       position: absolute; top: 10px; left: 50%;
       transform: translateX(-50%);
       z-index: 11;
-      font-size: 24px;
-      padding: 10px 20px;
+      font-size: 16px;
+      padding: 5px 10px;
       background: #333; color: #fff;
       border: 2px solid #fff; border-radius: 5px;
       cursor: pointer;
@@ -97,465 +97,606 @@
       bottom: 16vh; left: calc(5vw + 200px + 70px);
       display: flex; flex-direction: column; gap: 10px;
     }
-
-    /* Smaller UI on narrower screens */
-    @media (max-width: 768px) {
-      #ui, #ballCount, #dialogue, #controls, #guardPopup, #errorMessage {
-        font-size: 16px; padding: 20px 30px;
-      }
-      #toggleUIBtn { font-size: 16px; }
-      #dpadContainer {
-        grid-template-columns: 50px 50px 50px;
-        grid-template-rows: 50px 50px 50px;
-      }
-      #dpadContainer button {
-        width: 50px; height: 50px; font-size: 14px;
-      }
-      #turnContainer button, #actionContainer button {
-        width: 50px; height: 50px; font-size: 14px;
-      }
-    }
   </style>
 </head>
 <body>
-  <div id="gameContainer">
-    <canvas id="gameCanvas"></canvas>
-    <button id="toggleUIBtn">Toggle UI</button>
+<div id="gameContainer">
+  <canvas id="gameCanvas"></canvas>
+  <button id="toggleUIBtn">Toggle UI</button>
 
-    <div id="ui">
-      Flowers: <span id="flowers">0</span> |
-      Coins: <span id="coins">0</span> |
-      Gems: <span id="gems">0</span> |
-      Potions: <span id="potions">0</span> |
-      Keys: <span id="keys">0</span> |
-      Artifacts: <span id="artifacts">0</span> |
-      Health: <span id="health">100</span> |
-      Time: <span id="time">Day</span> |
-      Location: <span id="location">Town</span>
-    </div>
-    <div id="ballCount">Balls Thrown: <span id="ballCountValue">0</span></div>
-    <div id="dialogue"></div>
-    <div id="controls">
-      Controls:<br>
-      [Desktop] Arrow Up/Down = forward/back, Left/Right = turn, Space = throw ball<br>
-      [Mobile] D‑Pad Up/Down = forward/back, Left/Right = strafe, L/R = turn, A = throw ball, B = jump
-    </div>
-    <div id="errorMessage">WebGL not supported in your browser.</div>
-    <div id="guardPopup"></div>
-
-    <!-- On-screen Controller Panels -->
-    <div id="dpadContainer">
-      <button id="btnUp">▲</button>
-      <button id="btnDown">▼</button>
-      <button id="btnLeft">◀</button>
-      <button id="btnRight">▶</button>
-    </div>
-    <div id="turnContainer">
-      <button id="btnTurnLeft">L</button>
-      <button id="btnTurnRight">R</button>
-    </div>
-    <div id="actionContainer">
-      <button id="btnThrow">A</button>
-      <button id="btnBigThrow">B</button>
-    </div>
+  <div id="ui">
+    Flowers: <span id="flowers">0</span> |
+    Coins: <span id="coins">0</span> |
+    Gems: <span id="gems">0</span> |
+    Potions: <span id="potions">0</span> |
+    Keys: <span id="keys">0</span> |
+    Artifacts: <span id="artifacts">0</span> |
+    Health: <span id="health">100</span> |
+    Time: <span id="time">Day</span> |
+    Location: <span id="location">Town</span>
   </div>
+  <div id="ballCount">Balls Thrown: <span id="ballCountValue">0</span></div>
+  <div id="dialogue"></div>
+  <div id="controls">
+    Controls:<br>
+    [Desktop] Arrow Up/Down = forward/back, Left/Right = turn, Space = throw ball<br>
+    [Mobile] D‑Pad Up/Down = forward/back, Left/Right = strafe, L/R = turn, A = throw ball, B = jump
+  </div>
+  <div id="errorMessage">WebGL not supported in your browser.</div>
+  <div id="guardPopup"></div>
 
-  <!-- Three.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script>
-    // Toggle UI
-    document.getElementById('toggleUIBtn').addEventListener('click', () => {
-      const ids = ["ui", "ballCount", "dialogue", "controls", "guardPopup", "errorMessage"];
-      for (const id of ids) {
-        const el = document.getElementById(id);
-        el.style.display = (el.style.display === "none") ? "block" : "none";
-      }
+  <!-- On-screen Controller Panels -->
+  <div id="dpadContainer">
+    <button id="btnUp">▲</button>
+    <button id="btnDown">▼</button>
+    <button id="btnLeft">◀</button>
+    <button id="btnRight">▶</button>
+  </div>
+  <div id="turnContainer">
+    <button id="btnTurnLeft">L</button>
+    <button id="btnTurnRight">R</button>
+  </div>
+  <div id="actionContainer">
+    <button id="btnThrow">A</button>
+    <button id="btnBigThrow">B</button>
+  </div>
+</div>
+
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/** UI Toggle */
+document.getElementById('toggleUIBtn').addEventListener('click', () => {
+  const ids = ["ui","ballCount","dialogue","controls","guardPopup","errorMessage"];
+  for(const id of ids){
+    const el = document.getElementById(id);
+    el.style.display = (el.style.display==="none") ? "block" : "none";
+  }
+});
+
+/** Prevent text highlighting on mobile for each button */
+function disableHighlight(id){
+  const btn = document.getElementById(id);
+  ["touchstart","mousedown"].forEach(evt => {
+    btn.addEventListener(evt,e=>{ e.preventDefault(); }, { passive:false });
+  });
+}
+["btnUp","btnDown","btnLeft","btnRight","btnTurnLeft","btnTurnRight","btnThrow","btnBigThrow"]
+  .forEach(disableHighlight);
+
+/** On-screen controller state */
+const controllerState = {
+  dpadUp:false, dpadDown:false, dpadLeft:false, dpadRight:false,
+  turnLeft:false, turnRight:false
+};
+function setButtonListener(btnId, stateProp){
+  const btn = document.getElementById(btnId);
+  ["mousedown","touchstart"].forEach(evt=>{
+    btn.addEventListener(evt, e=>{
+      e.preventDefault();
+      controllerState[stateProp]=true;
+    }, { passive:false });
+  });
+  ["mouseup","touchend","mouseleave"].forEach(evt=>{
+    btn.addEventListener(evt, e=>{
+      controllerState[stateProp]=false;
     });
+  });
+}
+setButtonListener("btnUp","dpadUp");
+setButtonListener("btnDown","dpadDown");
+setButtonListener("btnLeft","dpadLeft");
+setButtonListener("btnRight","dpadRight");
+setButtonListener("btnTurnLeft","turnLeft");
+setButtonListener("btnTurnRight","turnRight");
 
-    // Prevent text highlighting on mobile
-    function disableHighlight(id) {
-      const btn = document.getElementById(id);
-      ["touchstart", "mousedown"].forEach(evt => {
-        btn.addEventListener(evt, e => { e.preventDefault(); }, { passive: false });
+/** A/B button actions */
+["pointerdown","click"].forEach(evt=>{
+  document.getElementById("btnThrow").addEventListener(evt,e=>{
+    e.preventDefault();
+    if(window.game && typeof window.game.throwBall==="function"){
+      window.game.throwBall();
+    }
+  }, { passive:false });
+});
+["pointerdown","click"].forEach(evt=>{
+  document.getElementById("btnBigThrow").addEventListener(evt,e=>{
+    e.preventDefault();
+    if(window.game && typeof window.game.jump==="function"){
+      window.game.jump();
+    }
+  }, { passive:false });
+});
+
+let game=null;
+try{
+  const errorMsg = document.getElementById("errorMessage");
+  const gameCanvas = document.getElementById("gameCanvas");
+  if(!window.WebGLRenderingContext){
+    errorMsg.style.display="block";
+    gameCanvas.style.display="none";
+    throw new Error("WebGL not supported");
+  }
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight,0.1,3000);
+  const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  gameCanvas.style.display="block";
+
+  const keysPressed={};
+
+  class Game {
+    constructor(){
+      this.scene = scene;
+      this.camera = camera;
+      this.renderer = renderer;
+
+      // Day/night
+      this.time="Day";
+      this.dayNightCycle=0;
+
+      // Player
+      this.player = {
+        x:0, y:0.5, z:0,
+        baseSpeed:0.1,
+        yaw:0, pitch:0,
+        jumpVelocity:0,
+        object:null
+      };
+
+      // Stats
+      this.flowers=0; this.coins=0; this.gems=0; this.potions=0; this.keys=0; this.artifacts=0;
+      this.health=100;
+
+      this.objects=[];
+      this.buildingPositions=[];
+      this.ballCount=0;
+      this.thrownBalls=[];
+      this.keysPressed=keysPressed;
+      this.itemRange=80;
+
+      // Day/night objects
+      this.sunMesh=null; this.moonMesh=null; this.starsMesh=null;
+
+      // Scenes: outside vs inside
+      this.interior=false; // Are we inside the castle?
+      this.outsideGroup=new THREE.Group();  // All outside objects
+      this.insideGroup=new THREE.Group();   // All inside objects
+      this.scene.add(this.outsideGroup, this.insideGroup);
+
+      // We'll store collisions for outside vs inside
+      this.outsideColliders=[];
+      this.insideColliders=[];
+
+      // Castle door bounding area
+      this.castleDoorPos={ x:40, z:48, radius:2 };
+      // Interior door bounding area
+      this.interiorDoorPos={ x:0, z: -15, radius:2 };
+
+      this.initOutside();
+      this.initInside();
+      this.createPlayer();
+      this.initKeyboardMouse();
+      this.startAnimation();
+    }
+
+    initOutside(){
+      // Basic outside environment
+      // 1) ground
+      const groundGeo = new THREE.PlaneGeometry(300,300);
+      const groundMat = new THREE.MeshStandardMaterial({ color:0x6bb26b });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI/2;
+      ground.receiveShadow=true;
+      this.outsideGroup.add(ground);
+      this.outsideColliders.push({ mesh:ground, x:0, z:0, boundingRadius:9999, type:"ground" });
+
+      // 2) sun, moon, stars
+      this.createSun();
+      this.createMoon();
+      this.createStars();
+
+      // 3) castle building
+      const castleGroup = new THREE.Group();
+      // big base
+      const castleBase = new THREE.Mesh(
+        new THREE.BoxGeometry(20,10,20),
+        new THREE.MeshStandardMaterial({ color:0x999999 })
+      );
+      castleBase.position.set(40,5,40);
+      castleGroup.add(castleBase);
+      // door is at z=40 + halfsize=10 => z=50 => let's call the bounding area near z=48
+      // Just a door plane
+      const door = new THREE.Mesh(
+        new THREE.PlaneGeometry(4,6),
+        new THREE.MeshStandardMaterial({ color:0x553300, side:THREE.DoubleSide })
+      );
+      door.position.set(40,3,50.01);
+      castleGroup.add(door);
+
+      // We'll push a bounding area for collisions
+      this.outsideColliders.push({ mesh:castleBase, x:40, z:40, boundingRadius:10, type:"building" });
+
+      // Add to outside group
+      this.outsideGroup.add(castleGroup);
+
+      // Light
+      const ambient = new THREE.AmbientLight(0xffffff,0.4);
+      this.outsideGroup.add(ambient);
+      const dirLight = new THREE.DirectionalLight(0xffffff,0.6);
+      dirLight.position.set(50,100,50);
+      this.outsideGroup.add(dirLight);
+    }
+
+    initInside(){
+      // Make a big room: 3x bigger
+      // floor, walls, a door at one end
+      const floorSize=60; // big
+      const floorGeo = new THREE.PlaneGeometry(floorSize,floorSize);
+      const floorMat = new THREE.MeshStandardMaterial({ color:0x888888 });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x=-Math.PI/2;
+      floor.receiveShadow=true;
+      floor.position.set(0,0,0);
+      this.insideGroup.add(floor);
+      this.insideColliders.push({ mesh:floor, x:0, z:0, boundingRadius:9999, type:"floor" });
+
+      // 4 walls
+      const wallMat = new THREE.MeshStandardMaterial({ color:0x666666 });
+      const half=floorSize/2;
+      const wallHeight=10;
+      // front wall
+      const frontWall = new THREE.Mesh(
+        new THREE.BoxGeometry(floorSize, wallHeight, 1),
+        wallMat
+      );
+      frontWall.position.set(0,wallHeight/2, half);
+      this.insideGroup.add(frontWall);
+      this.insideColliders.push({ mesh:frontWall, x:0, z:half, boundingRadius:floorSize/2, type:"wall" });
+      // back wall
+      const backWall = new THREE.Mesh(
+        new THREE.BoxGeometry(floorSize, wallHeight, 1),
+        wallMat
+      );
+      backWall.position.set(0,wallHeight/2, -half);
+      this.insideGroup.add(backWall);
+      this.insideColliders.push({ mesh:backWall, x:0, z:-half, boundingRadius:floorSize/2, type:"wall" });
+      // left wall
+      const leftWall = new THREE.Mesh(
+        new THREE.BoxGeometry(1,wallHeight,floorSize),
+        wallMat
+      );
+      leftWall.position.set(-half,wallHeight/2,0);
+      this.insideGroup.add(leftWall);
+      this.insideColliders.push({ mesh:leftWall, x:-half, z:0, boundingRadius:floorSize/2, type:"wall" });
+      // right wall
+      const rightWall = new THREE.Mesh(
+        new THREE.BoxGeometry(1,wallHeight,floorSize),
+        wallMat
+      );
+      rightWall.position.set(half,wallHeight/2,0);
+      this.insideGroup.add(rightWall);
+      this.insideColliders.push({ mesh:rightWall, x:half, z:0, boundingRadius:floorSize/2, type:"wall" });
+
+      // interior door on the back wall
+      // place a plane at z=-half => e.g. z=-30
+      const interiorDoor = new THREE.Mesh(
+        new THREE.PlaneGeometry(4,6),
+        new THREE.MeshStandardMaterial({ color:0x553300, side:THREE.DoubleSide })
+      );
+      interiorDoor.position.set(0,3, -(half+0.01));
+      this.insideGroup.add(interiorDoor);
+
+      // Also add a simple light inside
+      const insideLight = new THREE.PointLight(0xffffff,0.8,60);
+      insideLight.position.set(0,5,0);
+      this.insideGroup.add(insideLight);
+
+      // Start hidden
+      this.insideGroup.visible=false;
+    }
+
+    createSun(){
+      const sunGeo=new THREE.SphereGeometry(9,16,16);
+      const sunMat=new THREE.MeshBasicMaterial({ color:0xffee00 });
+      this.sunMesh=new THREE.Mesh(sunGeo,sunMat);
+      this.sunMesh.position.set(0,200,-200);
+      this.sunMesh.visible=true;
+      this.outsideGroup.add(this.sunMesh);
+    }
+    createMoon(){
+      const moonGeo=new THREE.SphereGeometry(6,16,16);
+      const moonMat=new THREE.MeshBasicMaterial({ color:0xcccccc });
+      this.moonMesh=new THREE.Mesh(moonGeo, moonMat);
+      this.moonMesh.position.set(-100,150,100);
+      this.moonMesh.visible=false;
+      this.outsideGroup.add(this.moonMesh);
+    }
+    createStars(){
+      const starCount=300;
+      const positions=new Float32Array(starCount*3);
+      for(let i=0; i<starCount; i++){
+        const r=300+Math.random()*200;
+        const angle=Math.random()*Math.PI*2;
+        const ySpread=Math.random()*200-50;
+        positions[i*3]=Math.cos(angle)*r;
+        positions[i*3+1]=50+ySpread;
+        positions[i*3+2]=Math.sin(angle)*r;
+      }
+      const starGeo=new THREE.BufferGeometry();
+      starGeo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+      const starMat=new THREE.PointsMaterial({ color:0xffffff, size:1.2, depthTest:false });
+      const starField=new THREE.Points(starGeo,starMat);
+      starField.visible=false;
+      this.outsideGroup.add(starField);
+      this.starsMesh=starField;
+    }
+
+    createPlayer(){
+      // Simple cylinder
+      const group=new THREE.Group();
+      const body=new THREE.Mesh(
+        new THREE.CylinderGeometry(0.4,0.5,1.2,16),
+        new THREE.MeshStandardMaterial({ color:0xff69b4 })
+      );
+      body.position.y=0.6;
+      group.add(body);
+      group.position.set(this.player.x, this.player.y, this.player.z);
+      this.player.object=group;
+      this.scene.add(group);
+    }
+
+    // dayNight function
+    updateDayNight(){
+      this.dayNightCycle=(this.dayNightCycle+1)%1200;
+      if(this.dayNightCycle<600){
+        this.time="Day";
+        if(this.sunMesh) this.sunMesh.visible=true;
+        if(this.moonMesh) this.moonMesh.visible=false;
+        if(this.starsMesh) this.starsMesh.visible=false;
+        this.scene.background=new THREE.Color(0x87ceeb);
+      } else {
+        this.time="Night";
+        if(this.sunMesh) this.sunMesh.visible=false;
+        if(this.moonMesh) this.moonMesh.visible=true;
+        if(this.starsMesh) this.starsMesh.visible=true;
+        this.scene.background=new THREE.Color(0x000000);
+      }
+      document.getElementById('time').textContent=this.time;
+    }
+
+    // Teleport to inside
+    enterCastle(){
+      // Hide outside
+      this.outsideGroup.visible=false;
+      // Show inside
+      this.insideGroup.visible=true;
+      // Switch boolean
+      this.interior=true;
+      // Reposition player in center of inside room
+      this.player.x=0; this.player.z=0; this.player.y=0.5;
+      if(this.player.object){
+        this.player.object.position.set(0,0.5,0);
+      }
+      document.getElementById("location").textContent="Castle";
+    }
+
+    // Teleport back outside
+    exitCastle(){
+      // Hide inside
+      this.insideGroup.visible=false;
+      // Show outside
+      this.outsideGroup.visible=true;
+      // Switch boolean
+      this.interior=false;
+      // Place player a few steps away from castle door
+      this.player.x=40; 
+      this.player.z=45; 
+      this.player.y=0.5;
+      if(this.player.object){
+        this.player.object.position.set(40,0.5,45);
+      }
+      document.getElementById("location").textContent="Town";
+    }
+
+    startAnimation(){
+      const animate=()=>{
+        requestAnimationFrame(animate);
+        this.update();
+        this.renderer.render(this.scene,this.camera);
+      };
+      animate();
+    }
+
+    update(){
+      // day/night
+      this.updateDayNight();
+      // movement
+      this.updateMovement();
+      // check door triggers
+      this.updateDoors();
+      // camera
+      this.updateCamera();
+    }
+
+    updateDoors(){
+      if(!this.interior){
+        // Check if near castle door
+        const dx=this.player.x - this.castleDoorPos.x;
+        const dz=this.player.z - this.castleDoorPos.z;
+        if(dx*dx + dz*dz < this.castleDoorPos.radius*this.castleDoorPos.radius){
+          // enter castle
+          this.enterCastle();
+        }
+      } else {
+        // inside
+        // check if near interior door
+        const dx=this.player.x - this.interiorDoorPos.x;
+        const dz=this.player.z - this.interiorDoorPos.z;
+        if(dx*dx + dz*dz < this.interiorDoorPos.radius*this.interiorDoorPos.radius){
+          // exit
+          this.exitCastle();
+        }
+      }
+    }
+
+    updateMovement(){
+      // read input
+      let keyboardForward=0, keyboardTurn=0;
+      if(this.keysPressed["ArrowUp"])   keyboardForward+=1;
+      if(this.keysPressed["ArrowDown"]) keyboardForward-=1;
+      if(this.keysPressed["ArrowLeft"]) keyboardTurn+=1;
+      if(this.keysPressed["ArrowRight"])keyboardTurn-=1;
+
+      let touchForward=0, touchStrafe=0;
+      if(controllerState.dpadUp)    touchForward+=1;
+      if(controllerState.dpadDown)  touchForward-=1;
+      if(controllerState.dpadLeft)  touchStrafe+=1;
+      if(controllerState.dpadRight) touchStrafe-=1;
+
+      let finalForward=(keyboardForward!==0 ? keyboardForward : touchForward);
+      let finalStrafe=touchStrafe;
+      let finalTurn=keyboardTurn;
+      if(controllerState.turnLeft)  finalTurn+=1;
+      if(controllerState.turnRight) finalTurn-=1;
+
+      // outside => 2.5 speed, inside => normal
+      const speedMult=(this.interior)?1.0:2.5;
+      const forwardVec=new THREE.Vector3(Math.sin(this.player.yaw),0,Math.cos(this.player.yaw));
+      const rightVec=new THREE.Vector3(Math.cos(this.player.yaw),0,-Math.sin(this.player.yaw));
+      const movement=forwardVec.clone().multiplyScalar(finalForward)
+                         .add(rightVec.clone().multiplyScalar(finalStrafe));
+      if(movement.length()>1) movement.normalize();
+      movement.multiplyScalar(this.player.baseSpeed * speedMult);
+
+      const newX=this.player.x + movement.x;
+      const newZ=this.player.z + movement.z;
+      let canMove=true;
+
+      // collisions
+      if(!this.interior){
+        // check outsideColliders
+        for(const c of this.outsideColliders){
+          // skip ground?
+          if(c.type==="ground") continue;
+          const dx=newX - (c.x||0);
+          const dz=newZ - (c.z||0);
+          const r=(c.boundingRadius||5)+1;
+          if(dx*dx+dz*dz < r*r){
+            canMove=false;
+            break;
+          }
+        }
+      } else {
+        // inside
+        for(const c of this.insideColliders){
+          // skip floor?
+          if(c.type==="floor") continue;
+          const dx=newX - (c.x||0);
+          const dz=newZ - (c.z||0);
+          const r=(c.boundingRadius||5)+1;
+          if(dx*dx+dz*dz < r*r){
+            canMove=false;
+            break;
+          }
+        }
+      }
+
+      if(canMove){
+        this.player.x=newX;
+        this.player.z=newZ;
+      }
+      // turn
+      this.player.yaw+=finalTurn*0.02;
+
+      // jump
+      if(this.player.jumpVelocity!==0 || this.player.y>0.5){
+        this.player.jumpVelocity-=0.02;
+        this.player.y+=this.player.jumpVelocity;
+        if(this.player.y<0.5){
+          this.player.y=0.5;
+          this.player.jumpVelocity=0;
+        }
+      }
+
+      // update mesh
+      if(this.player.object){
+        this.player.object.position.set(this.player.x,this.player.y,this.player.z);
+        this.player.object.rotation.y=this.player.yaw;
+      }
+    }
+
+    updateCamera(){
+      const camDist=15;
+      const offsetX=-Math.sin(this.player.yaw)*camDist;
+      const offsetZ=-Math.cos(this.player.yaw)*camDist;
+      const offsetY=10;
+      this.camera.position.set(
+        this.player.x+offsetX,
+        this.player.y+offsetY,
+        this.player.z+offsetZ
+      );
+      this.camera.lookAt(
+        this.player.x,
+        this.player.y+1,
+        this.player.z
+      );
+    }
+
+    throwBall(){
+      console.log("Throw ball!");
+      const direction=new THREE.Vector3(Math.sin(this.player.yaw),0,Math.cos(this.player.yaw));
+      const ballGeo=new THREE.SphereGeometry(0.3,16,16);
+      const ballMat=new THREE.MeshStandardMaterial({ color:0xff4500 });
+      const ball=new THREE.Mesh(ballGeo,ballMat);
+      ball.position.set(this.player.x,this.player.y+1,this.player.z);
+      ball.userData={
+        velocity: direction.multiplyScalar(0.5).add(new THREE.Vector3(0,0.3,0)),
+        timer:0
+      };
+      this.scene.add(ball);
+      this.thrownBalls.push(ball);
+      this.ballCount++;
+      document.getElementById("ballCountValue").textContent=this.ballCount;
+    }
+
+    jump(){
+      console.log("Jump!");
+      if(this.player.y<=0.5){
+        this.player.jumpVelocity=0.3;
+      }
+    }
+
+    initKeyboardMouse(){
+      document.addEventListener('keydown', e=>{
+        this.keysPressed[e.key]=true;
+        if(e.key===" ") this.throwBall();
+      });
+      document.addEventListener('keyup', e=>{
+        this.keysPressed[e.key]=false;
+      });
+      document.addEventListener('mousedown',()=>{
+        try{ document.body.requestPointerLock(); }
+        catch(err){ console.warn("Pointer lock fail:", err); }
+      });
+      document.addEventListener('mousemove', evt=>{
+        if(document.pointerLockElement===document.body){
+          const movementX=evt.movementX||0;
+          const sensitivity=0.001;
+          this.player.yaw+=movementX*sensitivity;
+        }
       });
     }
-    ["btnUp","btnDown","btnLeft","btnRight","btnTurnLeft","btnTurnRight","btnThrow","btnBigThrow"]
-      .forEach(disableHighlight);
+  }
 
-    // On-screen controller state
-    const controllerState = {
-      dpadUp: false, dpadDown: false, dpadLeft: false, dpadRight: false,
-      turnLeft: false, turnRight: false
-    };
-    function setButtonListener(btnId, stateProp) {
-      const btn = document.getElementById(btnId);
-      ["mousedown","touchstart"].forEach(evt => {
-        btn.addEventListener(evt, e => { e.preventDefault(); controllerState[stateProp] = true; }, { passive:false });
-      });
-      ["mouseup", "touchend", "mouseleave"].forEach(evt => {
-        btn.addEventListener(evt, e => { controllerState[stateProp] = false; });
-      });
-    }
-    setButtonListener('btnUp', 'dpadUp');
-    setButtonListener('btnDown', 'dpadDown');
-    setButtonListener('btnLeft', 'dpadLeft');
-    setButtonListener('btnRight', 'dpadRight');
-    setButtonListener('btnTurnLeft', 'turnLeft');
-    setButtonListener('btnTurnRight', 'turnRight');
-
-    // A/B button actions
-    ["pointerdown", "click"].forEach(evt => {
-      document.getElementById("btnThrow").addEventListener(evt, e => {
-        e.preventDefault();
-        if (window.game && typeof window.game.throwBall === "function") {
-          window.game.throwBall();
-        }
-      }, { passive: false });
-    });
-    ["pointerdown", "click"].forEach(evt => {
-      document.getElementById("btnBigThrow").addEventListener(evt, e => {
-        e.preventDefault();
-        if (window.game && typeof window.game.jump === "function") {
-          window.game.jump();
-        }
-      }, { passive: false });
-    });
-
-    let game = null;
-
-    try {
-      const errorMsg = document.getElementById('errorMessage');
-      const gameCanvas = document.getElementById('gameCanvas');
-      if (!window.WebGLRenderingContext) {
-        errorMsg.style.display = 'block';
-        gameCanvas.style.display = 'none';
-        throw new Error('WebGL not supported');
-      }
-
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 3000);
-      const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      gameCanvas.style.display = 'block';
-
-      const keysPressed = {};
-
-      class Game {
-        constructor() {
-          this.scene = scene;
-          this.camera = camera;
-          this.renderer = renderer;
-          // We'll track dayNightCycle to do day/night transitions
-          this.time = 'Day';
-          this.dayNightCycle = 0;  // increments each frame
-
-          this.player = {
-            x: 0, y: 0.5, z: 0,
-            baseSpeed: 0.1,
-            yaw: 0, pitch: 0,
-            jumpVelocity: 0,
-            object: null
-          };
-
-          // Stats
-          this.flowers = 0; 
-          this.coins = 0; 
-          this.gems = 0; 
-          this.potions = 0; 
-          this.keys = 0; 
-          this.artifacts = 0;
-          this.health = 100;
-
-          this.objects = []; 
-          this.buildingPositions = [];
-          this.ballCount = 0;
-          this.thrownBalls = [];
-          this.keysPressed = keysPressed;
-          this.itemRange = 80;
-
-          // We'll keep references for day/night objects
-          this.sunMesh = null; 
-          this.moonMesh = null; 
-          this.starsMesh = null;
-
-          // Example NPC data
-          this.npcBlueData = { angle: 0, speed: 0.001, radius: 120, object: null };
-          this.npcYellowData = { object: null, speed: 0.03, target: null };
-          this.guardData = {
-            object: null,
-            state: 'idle',
-            timer: 0,
-            route: [ { x: 35, z: 60 }, { x: 35, z: 70 }, { x: 55, z: 70 }, { x: 55, z: 60 }, { x: 45, z: 55 } ],
-            routeIndex: 0,
-            speed: 0.02
-          };
-          this.mermaidData = { object: null, route: [ { x: -15, z: -70 }, { x: 15, z: -70 } ], routeIndex: 0, speed: 0.02 };
-          this.birdData = { angle: 0, speed: 0.002, radius: 140, object: null };
-          this.guardObject = null; 
-          this.guardMessageShown = false;
-          this.npcBlueMessageShown = false; 
-          this.mermaidMessageShown = false; 
-          this.npcYellowMessageShown = false;
-
-          // If we have an interior scene or not
-          this.interior = false;
-          this.outsideObjects = [];
-          this.insideObjects = [];
-
-          this.initScene();
-          this.initKeyboardMouse();
-          this.startAnimation();
-        }
-
-        // -----------------------
-        // Example function stubs
-        // to show day/night, etc.
-        // -----------------------
-
-        initScene() {
-          // Example: outside background
-          this.scene.background = new THREE.Color(0x87ceeb);
-
-          // Basic environment (outside)
-          // e.g. ground, sun, moon, etc.
-          this.createOutside();
-          this.createPlayer();
-          // buildings, NPC, items, etc.
-
-          // Camera start
-          this.camera.position.set(this.player.x + 15, this.player.y + 15, this.player.z + 15);
-          this.camera.lookAt(this.player.x, this.player.y + 1, this.player.z);
-        }
-
-        createOutside() {
-          // Just an example ground
-          const groundGeo = new THREE.PlaneGeometry(300,300);
-          const groundMat = new THREE.MeshStandardMaterial({ color: 0x6bb26b });
-          const ground = new THREE.Mesh(groundGeo, groundMat);
-          ground.rotation.x = -Math.PI/2;
-          this.scene.add(ground);
-          this.outsideObjects.push(ground);
-
-          // Simple day/night objects
-          this.createSun();
-          this.createMoon();
-          this.createStars();
-        }
-
-        createSun() {
-          const sunGeo = new THREE.SphereGeometry(9, 16, 16);
-          const sunMat = new THREE.MeshBasicMaterial({ color: 0xffee00 });
-          this.sunMesh = new THREE.Mesh(sunGeo, sunMat);
-          this.sunMesh.position.set(0, 200, -200);
-          this.sunMesh.visible = true;
-          this.scene.add(this.sunMesh);
-          this.outsideObjects.push(this.sunMesh);
-        }
-        createMoon() {
-          const moonGeo = new THREE.SphereGeometry(6, 16, 16);
-          const moonMat = new THREE.MeshBasicMaterial({ color: 0xcccccc });
-          this.moonMesh = new THREE.Mesh(moonGeo, moonMat);
-          this.moonMesh.position.set(-100,150,100);
-          this.moonMesh.visible = false;
-          this.scene.add(this.moonMesh);
-          this.outsideObjects.push(this.moonMesh);
-        }
-        createStars() {
-          const starCount = 300;
-          const positions = new Float32Array(starCount * 3);
-          for (let i=0; i<starCount; i++) {
-            const r = 300 + Math.random()*200;
-            const angle = Math.random()*Math.PI*2;
-            const ySpread = Math.random()*200 - 50;
-            positions[i*3]   = Math.cos(angle)*r;
-            positions[i*3+1] = 50 + ySpread;
-            positions[i*3+2] = Math.sin(angle)*r;
-          }
-          const starGeo = new THREE.BufferGeometry();
-          starGeo.setAttribute('position', new THREE.BufferAttribute(positions,3));
-          const starMat = new THREE.PointsMaterial({ color:0xffffff, size:1.2, depthTest:false });
-          const starField = new THREE.Points(starGeo, starMat);
-          starField.visible = false;
-          this.scene.add(starField);
-          this.starsMesh = starField;
-          this.outsideObjects.push(starField);
-        }
-
-        createPlayer() {
-          // minimal
-          const group = new THREE.Group();
-          const body = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.4,0.5,1.2,16),
-            new THREE.MeshStandardMaterial({ color:0xff69b4 })
-          );
-          body.position.y = 0.6;
-          group.add(body);
-          group.position.set(this.player.x, this.player.y, this.player.z);
-          this.player.object = group;
-          this.scene.add(group);
-        }
-
-        // The actual day/night function:
-        updateDayNight() {
-          // Increase cycle
-          this.dayNightCycle = (this.dayNightCycle+1) % 1200;
-          // Simple split day vs night
-          if (this.dayNightCycle < 600) {
-            this.time = 'Day';
-            this.sunMesh.visible = true;
-            this.moonMesh.visible = false;
-            if (this.starsMesh) this.starsMesh.visible = false;
-            this.scene.background = new THREE.Color(0x87ceeb);
-          } else {
-            this.time = 'Night';
-            this.sunMesh.visible = false;
-            this.moonMesh.visible = true;
-            if (this.starsMesh) this.starsMesh.visible = true;
-            this.scene.background = new THREE.Color(0x000000);
-          }
-          document.getElementById('time').textContent = this.time;
-        }
-
-        // -----------
-        // ANIMATION
-        // -----------
-        startAnimation() {
-          const animate = () => {
-            requestAnimationFrame(animate);
-            this.update();
-            this.renderer.render(this.scene, this.camera);
-          };
-          animate();
-        }
-
-        update() {
-          // We call updateDayNight here:
-          this.updateDayNight();
-
-          // Then do the rest
-          this.updateMovement();
-          // e.g. updateBalls(), updateGuard(), etc.
-          this.updateCamera();
-        }
-
-        updateMovement() {
-          // example
-          let keyboardForward = 0, keyboardTurn=0;
-          if (this.keysPressed['ArrowUp']) keyboardForward += 1;
-          if (this.keysPressed['ArrowDown']) keyboardForward -= 1;
-          if (this.keysPressed['ArrowLeft']) keyboardTurn += 1;
-          if (this.keysPressed['ArrowRight']) keyboardTurn -= 1;
-
-          let touchForward = 0, touchStrafe = 0;
-          if (controllerState.dpadUp) touchForward += 1;
-          if (controllerState.dpadDown) touchForward -= 1;
-          if (controllerState.dpadLeft) touchStrafe += 1;
-          if (controllerState.dpadRight) touchStrafe -= 1;
-
-          let finalForward = (keyboardForward !== 0 ? keyboardForward : touchForward);
-          let finalStrafe = touchStrafe;
-          let finalTurn = keyboardTurn;
-          if (controllerState.turnLeft) finalTurn += 1;
-          if (controllerState.turnRight) finalTurn -= 1;
-
-          // outside => 2.5 speed, inside => normal
-          const speedMult = this.interior ? 1.0 : 2.5;
-          const forwardVec = new THREE.Vector3(Math.sin(this.player.yaw),0,Math.cos(this.player.yaw));
-          const rightVec   = new THREE.Vector3(Math.cos(this.player.yaw),0,-Math.sin(this.player.yaw));
-          const movement   = forwardVec.clone().multiplyScalar(finalForward)
-                              .add(rightVec.clone().multiplyScalar(finalStrafe));
-          if (movement.length() > 1) movement.normalize();
-          movement.multiplyScalar(this.player.baseSpeed * speedMult);
-
-          const newX = this.player.x + movement.x;
-          const newZ = this.player.z + movement.z;
-          let canMove = true;
-
-          // collision checks
-          // ...
-          if (canMove) {
-            this.player.x = newX;
-            this.player.z = newZ;
-          }
-          this.player.yaw += finalTurn * 0.02;
-
-          // jump
-          if (this.player.jumpVelocity !== 0 || this.player.y>0.5) {
-            this.player.jumpVelocity -= 0.02;
-            this.player.y += this.player.jumpVelocity;
-            if (this.player.y<0.5) {
-              this.player.y=0.5;
-              this.player.jumpVelocity=0;
-            }
-          }
-
-          if (this.player.object) {
-            this.player.object.position.set(this.player.x, this.player.y, this.player.z);
-            this.player.object.rotation.y = this.player.yaw;
-          }
-        }
-
-        updateCamera() {
-          const camDist=15;
-          const offsetX = -Math.sin(this.player.yaw)*camDist;
-          const offsetZ = -Math.cos(this.player.yaw)*camDist;
-          const offsetY = 10;
-          this.camera.position.set(
-            this.player.x + offsetX,
-            this.player.y + offsetY,
-            this.player.z + offsetZ
-          );
-          this.camera.lookAt(
-            this.player.x,
-            this.player.y+1,
-            this.player.z
-          );
-        }
-
-        throwBall() {
-          // ...
-          console.log("Throwing ball...");
-        }
-        jump() {
-          // ...
-          console.log("Jumping...");
-          if (this.player.y<=0.5) {
-            this.player.jumpVelocity=0.3;
-          }
-        }
-
-        initKeyboardMouse() {
-          document.addEventListener('keydown', e => {
-            this.keysPressed[e.key]=true;
-            if (e.key===' ') this.throwBall();
-          });
-          document.addEventListener('keyup', e => {
-            this.keysPressed[e.key]=false;
-          });
-          document.addEventListener('mousedown', () => {
-            if (!/Mobi|Android/i.test(navigator.userAgent)) {
-              // pointer lock on desktop only
-              try { document.body.requestPointerLock(); }
-              catch(err) { console.warn('Pointer lock fail',err); }
-            }
-          });
-          document.addEventListener('mousemove', evt => {
-            if (document.pointerLockElement===document.body) {
-              const movementX= evt.movementX||0;
-              const sensitivity=0.001;
-              this.player.yaw += movementX*sensitivity;
-            }
-          });
-        }
-      }
-
-      window.game = new Game();
-    } catch (err) {
-      console.error('Error initializing the game:', err);
-    }
-  </script>
+  window.game=new Game();
+} catch(err){
+  console.error("Error initializing the game:", err);
+}
+</script>
 </body>
 </html>
