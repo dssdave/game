@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1,user-scalable=no">
-  <title>Princess Donia’s Town - Castle Interior Collision</title>
+  <title>Princess Donia’s Town - With updateDayNight()</title>
   <style>
     html, body {
       margin: 0; padding: 0;
@@ -248,10 +248,10 @@
           this.scene = scene;
           this.camera = camera;
           this.renderer = renderer;
+          // We'll track dayNightCycle to do day/night transitions
           this.time = 'Day';
-          this.dayNightCycle = 0;
+          this.dayNightCycle = 0;  // increments each frame
 
-          // We'll move 2.5x faster outside, normal speed inside
           this.player = {
             x: 0, y: 0.5, z: 0,
             baseSpeed: 0.1,
@@ -276,12 +276,12 @@
           this.keysPressed = keysPressed;
           this.itemRange = 80;
 
-          // Day/Night
+          // We'll keep references for day/night objects
           this.sunMesh = null; 
           this.moonMesh = null; 
           this.starsMesh = null;
 
-          // NPC data
+          // Example NPC data
           this.npcBlueData = { angle: 0, speed: 0.001, radius: 120, object: null };
           this.npcYellowData = { object: null, speed: 0.03, target: null };
           this.guardData = {
@@ -300,16 +300,9 @@
           this.mermaidMessageShown = false; 
           this.npcYellowMessageShown = false;
 
-          // Piazza NPC random-walk data
-          this.piazzaNPCData = [];
-
-          // Scene-switch booleans
-          this.interior = false; // Are we inside the castle?
-
-          // Keep track of objects that belong to "outside" so we can remove them
+          // If we have an interior scene or not
+          this.interior = false;
           this.outsideObjects = [];
-
-          // Keep track of objects that belong to "inside" scene
           this.insideObjects = [];
 
           this.initScene();
@@ -317,240 +310,118 @@
           this.startAnimation();
         }
 
+        // -----------------------
+        // Example function stubs
+        // to show day/night, etc.
+        // -----------------------
+
         initScene() {
-          // Outside background
-          this.scene.background = new THREE.Color(0x87CEEB);
+          // Example: outside background
+          this.scene.background = new THREE.Color(0x87ceeb);
 
-          // CREATE ALL OUTSIDE
-          this.createOutsideEnvironment(); // ground, hills, shrubs, water, lights, sun, moon, stars, etc.
-          this.createPlayerModel();        // Player
-          this.createBuildingsAndNPCs();   // Castle, house, cafe, fountain, etc.
-          this.createItems();              // flowers, coins, gems, etc.
-          this.createPiazza();
-          this.createPiazzaNPCs();
-          this.createLampPosts();
+          // Basic environment (outside)
+          // e.g. ground, sun, moon, etc.
+          this.createOutside();
+          this.createPlayer();
+          // buildings, NPC, items, etc.
 
-          // Start camera behind player
+          // Camera start
           this.camera.position.set(this.player.x + 15, this.player.y + 15, this.player.z + 15);
           this.camera.lookAt(this.player.x, this.player.y + 1, this.player.z);
         }
 
-        createOutsideEnvironment() {
-          // Ground
-          const groundGeo = new THREE.PlaneGeometry(300, 300);
-          const groundMat = new THREE.MeshStandardMaterial({ color: 0x6bb26b, side: THREE.DoubleSide });
+        createOutside() {
+          // Just an example ground
+          const groundGeo = new THREE.PlaneGeometry(300,300);
+          const groundMat = new THREE.MeshStandardMaterial({ color: 0x6bb26b });
           const ground = new THREE.Mesh(groundGeo, groundMat);
-          ground.rotation.x = Math.PI / 2;
+          ground.rotation.x = -Math.PI/2;
           this.scene.add(ground);
           this.outsideObjects.push(ground);
 
-          // e.g. rolling hills, boundary shrubs, day/night lighting, etc. 
-          // For brevity, add them to outsideObjects as well...
+          // Simple day/night objects
+          this.createSun();
+          this.createMoon();
+          this.createStars();
         }
 
-        createPlayerModel() {
-          // Basic princess
+        createSun() {
+          const sunGeo = new THREE.SphereGeometry(9, 16, 16);
+          const sunMat = new THREE.MeshBasicMaterial({ color: 0xffee00 });
+          this.sunMesh = new THREE.Mesh(sunGeo, sunMat);
+          this.sunMesh.position.set(0, 200, -200);
+          this.sunMesh.visible = true;
+          this.scene.add(this.sunMesh);
+          this.outsideObjects.push(this.sunMesh);
+        }
+        createMoon() {
+          const moonGeo = new THREE.SphereGeometry(6, 16, 16);
+          const moonMat = new THREE.MeshBasicMaterial({ color: 0xcccccc });
+          this.moonMesh = new THREE.Mesh(moonGeo, moonMat);
+          this.moonMesh.position.set(-100,150,100);
+          this.moonMesh.visible = false;
+          this.scene.add(this.moonMesh);
+          this.outsideObjects.push(this.moonMesh);
+        }
+        createStars() {
+          const starCount = 300;
+          const positions = new Float32Array(starCount * 3);
+          for (let i=0; i<starCount; i++) {
+            const r = 300 + Math.random()*200;
+            const angle = Math.random()*Math.PI*2;
+            const ySpread = Math.random()*200 - 50;
+            positions[i*3]   = Math.cos(angle)*r;
+            positions[i*3+1] = 50 + ySpread;
+            positions[i*3+2] = Math.sin(angle)*r;
+          }
+          const starGeo = new THREE.BufferGeometry();
+          starGeo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+          const starMat = new THREE.PointsMaterial({ color:0xffffff, size:1.2, depthTest:false });
+          const starField = new THREE.Points(starGeo, starMat);
+          starField.visible = false;
+          this.scene.add(starField);
+          this.starsMesh = starField;
+          this.outsideObjects.push(starField);
+        }
+
+        createPlayer() {
+          // minimal
           const group = new THREE.Group();
-          // ...
-          // Put entire princess model code here
-          // ...
+          const body = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.4,0.5,1.2,16),
+            new THREE.MeshStandardMaterial({ color:0xff69b4 })
+          );
+          body.position.y = 0.6;
+          group.add(body);
           group.position.set(this.player.x, this.player.y, this.player.z);
           this.player.object = group;
           this.scene.add(group);
         }
 
-        createBuildingsAndNPCs() {
-          // 1) Castle
-          //  - near (40,0,40)
-          //  - boundingRadius ~ 8
-          //  - push to outsideObjects + this.objects
-          //  - the door area near (40,0,50)
-          // ...
-          // 2) House, Cafe, Fountain, etc.
-          // ...
-          // 3) Guard, mermaid, bird, etc.
-          // ...
-        }
-
-        createItems() {
-          // createFlowers, createCoins, etc. 
-          // push them to outsideObjects + this.objects
-          // ...
-        }
-
-        createPiazza() {
-          // smaller area with cobblestone texture, plus 4 corner lights
-          // push to outsideObjects + this.objects if needed
-          // ...
-        }
-
-        createPiazzaNPCs() {
-          // e.g. 2 NPCs with random walk
-          // push to outsideObjects + this.objects
-          // ...
-        }
-
-        createLampPosts() {
-          // around the boundary, etc.
-          // push to outsideObjects
-          // ...
-        }
-
-        // =========================
-        // CASTLE INTERIOR
-        // =========================
-        createCastleInterior() {
-          // We'll make a big rectangular room with separate walls, floor, ceiling
-          // so we can define collision boxes.
-
-          // Dimensions: width=300, depth=300, height=60 for example
-          const w = 300, h = 60, d = 300;
-          // Floor
-          const floorGeo = new THREE.PlaneGeometry(w, d);
-          const floorMat = new THREE.MeshStandardMaterial({ color: 0x999999 });
-          const floor = new THREE.Mesh(floorGeo, floorMat);
-          floor.rotation.x = -Math.PI/2;
-          floor.position.set(0, 0, 0);
-          this.scene.add(floor);
-          this.insideObjects.push(floor);
-          // For collision, store bounding info
-          this.objects.push({ 
-            mesh: floor, type:'insideWall', 
-            x:0, z:0, boundingBox:{ minX:-150, maxX:150, minZ:-150, maxZ:150 } 
-          });
-
-          // Ceiling
-          const ceilGeo = new THREE.PlaneGeometry(w, d);
-          const ceilMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, side: THREE.DoubleSide });
-          const ceiling = new THREE.Mesh(ceilGeo, ceilMat);
-          ceiling.rotation.x = Math.PI/2;
-          ceiling.position.set(0, h, 0);
-          this.scene.add(ceiling);
-          this.insideObjects.push(ceiling);
-          // We won't collide with ceiling, but if you want, you can store bounding.
-
-          // 4 Walls
-          // front wall (z=+150)
-          const wallMat = new THREE.MeshStandardMaterial({ color: 0x888888, side: THREE.DoubleSide });
-          const wallGeo = new THREE.PlaneGeometry(w, h);
-          const frontWall = new THREE.Mesh(wallGeo, wallMat);
-          frontWall.position.set(0, h/2, 150);
-          // face inward => rotateY= Math.PI
-          frontWall.rotation.y = Math.PI;
-          this.scene.add(frontWall);
-          this.insideObjects.push(frontWall);
-          this.objects.push({
-            mesh: frontWall, type:'insideWall',
-            x:0, z:150, boundingBox:{ minX:-150, maxX:150, minZ:150, maxZ:150 }
-          });
-
-          // back wall (z=-150)
-          const backWall = new THREE.Mesh(wallGeo, wallMat.clone());
-          backWall.position.set(0, h/2, -150);
-          // face inward => no rotation needed
-          this.scene.add(backWall);
-          this.insideObjects.push(backWall);
-          this.objects.push({
-            mesh: backWall, type:'insideWall',
-            x:0, z:-150, boundingBox:{ minX:-150, maxX:150, minZ:-150, maxZ:-150 }
-          });
-
-          // left wall (x=-150)
-          const sideWallGeo = new THREE.PlaneGeometry(d, h);
-          const leftWall = new THREE.Mesh(sideWallGeo, wallMat.clone());
-          leftWall.rotation.y = Math.PI/2;
-          leftWall.position.set(-150, h/2, 0);
-          this.scene.add(leftWall);
-          this.insideObjects.push(leftWall);
-          this.objects.push({
-            mesh: leftWall, type:'insideWall',
-            x:-150, z:0, boundingBox:{ minX:-150, maxX:-150, minZ:-150, maxZ:150 }
-          });
-
-          // right wall (x=150)
-          const rightWall = new THREE.Mesh(sideWallGeo, wallMat.clone());
-          rightWall.rotation.y = -Math.PI/2;
-          rightWall.position.set(150, h/2, 0);
-          this.scene.add(rightWall);
-          this.insideObjects.push(rightWall);
-          this.objects.push({
-            mesh: rightWall, type:'insideWall',
-            x:150, z:0, boundingBox:{ minX:150, maxX:150, minZ:-150, maxZ:150 }
-          });
-
-          // Light
-          const roomLight = new THREE.PointLight(0xffffff, 1.2, 600);
-          roomLight.position.set(0, 30, 0);
-          this.scene.add(roomLight);
-          this.insideObjects.push(roomLight);
-
-          // Exit door on backWall (z=-150). We'll place it near center:
-          const exitDoorGeo = new THREE.PlaneGeometry(10, 15);
-          const exitDoorMat = new THREE.MeshStandardMaterial({ color: 0x553300, side: THREE.DoubleSide });
-          const exitDoor = new THREE.Mesh(exitDoorGeo, exitDoorMat);
-          exitDoor.position.set(0, 7.5, -149.9); 
-          // Slightly forward so it doesn't clip the wall
-          this.scene.add(exitDoor);
-          this.insideObjects.push(exitDoor);
-        }
-
-        enterCastle() {
-          this.interior = true;
-          document.getElementById('location').textContent = "Castle Interior";
-
-          // remove outside objects
-          for (let obj of this.outsideObjects) {
-            this.scene.remove(obj);
+        // The actual day/night function:
+        updateDayNight() {
+          // Increase cycle
+          this.dayNightCycle = (this.dayNightCycle+1) % 1200;
+          // Simple split day vs night
+          if (this.dayNightCycle < 600) {
+            this.time = 'Day';
+            this.sunMesh.visible = true;
+            this.moonMesh.visible = false;
+            if (this.starsMesh) this.starsMesh.visible = false;
+            this.scene.background = new THREE.Color(0x87ceeb);
+          } else {
+            this.time = 'Night';
+            this.sunMesh.visible = false;
+            this.moonMesh.visible = true;
+            if (this.starsMesh) this.starsMesh.visible = true;
+            this.scene.background = new THREE.Color(0x000000);
           }
-          // create inside
-          this.createCastleInterior();
-
-          // place player near front wall => e.g. x=0, z=140, y=1
-          this.player.x = 0; 
-          this.player.y = 1; 
-          this.player.z = 140;
-          this.player.yaw = Math.PI; // facing inward
-          if (this.player.object) {
-            this.player.object.position.set(this.player.x, this.player.y, this.player.z);
-            this.player.object.rotation.y = this.player.yaw;
-          }
+          document.getElementById('time').textContent = this.time;
         }
 
-        exitCastle() {
-          this.interior = false;
-          document.getElementById('location').textContent = "Town";
-
-          // remove inside objects
-          for (let obj of this.insideObjects) {
-            this.scene.remove(obj);
-            // also remove from this.objects if type:'insideWall'
-            const idx = this.objects.indexOf(obj);
-            if (idx >= 0) {
-              this.objects.splice(idx,1);
-            }
-          }
-          this.insideObjects = [];
-
-          // re-add outside objects
-          for (let obj of this.outsideObjects) {
-            this.scene.add(obj);
-          }
-
-          // place player outside near castle door
-          this.player.x = 40;
-          this.player.y = 0.5;
-          this.player.z = 47;
-          this.player.yaw = Math.PI;
-          if (this.player.object) {
-            this.player.object.position.set(this.player.x, this.player.y, this.player.z);
-            this.player.object.rotation.y = this.player.yaw;
-          }
-        }
-
-        // (Simplified collisions for inside walls)
-        // We'll do a boundingBox check if (this.interior) => handle differently
-        // or we store them in this.objects with type:'insideWall' + boundingBox
-
+        // -----------
+        // ANIMATION
+        // -----------
         startAnimation() {
           const animate = () => {
             requestAnimationFrame(animate);
@@ -561,42 +432,18 @@
         }
 
         update() {
+          // We call updateDayNight here:
           this.updateDayNight();
-          this.updateBalls();
-          this.updateGuard();
+
+          // Then do the rest
           this.updateMovement();
-          this.updateBlueNPC();
-          this.updateYellowNPC();
-          this.updateMermaid();
-          this.updateBird();
-          this.updatePiazzaNPCs();
-          this.updatePickups();
-          this.updateCollisions();
+          // e.g. updateBalls(), updateGuard(), etc.
           this.updateCamera();
         }
 
-        updateCollisions() {
-          // If outside, near castle door => enter
-          if (!this.interior) {
-            const dx = this.player.x - 40;
-            const dz = this.player.z - 50;
-            if (dx*dx + dz*dz < 4) {
-              this.enterCastle();
-            }
-          } else {
-            // If inside, near back wall door => exit
-            const dx = this.player.x - 0;
-            const dz = this.player.z + 150;
-            if (dx*dx + dz*dz < 4) {
-              this.exitCastle();
-            }
-          }
-
-          // Also do normal collision triggers with guard, NPC, etc.
-        }
-
         updateMovement() {
-          let keyboardForward = 0, keyboardTurn = 0;
+          // example
+          let keyboardForward = 0, keyboardTurn=0;
           if (this.keysPressed['ArrowUp']) keyboardForward += 1;
           if (this.keysPressed['ArrowDown']) keyboardForward -= 1;
           if (this.keysPressed['ArrowLeft']) keyboardTurn += 1;
@@ -614,12 +461,12 @@
           if (controllerState.turnLeft) finalTurn += 1;
           if (controllerState.turnRight) finalTurn -= 1;
 
-          // outside => 2.5x speed, inside => normal
+          // outside => 2.5 speed, inside => normal
           const speedMult = this.interior ? 1.0 : 2.5;
-          const forwardVec = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
-          const rightVec = new THREE.Vector3(Math.cos(this.player.yaw), 0, -Math.sin(this.player.yaw));
-          const movement = forwardVec.clone().multiplyScalar(finalForward)
-                          .add(rightVec.clone().multiplyScalar(finalStrafe));
+          const forwardVec = new THREE.Vector3(Math.sin(this.player.yaw),0,Math.cos(this.player.yaw));
+          const rightVec   = new THREE.Vector3(Math.cos(this.player.yaw),0,-Math.sin(this.player.yaw));
+          const movement   = forwardVec.clone().multiplyScalar(finalForward)
+                              .add(rightVec.clone().multiplyScalar(finalStrafe));
           if (movement.length() > 1) movement.normalize();
           movement.multiplyScalar(this.player.baseSpeed * speedMult);
 
@@ -627,43 +474,21 @@
           const newZ = this.player.z + movement.z;
           let canMove = true;
 
-          // if inside => check collisions with type:'insideWall' boundingBoxes
-          if (this.interior) {
-            // we approximate bounding with minX..maxX, minZ..maxZ
-            // after moving, we ensure newX,newZ is within the "floor" bounds
-            // The interior is from x in [-150,150], z in [-150,150]
-            if (newX < -149 || newX > 149 || newZ < -149 || newZ > 149) {
-              canMove = false;
-            }
-          } else {
-            // if outside => normal collisions with building, boundary, etc.
-            for (const obj of this.objects) {
-              if (['building','boundary','decoration','npc','guard','mermaid'].includes(obj.type)) {
-                const dx = newX - obj.x;
-                const dz = newZ - obj.z;
-                const minDist = (obj.boundingRadius || 5) + 1;
-                if ((dx*dx + dz*dz) < (minDist*minDist)) {
-                  canMove = false;
-                  break;
-                }
-              }
-            }
-          }
-
+          // collision checks
+          // ...
           if (canMove) {
             this.player.x = newX;
             this.player.z = newZ;
           }
-
           this.player.yaw += finalTurn * 0.02;
 
-          // Jump
-          if (this.player.jumpVelocity !== 0 || this.player.y > 0.5) {
+          // jump
+          if (this.player.jumpVelocity !== 0 || this.player.y>0.5) {
             this.player.jumpVelocity -= 0.02;
             this.player.y += this.player.jumpVelocity;
-            if (this.player.y < 0.5) {
-              this.player.y = 0.5;
-              this.player.jumpVelocity = 0;
+            if (this.player.y<0.5) {
+              this.player.y=0.5;
+              this.player.jumpVelocity=0;
             }
           }
 
@@ -671,83 +496,57 @@
             this.player.object.position.set(this.player.x, this.player.y, this.player.z);
             this.player.object.rotation.y = this.player.yaw;
           }
-
-          if (finalForward !== 0 || finalStrafe !== 0) {
-            this.animateArms(this.player.object, true);
-          } else {
-            this.animateArms(this.player.object, false);
-          }
         }
 
-        // ... all the other code like updateDayNight, updateBalls, updateGuard, etc. ...
-        // same as before
-
-        animateArms(obj, isMoving) {
-          if (!obj) return;
-          const t = Date.now() * 0.002;
-          obj.traverse(child => {
-            if (child.userData && child.userData.isArm) {
-              if (isMoving) {
-                if (child.userData.side === 'left') {
-                  child.rotation.x = Math.sin(t) * 0.5;
-                } else {
-                  child.rotation.x = -Math.sin(t) * 0.5;
-                }
-              } else {
-                child.rotation.x = 0;
-              }
-            }
-          });
+        updateCamera() {
+          const camDist=15;
+          const offsetX = -Math.sin(this.player.yaw)*camDist;
+          const offsetZ = -Math.cos(this.player.yaw)*camDist;
+          const offsetY = 10;
+          this.camera.position.set(
+            this.player.x + offsetX,
+            this.player.y + offsetY,
+            this.player.z + offsetZ
+          );
+          this.camera.lookAt(
+            this.player.x,
+            this.player.y+1,
+            this.player.z
+          );
         }
 
         throwBall() {
-          const direction = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
-          const ballGeo = new THREE.SphereGeometry(0.3, 16, 16);
-          const ballMat = new THREE.MeshStandardMaterial({ color: 0xff4500 });
-          const ball = new THREE.Mesh(ballGeo, ballMat);
-          ball.position.set(this.player.x, this.player.y + 1, this.player.z);
-          ball.userData = {
-            velocity: direction.multiplyScalar(0.5).add(new THREE.Vector3(0, 0.3, 0)),
-            bounced: false,
-            timer: 0
-          };
-          this.scene.add(ball);
-          this.thrownBalls.push(ball);
-          this.ballCount++;
-          document.getElementById('ballCountValue').textContent = this.ballCount;
           // ...
+          console.log("Throwing ball...");
         }
-
         jump() {
-          if (this.player.y <= 0.5) {
-            this.player.jumpVelocity = 0.3;
-            // ...
+          // ...
+          console.log("Jumping...");
+          if (this.player.y<=0.5) {
+            this.player.jumpVelocity=0.3;
           }
         }
 
         initKeyboardMouse() {
           document.addEventListener('keydown', e => {
-            this.keysPressed[e.key] = true;
-            if (e.key === ' ') this.throwBall();
+            this.keysPressed[e.key]=true;
+            if (e.key===' ') this.throwBall();
           });
           document.addEventListener('keyup', e => {
-            this.keysPressed[e.key] = false;
+            this.keysPressed[e.key]=false;
           });
-
-          // On mobile, pointer lock can cause black screens in some browsers
-          // so you might skip forcing pointer lock on mobile
           document.addEventListener('mousedown', () => {
             if (!/Mobi|Android/i.test(navigator.userAgent)) {
-              // only request pointer lock on desktop
+              // pointer lock on desktop only
               try { document.body.requestPointerLock(); }
-              catch (err) { console.warn('Pointer lock failed:', err); }
+              catch(err) { console.warn('Pointer lock fail',err); }
             }
           });
           document.addEventListener('mousemove', evt => {
-            if (document.pointerLockElement === document.body) {
-              const movementX = evt.movementX || 0;
-              const sensitivity = 0.001;
-              this.player.yaw += movementX * sensitivity;
+            if (document.pointerLockElement===document.body) {
+              const movementX= evt.movementX||0;
+              const sensitivity=0.001;
+              this.player.yaw += movementX*sensitivity;
             }
           });
         }
