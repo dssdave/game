@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1,user-scalable=no">
-  <title>Princess Donia’s Town - Full Version</title>
+  <title>Princess Donia’s Town - Full Revised Version</title>
   <style>
     html, body {
       margin: 0; 
@@ -45,7 +45,7 @@
       transform: translate(-50%,50%);
       display: none; text-align: center;
     }
-    /* Fade overlay for transitions */
+    /* Fade overlay for scene transitions */
     #fadeOverlay {
       top: 0; left: 0; width: 100%; height: 100%;
       background: #000; opacity: 0;
@@ -53,7 +53,6 @@
       pointer-events: none;
       z-index: 20;
     }
-
     /* Toggle UI button */
     #toggleUIBtn {
       position: absolute; 
@@ -69,13 +68,12 @@
       border-radius: 5px;
       cursor: pointer;
     }
-
     /* On-screen Controller Panels */
     #dpadContainer, #turnContainer, #actionContainer {
       position: absolute; 
       z-index: 15;
     }
-    /* D-Pad */
+    /* D-Pad as a grid */
     #dpadContainer {
       bottom: 16vh; left: 5vw;
       display: grid;
@@ -119,7 +117,6 @@
       flex-direction: column; 
       gap: 10px;
     }
-
     /* Responsive adjustments */
     @media (max-width: 768px) {
       #ui, #ballCount, #dialogue, #controls, #guardPopup, #errorMessage, #fadeOverlay {
@@ -148,7 +145,6 @@
   <div id="gameContainer">
     <canvas id="gameCanvas"></canvas>
     <button id="toggleUIBtn">Toggle UI</button>
-
     <div id="ui">
       Flowers: <span id="flowers">0</span> |
       Coins: <span id="coins">0</span> |
@@ -194,10 +190,10 @@
     // Toggle UI
     document.getElementById('toggleUIBtn').addEventListener('click', () => {
       const ids = ["ui", "ballCount", "dialogue", "controls", "guardPopup", "errorMessage"];
-      for (const id of ids) {
+      ids.forEach(id => {
         const el = document.getElementById(id);
         el.style.display = (el.style.display === "none") ? "block" : "none";
-      }
+      });
     });
 
     // Prevent text highlighting on mobile
@@ -252,7 +248,11 @@
     // Main Game class
     class Game {
       constructor() {
+        // Set scene state (outside or insideCastle)
+        this.currentScene = "outside";
         this.scene = new THREE.Scene();
+        // For day, we set the background to a light blue; for night, we’ll change it
+        this.scene.background = new THREE.Color(0x87CEEB);
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
         this.renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas') });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -262,12 +262,11 @@
         document.getElementById('gameCanvas').style.display = 'block';
 
         // Initial state variables
-        this.currentScene = "outside"; // or "insideCastle"
         this.time = 'Day';
         this.dayNightCycle = 0;
         this.player = {
           x: 0, y: 0.5, z: 0,
-          speedKeyboard: 0.1,
+          speedKeyboard: 0.1,  // Use 0.1 (no extra multiplier)
           yaw: 0, pitch: 0,
           jumpVelocity: 0,
           object: null
@@ -293,16 +292,16 @@
         };
         this.mermaidData = { object: null, route: [ { x: -15, z: -70 }, { x: 15, z: -70 } ], routeIndex: 0, speed: 0.02 };
         this.birdData = { angle: 0, speed: 0.002, radius: 140, object: null };
-        this.guardObject = null; 
+        this.guardObject = null;
         this.guardMessageShown = false;
-        this.npcBlueMessageShown = false; 
-        this.mermaidMessageShown = false; 
+        this.npcBlueMessageShown = false;
+        this.mermaidMessageShown = false;
         this.npcYellowMessageShown = false;
 
-        // Cache fade overlay
+        // Cache fade overlay for scene transitions
         this.fadeOverlay = document.getElementById("fadeOverlay");
 
-        // Bind methods if needed
+        // Bind methods
         this.updateMovement = this.updateMovement.bind(this);
         this.animateArms = this.animateArms.bind(this);
 
@@ -312,9 +311,6 @@
       }
 
       initScene() {
-        // Set a day sky color
-        this.scene.background = new THREE.Color(0x87CEEB);
-
         // Ground
         const groundGeo = new THREE.PlaneGeometry(300, 300);
         const groundMat = new THREE.MeshStandardMaterial({ color: 0x6bb26b, side: THREE.DoubleSide });
@@ -354,7 +350,7 @@
         dirLight.position.set(10, 20, 10);
         this.scene.add(dirLight);
 
-        // Sun, Moon, and Stars
+        // Sun, Moon, Stars
         this.createSun();
         this.createMoon();
         this.createStars();
@@ -362,7 +358,7 @@
         // Player model
         this.createPlayerModel();
 
-        // Buildings
+        // Buildings (using a generated texture for the castle)
         this.createCastle();
         this.createHouse();
         this.createCafe();
@@ -378,7 +374,7 @@
         this.createMermaid();
         this.createBird();
 
-        // Items (pick-ups)
+        // Items (pickups)
         this.createFlowers(10);
         this.createCoins(8);
         this.createGems(4);
@@ -392,7 +388,7 @@
         // Create inside-castle room (hidden by default)
         this.createInsideCastle();
 
-        // Set starting camera position
+        // Set starting camera position behind player
         this.camera.position.set(this.player.x + 15, this.player.y + 15, this.player.z + 15);
         this.camera.lookAt(this.player.x, this.player.y + 1, this.player.z);
       }
@@ -421,6 +417,22 @@
         water.position.set(0, 0.02, -70);
         this.scene.add(water);
         this.objects.push({ mesh: water, type: 'water', x: 0, z: -70, boundingRadius: 0 });
+      }
+
+      // Generate a simple castle texture using a canvas with random grey shades
+      generateCastleTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        for (let y = 0; y < canvas.height; y += 10) {
+          for (let x = 0; x < canvas.width; x += 10) {
+            const grey = Math.floor(200 + Math.random()*55);
+            ctx.fillStyle = `rgb(${grey},${grey},${grey})`;
+            ctx.fillRect(x, y, 10, 10);
+          }
+        }
+        return new THREE.CanvasTexture(canvas);
       }
 
       createSun() {
@@ -496,7 +508,6 @@
         crown.rotation.x = Math.PI / 2;
         crown.position.set(0, 1.95, 0);
         group.add(crown);
-
         const armGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
         const skinMat = new THREE.MeshStandardMaterial({ color: 0xffddc1 });
         const leftArm = new THREE.Mesh(armGeo, skinMat);
@@ -507,7 +518,6 @@
         rightArm.position.set(0.5, 1.0, 0);
         rightArm.userData = { isArm: true, side: 'right' };
         group.add(rightArm);
-
         const legGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.8, 8);
         const leftLeg = new THREE.Mesh(legGeo, skinMat);
         leftLeg.position.set(-0.2, 0.2, 0);
@@ -515,7 +525,6 @@
         const rightLeg = new THREE.Mesh(legGeo, skinMat);
         rightLeg.position.set(0.2, 0.2, 0);
         group.add(rightLeg);
-
         group.position.set(this.player.x, this.player.y, this.player.z);
         this.player.object = group;
         this.scene.add(group);
@@ -523,14 +532,16 @@
 
       createCastle() {
         const group = new THREE.Group();
+        // Use a generated texture for a stone effect
+        const texture = this.generateCastleTexture();
         const base = new THREE.Mesh(
           new THREE.BoxGeometry(20, 10, 20),
-          new THREE.MeshStandardMaterial({ color: 0xcccccc })
+          new THREE.MeshStandardMaterial({ map: texture })
         );
         base.position.set(0, 5, 0);
         group.add(base);
         const towerGeo = new THREE.CylinderGeometry(3, 3, 15, 16);
-        const towerMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+        const towerMat = new THREE.MeshStandardMaterial({ map: texture });
         [[10,7.5,10], [-10,7.5,10], [10,7.5,-10], [-10,7.5,-10]].forEach(coords => {
           const tower = new THREE.Mesh(towerGeo, towerMat);
           tower.position.set(coords[0], coords[1], coords[2]);
@@ -542,12 +553,12 @@
         );
         door.position.set(0, 3, 10.01);
         group.add(door);
-        // Add a lamp post outside the door
-        group.add(this.createLampPost(-3, 2, 10));
-
+        // Add a lamp post outside the door (to the left)
+        group.add(this.createLampPost(-3, 0, 10));
         group.position.set(40, 0, 40);
         this.scene.add(group);
-        this.objects.push({ mesh: group, type: 'building', x: 40, z: 40, boundingRadius: 6 });
+        // For castle collision, we use the door world position: (40,?, 40+10.01) ≈ (40,3,50)
+        this.objects.push({ mesh: group, type: 'building', x: 40, z: 50, boundingRadius: 3 });
       }
 
       createHouse() {
@@ -571,10 +582,11 @@
         );
         door.position.set(0, 2, 5.01);
         group.add(door);
-        group.add(this.createLampPost(2, 2, 5));
+        // Add a lamp post to the right of the door
+        group.add(this.createLampPost(2, 0, 5));
         group.position.set(-40, 0, -40);
         this.scene.add(group);
-        this.objects.push({ mesh: group, type: 'building', x: -40, z: -40, boundingRadius: 10 });
+        this.objects.push({ mesh: group, type: 'building', x: -40, z: -40, boundingRadius: 5 });
       }
 
       createCafe() {
@@ -591,10 +603,10 @@
         );
         door.position.set(0, 1.5, 5.01);
         group.add(door);
-        group.add(this.createLampPost(-2, 2, 5));
+        group.add(this.createLampPost(-2, 0, 5));
         group.position.set(70, 0, -30);
         this.scene.add(group);
-        this.objects.push({ mesh: group, type: 'building', x: 70, z: -30, boundingRadius: 10 });
+        this.objects.push({ mesh: group, type: 'building', x: 70, z: -30, boundingRadius: 5 });
       }
 
       createFountain() {
@@ -629,27 +641,31 @@
           const radius = 130;
           const x = Math.cos(angle) * radius;
           const z = Math.sin(angle) * radius;
-          const post = this.createLampPost(x, 2, z);
+          const post = this.createLampPost(x, 0, z); // position y=0 so bottom is at ground
           this.scene.add(post);
         }
       }
 
       createLampPost(px, py, pz) {
+        // Create a group whose local coordinates are relative to its own origin.
         const group = new THREE.Group();
+        // Create the post so that its bottom is at y=0 and top at y=4 (center=2)
         const postGeo = new THREE.CylinderGeometry(0.2, 0.2, 4, 8);
         const postMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
         const post = new THREE.Mesh(postGeo, postMat);
-        post.position.set(0, 2, 0);
+        post.position.set(0, 2, 0); 
         group.add(post);
+        // Create the lamp sphere on top (placed at y=4)
         const lampGeo = new THREE.SphereGeometry(0.4, 8, 8);
         const lampMat = new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0xffff00, emissiveIntensity: 0.4 });
         const lamp = new THREE.Mesh(lampGeo, lampMat);
         lamp.position.set(0, 4, 0);
         group.add(lamp);
+        // Add a point light at the lamp position
         const light = new THREE.PointLight(0xffffaa, 0.7, 20);
         light.position.set(0, 4, 0);
         group.add(light);
-        // Position group at given coordinates
+        // Position the entire group at (px, py, pz)
         group.position.set(px, py, pz);
         return group;
       }
@@ -663,7 +679,6 @@
         inside.name = "insideCastle";
         this.scene.add(inside);
         this.insideCastleMesh = inside;
-
         const doorGeo = new THREE.PlaneGeometry(4, 6);
         const doorMat = new THREE.MeshStandardMaterial({ color: 0x553300, side: THREE.DoubleSide });
         const door = new THREE.Mesh(doorGeo, doorMat);
@@ -704,7 +719,6 @@
         rightArm.position.set(0.5, 1.0, 0);
         rightArm.userData = { isArm: true, side: 'right' };
         group.add(rightArm);
-
         group.position.set(120, 0.5, 0);
         this.scene.add(group);
         this.objects.push({ mesh: group, type: 'npc', x: 120, z: 0, boundingRadius: 1 });
@@ -741,7 +755,6 @@
         rightArm.position.set(0.5, 0.8, 0);
         rightArm.userData = { isArm: true, side: 'right' };
         group.add(rightArm);
-
         group.position.set(-30, 0.3, 30);
         this.scene.add(group);
         this.objects.push({ mesh: group, type: 'npc', x: -30, z: 30, boundingRadius: 1 });
@@ -778,7 +791,6 @@
         rightArm.position.set(0.5, 1.0, 0);
         rightArm.userData = { isArm: true, side: 'right' };
         group.add(rightArm);
-
         group.position.set(45, 0.5, 55.5);
         this.scene.add(group);
         this.objects.push({ mesh: group, type: 'guard', x: 45, z: 55.5, boundingRadius: 3 });
@@ -816,7 +828,6 @@
         rightArm.position.set(0.5, 1.1, 0);
         rightArm.userData = { isArm: true, side: 'right' };
         group.add(rightArm);
-
         group.position.set(20, -0.5, -70);
         this.scene.add(group);
         this.objects.push({ mesh: group, type: 'mermaid', x: 20, z: -70, boundingRadius: 3 });
@@ -839,7 +850,7 @@
           const radius = 130;
           const x = Math.cos(angle) * radius;
           const z = Math.sin(angle) * radius;
-          const post = this.createLampPost(x, 2, z);
+          const post = this.createLampPost(x, 0, z);
           this.scene.add(post);
         }
       }
@@ -1120,7 +1131,7 @@
         const step = this.mermaidData.speed;
         mermaid.position.x += Math.sin(angle) * step;
         mermaid.position.z += Math.cos(angle) * step;
-        // Water ripple effect
+        // Splash effect if in water
         const waterObj = this.objects.find(o => o.type === 'water');
         if (waterObj) {
           const dxW = mermaid.position.x - waterObj.x;
@@ -1177,7 +1188,7 @@
         const glowGeo = new THREE.SphereGeometry(1, 16, 16);
         const glowMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5, side: THREE.BackSide });
         const glow = new THREE.Mesh(glowGeo, glowMat);
-        glow.position.set(this.player.x, this.player.y+0.5, this.player.z);
+        glow.position.set(this.player.x, this.player.y + 0.5, this.player.z);
         this.scene.add(glow);
         setTimeout(() => {
           this.scene.remove(glow);
@@ -1185,6 +1196,7 @@
       }
 
       updateCollisions() {
+        // Guard dialogue
         if (this.guardObject && !this.guardMessageShown && this.currentScene === "outside") {
           const dx = this.player.x - this.guardObject.position.x;
           const dz = this.player.z - this.guardObject.position.z;
@@ -1194,6 +1206,7 @@
             setTimeout(() => { this.guardMessageShown = false; }, 2500);
           }
         }
+        // Blue NPC dialogue
         if (this.npcBlueData.object && !this.npcBlueMessageShown && this.currentScene === "outside") {
           const dx = this.player.x - this.npcBlueData.object.position.x;
           const dz = this.player.z - this.npcBlueData.object.position.z;
@@ -1203,18 +1216,17 @@
             setTimeout(() => { this.npcBlueMessageShown = false; }, 2500);
           }
         }
-        // Check castle door collision to enter
+        // Castle door trigger (using door world position: approx (40,3,50))
         if (this.currentScene === "outside") {
-          const castle = this.objects.find(o => o.type === "building" && o.x === 40 && o.z === 40);
-          if (castle) {
-            const dx = this.player.x - 40;
-            const dz = this.player.z - 40;
-            if (dx*dx + dz*dz < 10) {
-              this.enterCastle();
-            }
+          const doorX = 40;
+          const doorZ = 50;
+          const dx = this.player.x - doorX;
+          const dz = this.player.z - doorZ;
+          if (dx*dx + dz*dz < 9) { // within 3 units
+            this.enterCastle();
           }
         }
-        // If inside castle, check for door to exit
+        // Inside-castle door trigger to exit
         if (this.currentScene === "insideCastle") {
           const dx = this.player.x - 0;
           const dz = this.player.z - 15;
@@ -1229,15 +1241,10 @@
         setTimeout(() => {
           this.currentScene = "insideCastle";
           // Hide outside objects
-          for (let o of this.objects) {
-            if (o.mesh) o.mesh.visible = false;
-          }
-          // Show inside-castle mesh and door
+          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = false; });
           if (this.insideCastleMesh) this.insideCastleMesh.visible = true;
           if (this.insideCastleDoor) this.insideCastleDoor.visible = true;
-          this.player.x = 0;
-          this.player.z = 0;
-          this.player.y = 0.5;
+          this.player.x = 0; this.player.z = 0; this.player.y = 0.5;
           this.fadeOverlay.style.opacity = "0";
         }, 1000);
       }
@@ -1246,21 +1253,16 @@
         this.fadeOverlay.style.opacity = "1";
         setTimeout(() => {
           this.currentScene = "outside";
-          // Show outside objects
-          for (let o of this.objects) {
-            if (o.mesh) o.mesh.visible = true;
-          }
-          // Hide inside-castle mesh and door
+          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = true; });
           if (this.insideCastleMesh) this.insideCastleMesh.visible = false;
           if (this.insideCastleDoor) this.insideCastleDoor.visible = false;
-          this.player.x = 39;
-          this.player.z = 45;
-          this.player.y = 0.5;
+          this.player.x = 39; this.player.z = 45; this.player.y = 0.5;
           this.fadeOverlay.style.opacity = "0";
         }, 1000);
       }
 
       updateMovement() {
+        // Gather keyboard and touch input:
         let keyboardForward = 0, keyboardTurn = 0;
         if (this.keysPressed['ArrowUp']) keyboardForward += 1;
         if (this.keysPressed['ArrowDown']) keyboardForward -= 1;
@@ -1276,13 +1278,14 @@
         let finalTurn = keyboardTurn;
         if (controllerState.turnLeft) finalTurn += 1;
         if (controllerState.turnRight) finalTurn -= 1;
+        // Compute movement vectors
         const forwardVec = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
         const rightVec = new THREE.Vector3(Math.cos(this.player.yaw), 0, -Math.sin(this.player.yaw));
         const movement = forwardVec.clone().multiplyScalar(finalForward)
                           .add(rightVec.clone().multiplyScalar(finalStrafe));
         if (movement.length() > 1) movement.normalize();
-        // Increase speed by factor 2.5
-        movement.multiplyScalar(this.player.speedKeyboard * 2.5);
+        // (No extra multiplier; speed = this.player.speedKeyboard)
+        movement.multiplyScalar(this.player.speedKeyboard);
         const newX = this.player.x + movement.x;
         const newZ = this.player.z + movement.z;
         let canMove = true;
@@ -1301,7 +1304,9 @@
           this.player.x = newX;
           this.player.z = newZ;
         }
+        // Update turning
         this.player.yaw += finalTurn * 0.02;
+        // Jump physics
         if (this.player.jumpVelocity !== 0 || this.player.y > 0.5) {
           this.player.jumpVelocity -= 0.02;
           this.player.y += this.player.jumpVelocity;
@@ -1314,10 +1319,20 @@
           this.player.object.position.set(this.player.x, this.player.y, this.player.z);
           this.player.object.rotation.y = this.player.yaw;
         }
+        // Animate arms if moving
         if (finalForward !== 0 || finalStrafe !== 0) {
           this.animateArms(this.player.object, true);
         } else {
           this.animateArms(this.player.object, false);
+        }
+        // Player water ripple effect
+        const waterObj = this.objects.find(o => o.type === 'water');
+        if (waterObj) {
+          const dxW = this.player.x - waterObj.x;
+          const dzW = this.player.z - waterObj.z;
+          if (Math.abs(dxW) < 150 && Math.abs(dzW) < 15) {
+            this.spawnRipple(this.player.x, this.player.z);
+          }
         }
       }
 
@@ -1340,11 +1355,7 @@
         obj.traverse(child => {
           if (child.userData && child.userData.isArm) {
             if (isMoving) {
-              if (child.userData.side === 'left') {
-                child.rotation.x = Math.sin(t) * 0.5;
-              } else {
-                child.rotation.x = -Math.sin(t) * 0.5;
-              }
+              child.rotation.x = (child.userData.side === 'left') ? Math.sin(t) * 0.5 : -Math.sin(t) * 0.5;
             } else {
               child.rotation.x = 0;
             }
@@ -1418,9 +1429,17 @@
           }
         });
       }
+
+      startAnimation() {
+        const animate = () => {
+          requestAnimationFrame(animate);
+          this.update();
+          this.renderer.render(this.scene, this.camera);
+        };
+        animate();
+      }
     }
 
-    // Create a single instance (do not instantiate twice)
     window.game = new Game();
   </script>
 </body>
