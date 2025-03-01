@@ -17,7 +17,6 @@
       width: 100vw; height: 100vh;
     }
     canvas { display: block; }
-
     /* UI boxes */
     #ui, #ballCount, #dialogue, #controls, #errorMessage, #guardPopup, #fadeOverlay {
       background: rgba(0,0,0,0.7);
@@ -162,10 +161,10 @@
     </div>
   </div>
 
-  <!-- Three.js -->
+  <!-- Three.js Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
-    // Toggle UI
+    // Toggle UI button functionality
     document.getElementById('toggleUIBtn').addEventListener('click', () => {
       const ids = ["ui", "ballCount", "dialogue", "controls", "guardPopup", "errorMessage"];
       ids.forEach(id => {
@@ -173,7 +172,7 @@
         el.style.display = (el.style.display === "none") ? "block" : "none";
       });
     });
-
+    
     // Prevent text highlighting on mobile
     function disableHighlight(id) {
       const btn = document.getElementById(id);
@@ -183,8 +182,8 @@
     }
     ["btnUp","btnDown","btnLeft","btnRight","btnTurnLeft","btnTurnRight","btnThrow","btnBigThrow"]
       .forEach(disableHighlight);
-
-    // On-screen controller state
+    
+    // On-screen controller state and listeners
     const controllerState = {
       dpadUp: false, dpadDown: false, dpadLeft: false, dpadRight: false,
       turnLeft: false, turnRight: false
@@ -204,7 +203,7 @@
     setButtonListener('btnRight', 'dpadRight');
     setButtonListener('btnTurnLeft', 'turnLeft');
     setButtonListener('btnTurnRight', 'turnRight');
-
+    
     // Attach A and B button events
     ["pointerdown", "click"].forEach(evt => {
       document.getElementById("btnThrow").addEventListener(evt, e => {
@@ -222,14 +221,13 @@
         }
       }, { passive: false });
     });
-
+    
     // Main Game class
     class Game {
       constructor() {
-        // Scene transition state
         this.currentScene = "outside"; // "outside" or "insideCastle"
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x87CEEB); // Day sky
+        this.scene.background = new THREE.Color(0x87CEEB);
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
         this.renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas') });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -237,31 +235,27 @@
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.getElementById('gameCanvas').style.display = 'block';
-
+        
         // State variables
         this.time = 'Day';
         this.dayNightCycle = 0;
-        // Player – increased speed by 2.5×
         this.player = {
           x: 0, y: 0.5, z: 0,
-          speedKeyboard: 0.25,
+          speedKeyboard: 0.25, // 2.5× speed
           yaw: 0, pitch: 0,
           jumpVelocity: 0,
           collisionRadius: 0.5,
           object: null
         };
-        // Stats
         this.flowers = 0; this.coins = 0; this.gems = 0; this.potions = 0; this.keys = 0; this.artifacts = 0;
         this.health = 100;
-        this.objects = []; // For collisions
+        this.objects = [];
         this.buildingPositions = [];
         this.ballCount = 0;
         this.thrownBalls = [];
         this.keysPressed = {};
         this.itemRange = 80;
-        // Lights
         this.sunMesh = null; this.moonMesh = null; this.starsMesh = null;
-        // NPC Data
         this.npcBlueData = { angle: 0, speed: 0.001, radius: 120, object: null };
         this.npcYellowData = { object: null, speed: 0.03, target: null };
         this.guardData = {
@@ -279,19 +273,17 @@
         this.npcBlueMessageShown = false;
         this.mermaidMessageShown = false;
         this.npcYellowMessageShown = false;
-
-        // Cache fade overlay for scene transitions
         this.fadeOverlay = document.getElementById("fadeOverlay");
-
+        
         // Bind methods
         this.updateMovement = this.updateMovement.bind(this);
         this.animateArms = this.animateArms.bind(this);
-
+        
         this.initScene();
         this.initKeyboardMouse();
         this.startAnimation();
       }
-
+      
       initScene() {
         // Ground
         const groundGeo = new THREE.PlaneGeometry(300, 300);
@@ -349,7 +341,7 @@
         this.buildingPositions.push({ x: -40, z: -40 });
         this.buildingPositions.push({ x: 70, z: -30 });
         
-        // Piazza (set to size 50 now)
+        // Piazza (50×50)
         this.createPiazza();
         
         // NPCs
@@ -359,7 +351,7 @@
         this.createMermaid();
         this.createBird();
         
-        // Items (pickups)
+        // (Pickups stubs)
         this.createFlowers(10);
         this.createCoins(8);
         this.createGems(4);
@@ -367,10 +359,10 @@
         this.createKeys(2);
         this.createArtifacts(2);
         
-        // Lamp posts around border
+        // Lamp posts along border
         this.createLampPosts();
         
-        // Create inside-castle room (hidden by default)
+        // Create inside-castle room (hidden)
         this.createInsideCastle();
         
         // Set starting camera position behind player
@@ -406,8 +398,7 @@
       
       generateCastleTexture() {
         const canvas = document.createElement('canvas');
-        canvas.width = 512;
-        canvas.height = 512;
+        canvas.width = 512; canvas.height = 512;
         const ctx = canvas.getContext('2d');
         for (let y = 0; y < canvas.height; y += 10) {
           for (let x = 0; x < canvas.width; x += 10) {
@@ -536,11 +527,10 @@
         );
         door.position.set(0, 3, 10.01);
         group.add(door);
-        // Add a lamp post to the left of the door
+        // Add a lamp post outside the door
         group.add(this.createLampPost(-3, 0, 10));
         group.position.set(40, 0, 40);
         this.scene.add(group);
-        // Use door world position ~ (40,3,50) for collisions
         this.objects.push({ mesh: group, type: 'building', x: 40, z: 50, boundingRadius: 3 });
       }
       
@@ -667,12 +657,11 @@
       }
       
       createPiazza() {
-        const size = 50;  // Reverted size to 50
+        const size = 50;
         const geometry = new THREE.PlaneGeometry(size, size);
         const canvas = document.createElement('canvas');
         canvas.width = 256; canvas.height = 256;
         const ctx = canvas.getContext('2d');
-        // Randomized cobblestone-like pattern
         for (let y = 0; y < 256; y += 16) {
           for (let x = 0; x < 256; x += 16) {
             const grey = Math.floor(150 + Math.random() * 105);
@@ -687,7 +676,7 @@
         piazza.position.set(0, 0.02, 0);
         this.scene.add(piazza);
         this.objects.push({ mesh: piazza, type: 'piazza', x: 0, z: 0, boundingRadius: size / 2 });
-        // Four lamp posts at the corners (inset slightly)
+        // Four lamp posts at the corners (inset a bit)
         const offset = size / 2;
         const lamp1 = this.createLampPost(-offset + 2, 0, -offset + 2);
         const lamp2 = this.createLampPost(offset - 2, 0, -offset + 2);
@@ -735,6 +724,8 @@
         group.userData.piazzaMessage = message;
         return group;
       }
+      
+      // Update functions
       
       startAnimation() {
         const animate = () => {
@@ -947,7 +938,7 @@
         const rippleGeo = new THREE.RingGeometry(0.2, 0.4, 16);
         const rippleMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
         const ripple = new THREE.Mesh(rippleGeo, rippleMat);
-        ripple.rotation.x = -Math.PI/2;
+        ripple.rotation.x = -Math.PI / 2;
         ripple.position.set(x, 0.05, z);
         this.scene.add(ripple);
         setTimeout(() => { this.scene.remove(ripple); }, 600);
@@ -1010,33 +1001,18 @@
             }
           }
         });
-        if (this.npcBlueData.object) {
-          for (const obj of this.objects) {
-            if (obj.mesh === this.npcBlueData.object) {
-              obj.x = this.npcBlueData.object.position.x;
-              obj.z = this.npcBlueData.object.position.z;
-              break;
+        // Update NPC collision positions
+        [this.npcBlueData, this.npcYellowData, this.guardData].forEach(data => {
+          if (data.object) {
+            for (const obj of this.objects) {
+              if (obj.mesh === data.object) {
+                obj.x = data.object.position.x;
+                obj.z = data.object.position.z;
+                break;
+              }
             }
           }
-        }
-        if (this.npcYellowData.object) {
-          for (const obj of this.objects) {
-            if (obj.mesh === this.npcYellowData.object) {
-              obj.x = this.npcYellowData.object.position.x;
-              obj.z = this.npcYellowData.object.position.z;
-              break;
-            }
-          }
-        }
-        if (this.guardData.object) {
-          for (const obj of this.objects) {
-            if (obj.mesh === this.guardData.object) {
-              obj.x = this.guardData.object.position.x;
-              obj.z = this.guardData.object.position.z;
-              break;
-            }
-          }
-        }
+        });
       }
       
       updatePiazzaNPCs() {
@@ -1240,33 +1216,17 @@
             }
           }
         });
-        if (this.npcBlueData.object) {
-          for (const obj of this.objects) {
-            if (obj.mesh === this.npcBlueData.object) {
-              obj.x = this.npcBlueData.object.position.x;
-              obj.z = this.npcBlueData.object.position.z;
-              break;
+        [this.npcBlueData, this.npcYellowData, this.guardData].forEach(data => {
+          if (data.object) {
+            for (const obj of this.objects) {
+              if (obj.mesh === data.object) {
+                obj.x = data.object.position.x;
+                obj.z = data.object.position.z;
+                break;
+              }
             }
           }
-        }
-        if (this.npcYellowData.object) {
-          for (const obj of this.objects) {
-            if (obj.mesh === this.npcYellowData.object) {
-              obj.x = this.npcYellowData.object.position.x;
-              obj.z = this.npcYellowData.object.position.z;
-              break;
-            }
-          }
-        }
-        if (this.guardData.object) {
-          for (const obj of this.objects) {
-            if (obj.mesh === this.guardData.object) {
-              obj.x = this.guardData.object.position.x;
-              obj.z = this.guardData.object.position.z;
-              break;
-            }
-          }
-        }
+        });
       }
       
       updatePiazzaNPCs() {
@@ -1362,31 +1322,1211 @@
         );
         this.camera.lookAt(this.player.x, this.player.y + 1, this.player.z);
       }
+      
+      throwBall() {
+        const direction = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
+        const ballGeo = new THREE.SphereGeometry(0.3, 16, 16);
+        const ballMat = new THREE.MeshStandardMaterial({ color: 0xff4500 });
+        const ball = new THREE.Mesh(ballGeo, ballMat);
+        ball.position.set(this.player.x, this.player.y, this.player.z);
+        ball.position.y += 1;
+        ball.userData = {
+          velocity: direction.multiplyScalar(0.3).add(new THREE.Vector3(0, 0.2, 0)),
+          bounced: false,
+          timer: 0
+        };
+        this.scene.add(ball);
+        this.thrownBalls.push(ball);
+        this.ballCount++;
+        document.getElementById('ballCountValue').textContent = this.ballCount;
+        this.showDialogue("Threw a magic ball!");
+      }
+      
+      jump() {
+        if (this.player.y <= 0.5) {
+          this.player.jumpVelocity = 0.3;
+          this.showDialogue("Jump!");
+        }
+      }
+      
+      showDialogue(text) {
+        const dlg = document.getElementById('dialogue');
+        dlg.style.display = 'block';
+        dlg.textContent = text;
+        setTimeout(() => {
+          dlg.style.display = 'none';
+          dlg.textContent = '';
+        }, 1500);
+      }
+      
+      showGuardPopup(text) {
+        const popup = document.getElementById('guardPopup');
+        popup.style.display = 'block';
+        popup.textContent = text;
+        setTimeout(() => {
+          popup.style.display = 'none';
+          popup.textContent = '';
+        }, 2000);
+      }
+      
+      enterCastle() {
+        this.fadeOverlay.style.opacity = "1";
+        setTimeout(() => {
+          this.currentScene = "insideCastle";
+          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = false; });
+          if (this.insideCastleMesh) this.insideCastleMesh.visible = true;
+          if (this.insideCastleDoor) this.insideCastleDoor.visible = true;
+          this.player.x = 0; this.player.z = 0; this.player.y = 0.5;
+          this.fadeOverlay.style.opacity = "0";
+        }, 1000);
+      }
+      
+      exitCastle() {
+        this.fadeOverlay.style.opacity = "1";
+        setTimeout(() => {
+          this.currentScene = "outside";
+          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = true; });
+          if (this.insideCastleMesh) this.insideCastleMesh.visible = false;
+          if (this.insideCastleDoor) this.insideCastleDoor.visible = false;
+          this.player.x = 39; this.player.z = 45; this.player.y = 0.5;
+          this.fadeOverlay.style.opacity = "0";
+        }, 1000);
+      }
+      
+      updateCollisions() {
+        if (this.currentScene === "outside") {
+          const doorX = 40, doorZ = 50;
+          const dx = this.player.x - doorX;
+          const dz = this.player.z - doorZ;
+          if (dx*dx + dz*dz < 16) {
+            this.enterCastle();
+          }
+        }
+        if (this.currentScene === "insideCastle") {
+          const dx = this.player.x - 0;
+          const dz = this.player.z - 15;
+          if (dx*dx + dz*dz < 16) {
+            this.exitCastle();
+          }
+        }
+        this.objects.forEach(obj => {
+          if (obj.type === 'npc' && obj.mesh.userData.piazzaMessage) {
+            const dx = this.player.x - obj.x;
+            const dz = this.player.z - obj.z;
+            if (dx*dx + dz*dz < 16) {
+              this.showGuardPopup(obj.mesh.userData.piazzaMessage);
+            }
+          }
+        });
+        [this.npcBlueData, this.npcYellowData, this.guardData].forEach(data => {
+          if (data.object) {
+            for (const obj of this.objects) {
+              if (obj.mesh === data.object) {
+                obj.x = data.object.position.x;
+                obj.z = data.object.position.z;
+                break;
+              }
+            }
+          }
+        });
+      }
+      
+      updatePiazzaNPCs() {
+        this.objects.forEach(obj => {
+          if (obj.type === 'npc' && obj.mesh.userData.piazzaMessage) {
+            if (Math.random() < 0.01) {
+              obj.mesh.position.x += (Math.random()-0.5)*0.5;
+              obj.mesh.position.z += (Math.random()-0.5)*0.5;
+            }
+            obj.x = obj.mesh.position.x;
+            obj.z = obj.mesh.position.z;
+          }
+        });
+      }
+      
+      updateMovement() {
+        let keyboardForward = 0, keyboardTurn = 0;
+        if (this.keysPressed['ArrowUp']) keyboardForward += 1;
+        if (this.keysPressed['ArrowDown']) keyboardForward -= 1;
+        if (this.keysPressed['ArrowLeft']) keyboardTurn += 1;
+        if (this.keysPressed['ArrowRight']) keyboardTurn -= 1;
+        let touchForward = 0, touchStrafe = 0;
+        if (controllerState.dpadUp) touchForward += 1;
+        if (controllerState.dpadDown) touchForward -= 1;
+        if (controllerState.dpadLeft) touchStrafe += 1;
+        if (controllerState.dpadRight) touchStrafe -= 1;
+        let finalForward = (keyboardForward !== 0 ? keyboardForward : touchForward);
+        let finalStrafe = touchStrafe;
+        let finalTurn = keyboardTurn;
+        if (controllerState.turnLeft) finalTurn += 1;
+        if (controllerState.turnRight) finalTurn -= 1;
+        const forwardVec = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
+        const rightVec = new THREE.Vector3(Math.cos(this.player.yaw), 0, -Math.sin(this.player.yaw));
+        const movement = forwardVec.clone().multiplyScalar(finalForward)
+                          .add(rightVec.clone().multiplyScalar(finalStrafe));
+        if (movement.length() > 1) movement.normalize();
+        movement.multiplyScalar(this.player.speedKeyboard);
+        const newX = this.player.x + movement.x;
+        const newZ = this.player.z + movement.z;
+        let canMove = true;
+        for (const obj of this.objects) {
+          if (['building','boundary','decoration','npc','guard','mermaid','piazza'].includes(obj.type)) {
+            const dx = newX - obj.x;
+            const dz = newZ - obj.z;
+            const minDist = (obj.boundingRadius || 5) + this.player.collisionRadius;
+            if ((dx*dx + dz*dz) < (minDist*minDist)) {
+              canMove = false;
+              break;
+            }
+          }
+        }
+        if (canMove) {
+          this.player.x = newX;
+          this.player.z = newZ;
+        }
+        this.player.yaw += finalTurn * 0.02;
+        if (this.player.jumpVelocity !== 0 || this.player.y > 0.5) {
+          this.player.jumpVelocity -= 0.02;
+          this.player.y += this.player.jumpVelocity;
+          if (this.player.y < 0.5) {
+            this.player.y = 0.5;
+            this.player.jumpVelocity = 0;
+          }
+        }
+        if (this.player.object) {
+          this.player.object.position.set(this.player.x, this.player.y, this.player.z);
+          this.player.object.rotation.y = this.player.yaw;
+        }
+        if (finalForward !== 0 || finalStrafe !== 0) {
+          this.animateArms(this.player.object, true);
+        } else {
+          this.animateArms(this.player.object, false);
+        }
+        const waterObj = this.objects.find(o => o.type === 'water');
+        if (waterObj) {
+          const dxW = this.player.x - waterObj.x;
+          const dzW = this.player.z - waterObj.z;
+          if (Math.abs(dxW) < 150 && Math.abs(dzW) < 15) {
+            this.spawnRipple(this.player.x, this.player.z);
+          }
+        }
+      }
+      
+      updateCamera() {
+        const camDist = 15;
+        const offsetX = -Math.sin(this.player.yaw) * camDist;
+        const offsetZ = -Math.cos(this.player.yaw) * camDist;
+        const offsetY = 10;
+        this.camera.position.set(
+          this.player.x + offsetX,
+          this.player.y + offsetY,
+          this.player.z + offsetZ
+        );
+        this.camera.lookAt(this.player.x, this.player.y + 1, this.player.z);
+      }
+      
+      throwBall() {
+        const direction = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
+        const ballGeo = new THREE.SphereGeometry(0.3, 16, 16);
+        const ballMat = new THREE.MeshStandardMaterial({ color: 0xff4500 });
+        const ball = new THREE.Mesh(ballGeo, ballMat);
+        ball.position.set(this.player.x, this.player.y, this.player.z);
+        ball.position.y += 1;
+        ball.userData = {
+          velocity: direction.multiplyScalar(0.3).add(new THREE.Vector3(0, 0.2, 0)),
+          bounced: false,
+          timer: 0
+        };
+        this.scene.add(ball);
+        this.thrownBalls.push(ball);
+        this.ballCount++;
+        document.getElementById('ballCountValue').textContent = this.ballCount;
+        this.showDialogue("Threw a magic ball!");
+      }
+      
+      jump() {
+        if (this.player.y <= 0.5) {
+          this.player.jumpVelocity = 0.3;
+          this.showDialogue("Jump!");
+        }
+      }
+      
+      showDialogue(text) {
+        const dlg = document.getElementById('dialogue');
+        dlg.style.display = 'block';
+        dlg.textContent = text;
+        setTimeout(() => {
+          dlg.style.display = 'none';
+          dlg.textContent = '';
+        }, 1500);
+      }
+      
+      showGuardPopup(text) {
+        const popup = document.getElementById('guardPopup');
+        popup.style.display = 'block';
+        popup.textContent = text;
+        setTimeout(() => {
+          popup.style.display = 'none';
+          popup.textContent = '';
+        }, 2000);
+      }
+      
+      enterCastle() {
+        this.fadeOverlay.style.opacity = "1";
+        setTimeout(() => {
+          this.currentScene = "insideCastle";
+          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = false; });
+          if (this.insideCastleMesh) this.insideCastleMesh.visible = true;
+          if (this.insideCastleDoor) this.insideCastleDoor.visible = true;
+          this.player.x = 0; this.player.z = 0; this.player.y = 0.5;
+          this.fadeOverlay.style.opacity = "0";
+        }, 1000);
+      }
+      
+      exitCastle() {
+        this.fadeOverlay.style.opacity = "1";
+        setTimeout(() => {
+          this.currentScene = "outside";
+          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = true; });
+          if (this.insideCastleMesh) this.insideCastleMesh.visible = false;
+          if (this.insideCastleDoor) this.insideCastleDoor.visible = false;
+          this.player.x = 39; this.player.z = 45; this.player.y = 0.5;
+          this.fadeOverlay.style.opacity = "0";
+        }, 1000);
+      }
+      
+      updateCollisions() {
+        if (this.currentScene === "outside") {
+          const doorX = 40, doorZ = 50;
+          const dx = this.player.x - doorX;
+          const dz = this.player.z - doorZ;
+          if (dx*dx + dz*dz < 16) {
+            this.enterCastle();
+          }
+        }
+        if (this.currentScene === "insideCastle") {
+          const dx = this.player.x - 0;
+          const dz = this.player.z - 15;
+          if (dx*dx + dz*dz < 16) {
+            this.exitCastle();
+          }
+        }
+        this.objects.forEach(obj => {
+          if (obj.type === 'npc' && obj.mesh.userData.piazzaMessage) {
+            const dx = this.player.x - obj.x;
+            const dz = this.player.z - obj.z;
+            if (dx*dx + dz*dz < 16) {
+              this.showGuardPopup(obj.mesh.userData.piazzaMessage);
+            }
+          }
+        });
+        [this.npcBlueData, this.npcYellowData, this.guardData].forEach(data => {
+          if (data.object) {
+            for (const obj of this.objects) {
+              if (obj.mesh === data.object) {
+                obj.x = data.object.position.x;
+                obj.z = data.object.position.z;
+                break;
+              }
+            }
+          }
+        });
+      }
+      
+      updatePiazzaNPCs() {
+        this.objects.forEach(obj => {
+          if (obj.type === 'npc' && obj.mesh.userData.piazzaMessage) {
+            if (Math.random() < 0.01) {
+              obj.mesh.position.x += (Math.random()-0.5)*0.5;
+              obj.mesh.position.z += (Math.random()-0.5)*0.5;
+            }
+            obj.x = obj.mesh.position.x;
+            obj.z = obj.mesh.position.z;
+          }
+        });
+      }
+      
+      updateMovement() {
+        let keyboardForward = 0, keyboardTurn = 0;
+        if (this.keysPressed['ArrowUp']) keyboardForward += 1;
+        if (this.keysPressed['ArrowDown']) keyboardForward -= 1;
+        if (this.keysPressed['ArrowLeft']) keyboardTurn += 1;
+        if (this.keysPressed['ArrowRight']) keyboardTurn -= 1;
+        let touchForward = 0, touchStrafe = 0;
+        if (controllerState.dpadUp) touchForward += 1;
+        if (controllerState.dpadDown) touchForward -= 1;
+        if (controllerState.dpadLeft) touchStrafe += 1;
+        if (controllerState.dpadRight) touchStrafe -= 1;
+        let finalForward = (keyboardForward !== 0 ? keyboardForward : touchForward);
+        let finalStrafe = touchStrafe;
+        let finalTurn = keyboardTurn;
+        if (controllerState.turnLeft) finalTurn += 1;
+        if (controllerState.turnRight) finalTurn -= 1;
+        const forwardVec = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
+        const rightVec = new THREE.Vector3(Math.cos(this.player.yaw), 0, -Math.sin(this.player.yaw));
+        const movement = forwardVec.clone().multiplyScalar(finalForward)
+                          .add(rightVec.clone().multiplyScalar(finalStrafe));
+        if (movement.length() > 1) movement.normalize();
+        movement.multiplyScalar(this.player.speedKeyboard);
+        const newX = this.player.x + movement.x;
+        const newZ = this.player.z + movement.z;
+        let canMove = true;
+        for (const obj of this.objects) {
+          if (['building','boundary','decoration','npc','guard','mermaid','piazza'].includes(obj.type)) {
+            const dx = newX - obj.x;
+            const dz = newZ - obj.z;
+            const minDist = (obj.boundingRadius || 5) + this.player.collisionRadius;
+            if ((dx*dx + dz*dz) < (minDist*minDist)) {
+              canMove = false;
+              break;
+            }
+          }
+        }
+        if (canMove) {
+          this.player.x = newX;
+          this.player.z = newZ;
+        }
+        this.player.yaw += finalTurn * 0.02;
+        if (this.player.jumpVelocity !== 0 || this.player.y > 0.5) {
+          this.player.jumpVelocity -= 0.02;
+          this.player.y += this.player.jumpVelocity;
+          if (this.player.y < 0.5) {
+            this.player.y = 0.5;
+            this.player.jumpVelocity = 0;
+          }
+        }
+        if (this.player.object) {
+          this.player.object.position.set(this.player.x, this.player.y, this.player.z);
+          this.player.object.rotation.y = this.player.yaw;
+        }
+        if (finalForward !== 0 || finalStrafe !== 0) {
+          this.animateArms(this.player.object, true);
+        } else {
+          this.animateArms(this.player.object, false);
+        }
+        const waterObj = this.objects.find(o => o.type === 'water');
+        if (waterObj) {
+          const dxW = this.player.x - waterObj.x;
+          const dzW = this.player.z - waterObj.z;
+          if (Math.abs(dxW) < 150 && Math.abs(dzW) < 15) {
+            this.spawnRipple(this.player.x, this.player.z);
+          }
+        }
+      }
+      
+      updateCamera() {
+        const camDist = 15;
+        const offsetX = -Math.sin(this.player.yaw) * camDist;
+        const offsetZ = -Math.cos(this.player.yaw) * camDist;
+        const offsetY = 10;
+        this.camera.position.set(
+          this.player.x + offsetX,
+          this.player.y + offsetY,
+          this.player.z + offsetZ
+        );
+        this.camera.lookAt(this.player.x, this.player.y + 1, this.player.z);
+      }
+      
+      throwBall() {
+        const direction = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
+        const ballGeo = new THREE.SphereGeometry(0.3, 16, 16);
+        const ballMat = new THREE.MeshStandardMaterial({ color: 0xff4500 });
+        const ball = new THREE.Mesh(ballGeo, ballMat);
+        ball.position.set(this.player.x, this.player.y, this.player.z);
+        ball.position.y += 1;
+        ball.userData = {
+          velocity: direction.multiplyScalar(0.3).add(new THREE.Vector3(0, 0.2, 0)),
+          bounced: false,
+          timer: 0
+        };
+        this.scene.add(ball);
+        this.thrownBalls.push(ball);
+        this.ballCount++;
+        document.getElementById('ballCountValue').textContent = this.ballCount;
+        this.showDialogue("Threw a magic ball!");
+      }
+      
+      jump() {
+        if (this.player.y <= 0.5) {
+          this.player.jumpVelocity = 0.3;
+          this.showDialogue("Jump!");
+        }
+      }
+      
+      showDialogue(text) {
+        const dlg = document.getElementById('dialogue');
+        dlg.style.display = 'block';
+        dlg.textContent = text;
+        setTimeout(() => {
+          dlg.style.display = 'none';
+          dlg.textContent = '';
+        }, 1500);
+      }
+      
+      showGuardPopup(text) {
+        const popup = document.getElementById('guardPopup');
+        popup.style.display = 'block';
+        popup.textContent = text;
+        setTimeout(() => {
+          popup.style.display = 'none';
+          popup.textContent = '';
+        }, 2000);
+      }
+      
+      enterCastle() {
+        this.fadeOverlay.style.opacity = "1";
+        setTimeout(() => {
+          this.currentScene = "insideCastle";
+          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = false; });
+          if (this.insideCastleMesh) this.insideCastleMesh.visible = true;
+          if (this.insideCastleDoor) this.insideCastleDoor.visible = true;
+          this.player.x = 0; this.player.z = 0; this.player.y = 0.5;
+          this.fadeOverlay.style.opacity = "0";
+        }, 1000);
+      }
+      
+      exitCastle() {
+        this.fadeOverlay.style.opacity = "1";
+        setTimeout(() => {
+          this.currentScene = "outside";
+          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = true; });
+          if (this.insideCastleMesh) this.insideCastleMesh.visible = false;
+          if (this.insideCastleDoor) this.insideCastleDoor.visible = false;
+          this.player.x = 39; this.player.z = 45; this.player.y = 0.5;
+          this.fadeOverlay.style.opacity = "0";
+        }, 1000);
+      }
+      
+      updateCollisions() {
+        if (this.currentScene === "outside") {
+          const doorX = 40, doorZ = 50;
+          const dx = this.player.x - doorX;
+          const dz = this.player.z - doorZ;
+          if (dx*dx + dz*dz < 16) {
+            this.enterCastle();
+          }
+        }
+        if (this.currentScene === "insideCastle") {
+          const dx = this.player.x - 0;
+          const dz = this.player.z - 15;
+          if (dx*dx + dz*dz < 16) {
+            this.exitCastle();
+          }
+        }
+        this.objects.forEach(obj => {
+          if (obj.type === 'npc' && obj.mesh.userData.piazzaMessage) {
+            const dx = this.player.x - obj.x;
+            const dz = this.player.z - obj.z;
+            if (dx*dx + dz*dz < 16) {
+              this.showGuardPopup(obj.mesh.userData.piazzaMessage);
+            }
+          }
+        });
+        [this.npcBlueData, this.npcYellowData, this.guardData].forEach(data => {
+          if (data.object) {
+            for (const obj of this.objects) {
+              if (obj.mesh === data.object) {
+                obj.x = data.object.position.x;
+                obj.z = data.object.position.z;
+                break;
+              }
+            }
+          }
+        });
+      }
+      
+      updatePiazzaNPCs() {
+        this.objects.forEach(obj => {
+          if (obj.type === 'npc' && obj.mesh.userData.piazzaMessage) {
+            if (Math.random() < 0.01) {
+              obj.mesh.position.x += (Math.random()-0.5)*0.5;
+              obj.mesh.position.z += (Math.random()-0.5)*0.5;
+            }
+            obj.x = obj.mesh.position.x;
+            obj.z = obj.mesh.position.z;
+          }
+        });
+      }
+      
+      updateMovement() {
+        let keyboardForward = 0, keyboardTurn = 0;
+        if (this.keysPressed['ArrowUp']) keyboardForward += 1;
+        if (this.keysPressed['ArrowDown']) keyboardForward -= 1;
+        if (this.keysPressed['ArrowLeft']) keyboardTurn += 1;
+        if (this.keysPressed['ArrowRight']) keyboardTurn -= 1;
+        let touchForward = 0, touchStrafe = 0;
+        if (controllerState.dpadUp) touchForward += 1;
+        if (controllerState.dpadDown) touchForward -= 1;
+        if (controllerState.dpadLeft) touchStrafe += 1;
+        if (controllerState.dpadRight) touchStrafe -= 1;
+        let finalForward = (keyboardForward !== 0 ? keyboardForward : touchForward);
+        let finalStrafe = touchStrafe;
+        let finalTurn = keyboardTurn;
+        if (controllerState.turnLeft) finalTurn += 1;
+        if (controllerState.turnRight) finalTurn -= 1;
+        const forwardVec = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
+        const rightVec = new THREE.Vector3(Math.cos(this.player.yaw), 0, -Math.sin(this.player.yaw));
+        const movement = forwardVec.clone().multiplyScalar(finalForward)
+                          .add(rightVec.clone().multiplyScalar(finalStrafe));
+        if (movement.length() > 1) movement.normalize();
+        movement.multiplyScalar(this.player.speedKeyboard);
+        const newX = this.player.x + movement.x;
+        const newZ = this.player.z + movement.z;
+        let canMove = true;
+        for (const obj of this.objects) {
+          if (['building','boundary','decoration','npc','guard','mermaid','piazza'].includes(obj.type)) {
+            const dx = newX - obj.x;
+            const dz = newZ - obj.z;
+            const minDist = (obj.boundingRadius || 5) + this.player.collisionRadius;
+            if ((dx*dx + dz*dz) < (minDist*minDist)) {
+              canMove = false;
+              break;
+            }
+          }
+        }
+        if (canMove) {
+          this.player.x = newX;
+          this.player.z = newZ;
+        }
+        this.player.yaw += finalTurn * 0.02;
+        if (this.player.jumpVelocity !== 0 || this.player.y > 0.5) {
+          this.player.jumpVelocity -= 0.02;
+          this.player.y += this.player.jumpVelocity;
+          if (this.player.y < 0.5) {
+            this.player.y = 0.5;
+            this.player.jumpVelocity = 0;
+          }
+        }
+        if (this.player.object) {
+          this.player.object.position.set(this.player.x, this.player.y, this.player.z);
+          this.player.object.rotation.y = this.player.yaw;
+        }
+        if (finalForward !== 0 || finalStrafe !== 0) {
+          this.animateArms(this.player.object, true);
+        } else {
+          this.animateArms(this.player.object, false);
+        }
+        const waterObj = this.objects.find(o => o.type === 'water');
+        if (waterObj) {
+          const dxW = this.player.x - waterObj.x;
+          const dzW = this.player.z - waterObj.z;
+          if (Math.abs(dxW) < 150 && Math.abs(dzW) < 15) {
+            this.spawnRipple(this.player.x, this.player.z);
+          }
+        }
+      }
+      
+      updateCamera() {
+        const camDist = 15;
+        const offsetX = -Math.sin(this.player.yaw) * camDist;
+        const offsetZ = -Math.cos(this.player.yaw) * camDist;
+        const offsetY = 10;
+        this.camera.position.set(
+          this.player.x + offsetX,
+          this.player.y + offsetY,
+          this.player.z + offsetZ
+        );
+        this.camera.lookAt(this.player.x, this.player.y + 1, this.player.z);
+      }
+      
+      throwBall() {
+        const direction = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
+        const ballGeo = new THREE.SphereGeometry(0.3, 16, 16);
+        const ballMat = new THREE.MeshStandardMaterial({ color: 0xff4500 });
+        const ball = new THREE.Mesh(ballGeo, ballMat);
+        ball.position.set(this.player.x, this.player.y, this.player.z);
+        ball.position.y += 1;
+        ball.userData = {
+          velocity: direction.multiplyScalar(0.3).add(new THREE.Vector3(0, 0.2, 0)),
+          bounced: false,
+          timer: 0
+        };
+        this.scene.add(ball);
+        this.thrownBalls.push(ball);
+        this.ballCount++;
+        document.getElementById('ballCountValue').textContent = this.ballCount;
+        this.showDialogue("Threw a magic ball!");
+      }
+      
+      jump() {
+        if (this.player.y <= 0.5) {
+          this.player.jumpVelocity = 0.3;
+          this.showDialogue("Jump!");
+        }
+      }
+      
+      showDialogue(text) {
+        const dlg = document.getElementById('dialogue');
+        dlg.style.display = 'block';
+        dlg.textContent = text;
+        setTimeout(() => {
+          dlg.style.display = 'none';
+          dlg.textContent = '';
+        }, 1500);
+      }
+      
+      showGuardPopup(text) {
+        const popup = document.getElementById('guardPopup');
+        popup.style.display = 'block';
+        popup.textContent = text;
+        setTimeout(() => {
+          popup.style.display = 'none';
+          popup.textContent = '';
+        }, 2000);
+      }
+      
+      enterCastle() {
+        this.fadeOverlay.style.opacity = "1";
+        setTimeout(() => {
+          this.currentScene = "insideCastle";
+          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = false; });
+          if (this.insideCastleMesh) this.insideCastleMesh.visible = true;
+          if (this.insideCastleDoor) this.insideCastleDoor.visible = true;
+          this.player.x = 0; this.player.z = 0; this.player.y = 0.5;
+          this.fadeOverlay.style.opacity = "0";
+        }, 1000);
+      }
+      
+      exitCastle() {
+        this.fadeOverlay.style.opacity = "1";
+        setTimeout(() => {
+          this.currentScene = "outside";
+          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = true; });
+          if (this.insideCastleMesh) this.insideCastleMesh.visible = false;
+          if (this.insideCastleDoor) this.insideCastleDoor.visible = false;
+          this.player.x = 39; this.player.z = 45; this.player.y = 0.5;
+          this.fadeOverlay.style.opacity = "0";
+        }, 1000);
+      }
+      
+      updateCollisions() {
+        if (this.currentScene === "outside") {
+          const doorX = 40, doorZ = 50;
+          const dx = this.player.x - doorX;
+          const dz = this.player.z - doorZ;
+          if (dx*dx + dz*dz < 16) {
+            this.enterCastle();
+          }
+        }
+        if (this.currentScene === "insideCastle") {
+          const dx = this.player.x - 0;
+          const dz = this.player.z - 15;
+          if (dx*dx + dz*dz < 16) {
+            this.exitCastle();
+          }
+        }
+        this.objects.forEach(obj => {
+          if (obj.type === 'npc' && obj.mesh.userData.piazzaMessage) {
+            const dx = this.player.x - obj.x;
+            const dz = this.player.z - obj.z;
+            if (dx*dx + dz*dz < 16) {
+              this.showGuardPopup(obj.mesh.userData.piazzaMessage);
+            }
+          }
+        });
+        [this.npcBlueData, this.npcYellowData, this.guardData].forEach(data => {
+          if (data.object) {
+            for (const obj of this.objects) {
+              if (obj.mesh === data.object) {
+                obj.x = data.object.position.x;
+                obj.z = data.object.position.z;
+                break;
+              }
+            }
+          }
+        });
+      }
+      
+      updatePiazzaNPCs() {
+        this.objects.forEach(obj => {
+          if (obj.type === 'npc' && obj.mesh.userData.piazzaMessage) {
+            if (Math.random() < 0.01) {
+              obj.mesh.position.x += (Math.random()-0.5)*0.5;
+              obj.mesh.position.z += (Math.random()-0.5)*0.5;
+            }
+            obj.x = obj.mesh.position.x;
+            obj.z = obj.mesh.position.z;
+          }
+        });
+      }
+      
+      updateMovement() {
+        let keyboardForward = 0, keyboardTurn = 0;
+        if (this.keysPressed['ArrowUp']) keyboardForward += 1;
+        if (this.keysPressed['ArrowDown']) keyboardForward -= 1;
+        if (this.keysPressed['ArrowLeft']) keyboardTurn += 1;
+        if (this.keysPressed['ArrowRight']) keyboardTurn -= 1;
+        let touchForward = 0, touchStrafe = 0;
+        if (controllerState.dpadUp) touchForward += 1;
+        if (controllerState.dpadDown) touchForward -= 1;
+        if (controllerState.dpadLeft) touchStrafe += 1;
+        if (controllerState.dpadRight) touchStrafe -= 1;
+        let finalForward = (keyboardForward !== 0 ? keyboardForward : touchForward);
+        let finalStrafe = touchStrafe;
+        let finalTurn = keyboardTurn;
+        if (controllerState.turnLeft) finalTurn += 1;
+        if (controllerState.turnRight) finalTurn -= 1;
+        const forwardVec = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
+        const rightVec = new THREE.Vector3(Math.cos(this.player.yaw), 0, -Math.sin(this.player.yaw));
+        const movement = forwardVec.clone().multiplyScalar(finalForward)
+                          .add(rightVec.clone().multiplyScalar(finalStrafe));
+        if (movement.length() > 1) movement.normalize();
+        movement.multiplyScalar(this.player.speedKeyboard);
+        const newX = this.player.x + movement.x;
+        const newZ = this.player.z + movement.z;
+        let canMove = true;
+        for (const obj of this.objects) {
+          if (['building','boundary','decoration','npc','guard','mermaid','piazza'].includes(obj.type)) {
+            const dx = newX - obj.x;
+            const dz = newZ - obj.z;
+            const minDist = (obj.boundingRadius || 5) + this.player.collisionRadius;
+            if ((dx*dx + dz*dz) < (minDist*minDist)) {
+              canMove = false;
+              break;
+            }
+          }
+        }
+        if (canMove) {
+          this.player.x = newX;
+          this.player.z = newZ;
+        }
+        this.player.yaw += finalTurn * 0.02;
+        if (this.player.jumpVelocity !== 0 || this.player.y > 0.5) {
+          this.player.jumpVelocity -= 0.02;
+          this.player.y += this.player.jumpVelocity;
+          if (this.player.y < 0.5) {
+            this.player.y = 0.5;
+            this.player.jumpVelocity = 0;
+          }
+        }
+        if (this.player.object) {
+          this.player.object.position.set(this.player.x, this.player.y, this.player.z);
+          this.player.object.rotation.y = this.player.yaw;
+        }
+        if (finalForward !== 0 || finalStrafe !== 0) {
+          this.animateArms(this.player.object, true);
+        } else {
+          this.animateArms(this.player.object, false);
+        }
+        const waterObj = this.objects.find(o => o.type === 'water');
+        if (waterObj) {
+          const dxW = this.player.x - waterObj.x;
+          const dzW = this.player.z - waterObj.z;
+          if (Math.abs(dxW) < 150 && Math.abs(dzW) < 15) {
+            this.spawnRipple(this.player.x, this.player.z);
+          }
+        }
+      }
+      
+      updateCamera() {
+        const camDist = 15;
+        const offsetX = -Math.sin(this.player.yaw) * camDist;
+        const offsetZ = -Math.cos(this.player.yaw) * camDist;
+        const offsetY = 10;
+        this.camera.position.set(
+          this.player.x + offsetX,
+          this.player.y + offsetY,
+          this.player.z + offsetZ
+        );
+        this.camera.lookAt(this.player.x, this.player.y + 1, this.player.z);
+      }
+      
+      animateArms(obj, isMoving) {
+        if (!obj) return;
+        const t = Date.now() * 0.002;
+        obj.traverse(child => {
+          if (child.userData && child.userData.isArm) {
+            child.rotation.x = isMoving 
+              ? (child.userData.side === 'left' ? Math.sin(t) * 0.5 : -Math.sin(t) * 0.5)
+              : 0;
+          }
+        });
+      }
+      
+      throwBall() {
+        const direction = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
+        const ballGeo = new THREE.SphereGeometry(0.3, 16, 16);
+        const ballMat = new THREE.MeshStandardMaterial({ color: 0xff4500 });
+        const ball = new THREE.Mesh(ballGeo, ballMat);
+        ball.position.set(this.player.x, this.player.y, this.player.z);
+        ball.position.y += 1;
+        ball.userData = {
+          velocity: direction.multiplyScalar(0.3).add(new THREE.Vector3(0, 0.2, 0)),
+          bounced: false,
+          timer: 0
+        };
+        this.scene.add(ball);
+        this.thrownBalls.push(ball);
+        this.ballCount++;
+        document.getElementById('ballCountValue').textContent = this.ballCount;
+        this.showDialogue("Threw a magic ball!");
+      }
+      
+      jump() {
+        if (this.player.y <= 0.5) {
+          this.player.jumpVelocity = 0.3;
+          this.showDialogue("Jump!");
+        }
+      }
+      
+      showDialogue(text) {
+        const dlg = document.getElementById('dialogue');
+        dlg.style.display = 'block';
+        dlg.textContent = text;
+        setTimeout(() => {
+          dlg.style.display = 'none';
+          dlg.textContent = '';
+        }, 1500);
+      }
+      
+      showGuardPopup(text) {
+        const popup = document.getElementById('guardPopup');
+        popup.style.display = 'block';
+        popup.textContent = text;
+        setTimeout(() => {
+          popup.style.display = 'none';
+          popup.textContent = '';
+        }, 2000);
+      }
+      
+      enterCastle() {
+        this.fadeOverlay.style.opacity = "1";
+        setTimeout(() => {
+          this.currentScene = "insideCastle";
+          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = false; });
+          if (this.insideCastleMesh) this.insideCastleMesh.visible = true;
+          if (this.insideCastleDoor) this.insideCastleDoor.visible = true;
+          this.player.x = 0; this.player.z = 0; this.player.y = 0.5;
+          this.fadeOverlay.style.opacity = "0";
+        }, 1000);
+      }
+      
+      exitCastle() {
+        this.fadeOverlay.style.opacity = "1";
+        setTimeout(() => {
+          this.currentScene = "outside";
+          this.objects.forEach(o => { if(o.mesh) o.mesh.visible = true; });
+          if (this.insideCastleMesh) this.insideCastleMesh.visible = false;
+          if (this.insideCastleDoor) this.insideCastleDoor.visible = false;
+          this.player.x = 39; this.player.z = 45; this.player.y = 0.5;
+          this.fadeOverlay.style.opacity = "0";
+        }, 1000);
+      }
+      
+      updatePickups() {
+        for (let i = this.objects.length - 1; i >= 0; i--) {
+          const obj = this.objects[i];
+          if (["flower","coin","gem","potion","key","artifact"].includes(obj.type)) {
+            const dx = this.player.x - obj.x;
+            const dz = this.player.z - obj.z;
+            if (dx*dx + dz*dz < 1.0) {
+              switch(obj.type) {
+                case "flower": this.flowers++; document.getElementById('flowers').textContent = this.flowers; break;
+                case "coin": this.coins++; document.getElementById('coins').textContent = this.coins; break;
+                case "gem": this.gems++; document.getElementById('gems').textContent = this.gems; break;
+                case "potion": this.potions++; document.getElementById('potions').textContent = this.potions; break;
+                case "key": this.keys++; document.getElementById('keys').textContent = this.keys; break;
+                case "artifact": this.artifacts++; document.getElementById('artifacts').textContent = this.artifacts; break;
+              }
+              this.startCollectionGlow();
+              this.scene.remove(obj.mesh);
+              this.objects.splice(i,1);
+            }
+          }
+        }
+      }
+      
+      startCollectionGlow() {
+        const glowGeo = new THREE.SphereGeometry(1, 16, 16);
+        const glowMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5, side: THREE.BackSide });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        glow.position.set(this.player.x, this.player.y + 0.5, this.player.z);
+        this.scene.add(glow);
+        setTimeout(() => { this.scene.remove(glow); }, 1000);
+      }
+      
+      updateCollisions() {
+        if (this.currentScene === "outside") {
+          const doorX = 40, doorZ = 50;
+          const dx = this.player.x - doorX;
+          const dz = this.player.z - doorZ;
+          if (dx*dx + dz*dz < 16) {
+            this.enterCastle();
+          }
+        }
+        if (this.currentScene === "insideCastle") {
+          const dx = this.player.x - 0;
+          const dz = this.player.z - 15;
+          if (dx*dx + dz*dz < 16) {
+            this.exitCastle();
+          }
+        }
+        this.objects.forEach(obj => {
+          if (obj.type === 'npc' && obj.mesh.userData.piazzaMessage) {
+            const dx = this.player.x - obj.x;
+            const dz = this.player.z - obj.z;
+            if (dx*dx + dz*dz < 16) {
+              this.showGuardPopup(obj.mesh.userData.piazzaMessage);
+            }
+          }
+        });
+        [this.npcBlueData, this.npcYellowData, this.guardData].forEach(data => {
+          if (data.object) {
+            for (const obj of this.objects) {
+              if (obj.mesh === data.object) {
+                obj.x = data.object.position.x;
+                obj.z = data.object.position.z;
+                break;
+              }
+            }
+          }
+        });
+      }
+      
+      updatePiazzaNPCs() {
+        this.objects.forEach(obj => {
+          if (obj.type === 'npc' && obj.mesh.userData.piazzaMessage) {
+            if (Math.random() < 0.01) {
+              obj.mesh.position.x += (Math.random()-0.5)*0.5;
+              obj.mesh.position.z += (Math.random()-0.5)*0.5;
+            }
+            obj.x = obj.mesh.position.x;
+            obj.z = obj.mesh.position.z;
+          }
+        });
+      }
+      
+      updateMovement() {
+        let keyboardForward = 0, keyboardTurn = 0;
+        if (this.keysPressed['ArrowUp']) keyboardForward += 1;
+        if (this.keysPressed['ArrowDown']) keyboardForward -= 1;
+        if (this.keysPressed['ArrowLeft']) keyboardTurn += 1;
+        if (this.keysPressed['ArrowRight']) keyboardTurn -= 1;
+        let touchForward = 0, touchStrafe = 0;
+        if (controllerState.dpadUp) touchForward += 1;
+        if (controllerState.dpadDown) touchForward -= 1;
+        if (controllerState.dpadLeft) touchStrafe += 1;
+        if (controllerState.dpadRight) touchStrafe -= 1;
+        let finalForward = (keyboardForward !== 0 ? keyboardForward : touchForward);
+        let finalStrafe = touchStrafe;
+        let finalTurn = keyboardTurn;
+        if (controllerState.turnLeft) finalTurn += 1;
+        if (controllerState.turnRight) finalTurn -= 1;
+        const forwardVec = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
+        const rightVec = new THREE.Vector3(Math.cos(this.player.yaw), 0, -Math.sin(this.player.yaw));
+        const movement = forwardVec.clone().multiplyScalar(finalForward)
+                          .add(rightVec.clone().multiplyScalar(finalStrafe));
+        if (movement.length() > 1) movement.normalize();
+        movement.multiplyScalar(this.player.speedKeyboard);
+        const newX = this.player.x + movement.x;
+        const newZ = this.player.z + movement.z;
+        let canMove = true;
+        for (const obj of this.objects) {
+          if (['building','boundary','decoration','npc','guard','mermaid','piazza'].includes(obj.type)) {
+            const dx = newX - obj.x;
+            const dz = newZ - obj.z;
+            const minDist = (obj.boundingRadius || 5) + this.player.collisionRadius;
+            if ((dx*dx + dz*dz) < (minDist*minDist)) {
+              canMove = false;
+              break;
+            }
+          }
+        }
+        if (canMove) {
+          this.player.x = newX;
+          this.player.z = newZ;
+        }
+        this.player.yaw += finalTurn * 0.02;
+        if (this.player.jumpVelocity !== 0 || this.player.y > 0.5) {
+          this.player.jumpVelocity -= 0.02;
+          this.player.y += this.player.jumpVelocity;
+          if (this.player.y < 0.5) {
+            this.player.y = 0.5;
+            this.player.jumpVelocity = 0;
+          }
+        }
+        if (this.player.object) {
+          this.player.object.position.set(this.player.x, this.player.y, this.player.z);
+          this.player.object.rotation.y = this.player.yaw;
+        }
+        if (finalForward !== 0 || finalStrafe !== 0) {
+          this.animateArms(this.player.object, true);
+        } else {
+          this.animateArms(this.player.object, false);
+        }
+        const waterObj = this.objects.find(o => o.type === 'water');
+        if (waterObj) {
+          const dxW = this.player.x - waterObj.x;
+          const dzW = this.player.z - waterObj.z;
+          if (Math.abs(dxW) < 150 && Math.abs(dzW) < 15) {
+            this.spawnRipple(this.player.x, this.player.z);
+          }
+        }
+      }
+      
+      updateCamera() {
+        const camDist = 15;
+        const offsetX = -Math.sin(this.player.yaw) * camDist;
+        const offsetZ = -Math.cos(this.player.yaw) * camDist;
+        const offsetY = 10;
+        this.camera.position.set(
+          this.player.x + offsetX,
+          this.player.y + offsetY,
+          this.player.z + offsetZ
+        );
+        this.camera.lookAt(this.player.x, this.player.y + 1, this.player.z);
+      }
+      
+      updateBlueNPC() {
+        if (!this.npcBlueData.object) return;
+        this.npcBlueData.angle += this.npcBlueData.speed;
+        const x = this.npcBlueData.radius * Math.cos(this.npcBlueData.angle);
+        const z = this.npcBlueData.radius * Math.sin(this.npcBlueData.angle);
+        this.npcBlueData.object.position.set(x, 0.5, z);
+        this.npcBlueData.object.rotation.y = -this.npcBlueData.angle;
+        this.animateArms(this.npcBlueData.object, true);
+        for (const obj of this.objects) {
+          if (obj.mesh === this.npcBlueData.object) {
+            obj.x = this.npcBlueData.object.position.x;
+            obj.z = this.npcBlueData.object.position.z;
+            break;
+          }
+        }
+      }
+      
+      updateYellowNPC() {
+        if (!this.npcYellowData.object) return;
+        const npc = this.npcYellowData.object;
+        if (!this.npcYellowData.target) {
+          this.npcYellowData.target = this.getRandomBuildingTarget();
+        }
+        const dx = this.npcYellowData.target.x - npc.position.x;
+        const dz = this.npcYellowData.target.z - npc.position.z;
+        const distSq = dx * dx + dz * dz;
+        if (distSq < 1) {
+          this.npcYellowData.target = this.getRandomBuildingTarget();
+        } else {
+          this.animateArms(npc, true);
+          const angle = Math.atan2(dx, dz);
+          npc.rotation.y = angle;
+          const step = this.npcYellowData.speed;
+          npc.position.x += Math.sin(angle) * step;
+          npc.position.z += Math.cos(angle) * step;
+        }
+        for (const obj of this.objects) {
+          if (obj.mesh === npc) {
+            obj.x = npc.position.x;
+            obj.z = npc.position.z;
+            break;
+          }
+        }
+      }
+      
+      getRandomBuildingTarget() {
+        const i = Math.floor(Math.random() * this.buildingPositions.length);
+        return this.buildingPositions[i];
+      }
+      
+      updateMermaid() {
+        if (!this.mermaidData.object) return;
+        const mermaid = this.mermaidData.object;
+        const route = this.mermaidData.route;
+        let target = route[this.mermaidData.routeIndex];
+        const dx = target.x - mermaid.position.x;
+        const dz = target.z - mermaid.position.z;
+        if ((dx * dx + dz * dz) < 1) {
+          this.mermaidData.routeIndex = (this.mermaidData.routeIndex + 1) % route.length;
+          target = route[this.mermaidData.routeIndex];
+        }
+        const angle = Math.atan2(dx, dz);
+        mermaid.rotation.y = angle;
+        this.animateArms(mermaid, true);
+        const step = this.mermaidData.speed;
+        mermaid.position.x += Math.sin(angle) * step;
+        mermaid.position.z += Math.cos(angle) * step;
+        const waterObj = this.objects.find(o => o.type === 'water');
+        if (waterObj) {
+          const dxW = mermaid.position.x - waterObj.x;
+          const dzW = mermaid.position.z - waterObj.z;
+          if (Math.abs(dxW) < 150 && Math.abs(dzW) < 15) {
+            this.spawnRipple(mermaid.position.x, mermaid.position.z);
+          }
+        }
+      }
+      
+      updateBird() {
+        if (!this.birdData.object) return;
+        this.birdData.angle += this.birdData.speed;
+        const bx = this.birdData.radius * Math.cos(this.birdData.angle);
+        const bz = this.birdData.radius * Math.sin(this.birdData.angle);
+        this.birdData.object.position.set(bx, 60, bz);
+        this.birdData.object.rotation.y = -this.birdData.angle;
+      }
+      
+      updatePickups() {
+        for (let i = this.objects.length - 1; i >= 0; i--) {
+          const obj = this.objects[i];
+          if (["flower","coin","gem","potion","key","artifact"].includes(obj.type)) {
+            const dx = this.player.x - obj.x;
+            const dz = this.player.z - obj.z;
+            if (dx*dx + dz*dz < 1.0) {
+              switch(obj.type) {
+                case "flower": this.flowers++; document.getElementById('flowers').textContent = this.flowers; break;
+                case "coin": this.coins++; document.getElementById('coins').textContent = this.coins; break;
+                case "gem": this.gems++; document.getElementById('gems').textContent = this.gems; break;
+                case "potion": this.potions++; document.getElementById('potions').textContent = this.potions; break;
+                case "key": this.keys++; document.getElementById('keys').textContent = this.keys; break;
+                case "artifact": this.artifacts++; document.getElementById('artifacts').textContent = this.artifacts; break;
+              }
+              this.startCollectionGlow();
+              this.scene.remove(obj.mesh);
+              this.objects.splice(i,1);
+            }
+          }
+        }
+      }
+      
+      startCollectionGlow() {
+        const glowGeo = new THREE.SphereGeometry(1, 16, 16);
+        const glowMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5, side: THREE.BackSide });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        glow.position.set(this.player.x, this.player.y + 0.5, this.player.z);
+        this.scene.add(glow);
+        setTimeout(() => { this.scene.remove(glow); }, 1000);
+      }
+      
+      startAnimation() {
+        const animate = () => {
+          requestAnimationFrame(animate);
+          this.update();
+          this.renderer.render(this.scene, this.camera);
+        };
+        animate();
+      }
+      
+      initKeyboardMouse() {
+        document.addEventListener('keydown', e => {
+          this.keysPressed[e.key] = true;
+          if (e.key === ' ') this.throwBall();
+        });
+        document.addEventListener('keyup', e => {
+          this.keysPressed[e.key] = false;
+        });
+        document.addEventListener('mousedown', () => {
+          try { document.body.requestPointerLock(); }
+          catch (err) { console.warn('Pointer lock failed:', err); }
+        });
+        document.addEventListener('mousemove', evt => {
+          if (document.pointerLockElement === document.body) {
+            const movementX = evt.movementX || 0;
+            const sensitivity = 0.001;
+            this.player.yaw += movementX * sensitivity;
+          }
+        });
+      }
     }
     
     window.game = new Game();
-    
-    // Attach A and B button events
-    ["pointerdown", "click"].forEach(evt => {
-      document.getElementById("btnThrow").addEventListener(evt, e => {
-        e.preventDefault();
-        if (window.game && typeof window.game.throwBall === "function") {
-          window.game.throwBall();
-        }
-      }, { passive: false });
-    });
-    ["pointerdown", "click"].forEach(evt => {
-      document.getElementById("btnBigThrow").addEventListener(evt, e => {
-        e.preventDefault();
-        if (window.game && typeof window.game.jump === "function") {
-          window.game.jump();
-        }
-      }, { passive: false });
-    });
-    
-    // Prevent duplicate Game instances
-    // (If necessary, comment out the second assignment.)
-    // window.game = new Game();
   </script>
 </body>
 </html>
