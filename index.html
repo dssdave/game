@@ -231,8 +231,9 @@
         gameCanvas.style.display = 'none';
         throw new Error('WebGL not supported');
       }
+
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 3000);
       const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(window.devicePixelRatio);
@@ -250,7 +251,7 @@
           this.time = 'Day';
           this.dayNightCycle = 0;
 
-          // Player – speed changed from 0.1 to 0.1 (but we multiply by 2.5 in updateMovement)
+          // Player – effectively 2.5x speed by multiplying final movement
           this.player = {
             x: 0, y: 0.5, z: 0,
             speedKeyboard: 0.1,
@@ -302,23 +303,9 @@
           // Piazza NPC random-walk data
           this.piazzaNPCData = [];
 
-          // Bind
-          this.updateMovement = this.updateMovement.bind(this);
-          this.animateArms = this.animateArms.bind(this);
-
           this.initScene();
           this.initKeyboardMouse();
           this.startAnimation();
-        }
-
-        // If near the castle door
-        isNearCastleDoor() {
-          // The castle is at x=40, z=40, door is ~z=50
-          // We'll just check if the player is near (40,50)
-          const dx = this.player.x - 40;
-          const dz = this.player.z - 50;
-          const dist = Math.sqrt(dx*dx + dz*dz);
-          return dist < 4; // threshold 4
         }
 
         initScene() {
@@ -538,7 +525,6 @@
           this.scene.add(group);
         }
 
-        // Generate a random stone texture for the castle
         generateStoneTexture() {
           const canvas = document.createElement('canvas');
           canvas.width = 256;
@@ -561,7 +547,6 @@
         createCastle() {
           const group = new THREE.Group();
 
-          // Use random stone texture
           const stoneTex = this.generateStoneTexture();
           const baseMat = new THREE.MeshStandardMaterial({
             map: stoneTex,
@@ -591,9 +576,9 @@
           door.position.set(0, 3, 10.01);
           group.add(door);
 
-          // Move the door light to the left side
+          // Door Light
           const doorLight = new THREE.PointLight(0xffeeaa, 0.8, 15);
-          doorLight.position.set(-3, 5, 12); // left of the door
+          doorLight.position.set(-3, 5, 12);
           group.add(doorLight);
 
           // Sign
@@ -613,8 +598,6 @@
 
           group.position.set(40, 0, 40);
           this.scene.add(group);
-
-          // boundingRadius: reduced from 15 to 8
           this.objects.push({ mesh: group, type: 'building', x: 40, z: 40, boundingRadius: 8 });
         }
 
@@ -642,12 +625,10 @@
           door.position.set(0, 2, 5.01);
           group.add(door);
 
-          // Door light to the right side
           const doorLight = new THREE.PointLight(0xffeeaa, 0.8, 10);
-          doorLight.position.set(3, 3, 6); 
+          doorLight.position.set(3, 3, 6);
           group.add(doorLight);
 
-          // Sign
           const canvas = document.createElement('canvas');
           canvas.width = 128; canvas.height = 32;
           const ctx = canvas.getContext('2d');
@@ -683,12 +664,10 @@
           door.position.set(0, 1.5, 5.01);
           group.add(door);
 
-          // door light on left side
           const doorLight = new THREE.PointLight(0xffeeaa, 0.8, 10);
           doorLight.position.set(-3, 2.5, 6.5);
           group.add(doorLight);
 
-          // Sign
           const canvas = document.createElement('canvas');
           canvas.width = 256; canvas.height = 64;
           const ctx = canvas.getContext('2d');
@@ -913,8 +892,6 @@
         }
 
         createLampPosts() {
-          // We'll just place 4 corner lights in the piazza as well
-          // but also keep boundary lamps if desired
           for (let i = 0; i < 20; i++) {
             const angle = (i / 20) * Math.PI * 2;
             const radius = 130;
@@ -937,7 +914,6 @@
           }
         }
 
-        // Create a random "cobblestone" for the piazza
         createPiazza() {
           const size = 15;
           const canvas = document.createElement('canvas');
@@ -978,7 +954,6 @@
           this.objects.push({ mesh: piazza, type: 'piazza', x: 0, z: 0, boundingRadius: 8 });
         }
 
-        // Create two NPCs in the piazza that wander around
         createPiazzaNPCs() {
           const makeNPC = (color, x, z, dialogue) => {
             const group = new THREE.Group();
@@ -1003,7 +978,6 @@
             hair.position.set(0, 1.75, 0);
             group.add(hair);
 
-            // arms
             const armGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
             const skinMat = new THREE.MeshStandardMaterial({ color: 0xffddc1 });
             const leftArm = new THREE.Mesh(armGeo, skinMat);
@@ -1029,7 +1003,6 @@
           this.piazzaNPCData.push({ object: npc2, speed: 0.02 });
         }
 
-        // Items
         createFlowers(count) {
           for (let i = 0; i < count; i++) {
             const fx = Math.random() * this.itemRange * 2 - this.itemRange;
@@ -1159,7 +1132,6 @@
             const dx = d.target.x - npc.position.x;
             const dz = d.target.z - npc.position.z;
             if (dx*dx + dz*dz < 1) {
-              // pick new target
               d.target = { 
                 x: Math.random()*10 - 5, 
                 z: Math.random()*10 - 5
@@ -1181,7 +1153,6 @@
             if (["flower","coin","gem","potion","key","artifact"].includes(obj.type)) {
               const dx = this.player.x - obj.x;
               const dz = this.player.z - obj.z;
-              // pick radius ~1
               if (dx*dx + dz*dz < 1.0) {
                 switch (obj.type) {
                   case "flower": this.flowers++; document.getElementById('flowers').textContent = this.flowers; break;
@@ -1203,7 +1174,6 @@
           this.time = (this.dayNightCycle < 600) ? 'Day' : 'Night';
           document.getElementById('time').textContent = this.time;
 
-          // Toggle sky color
           if (this.time === 'Day') {
             this.scene.background = new THREE.Color(0x87CEEB);
             if (this.sunMesh) this.sunMesh.visible = true;
@@ -1240,7 +1210,6 @@
 
             if (!ball.userData.timer) ball.userData.timer = 0;
             ball.userData.timer++;
-            // remove after 150 frames
             if (ball.userData.timer > 150) {
               this.scene.remove(ball);
               this.thrownBalls.splice(i, 1);
@@ -1347,7 +1316,7 @@
           mermaid.position.x += Math.sin(angle) * step;
           mermaid.position.z += Math.cos(angle) * step;
 
-          // Spawn ripple if near water
+          // water splash
           const waterObj = this.objects.find(o => o.type === 'water');
           if (waterObj) {
             const dxW = mermaid.position.x - waterObj.x;
@@ -1365,6 +1334,16 @@
           const bz = this.birdData.radius * Math.sin(this.birdData.angle);
           this.birdData.object.position.set(bx, 60, bz);
           this.birdData.object.rotation.y = -this.birdData.angle;
+        }
+
+        spawnRipple(x, z) {
+          const rippleGeo = new THREE.RingGeometry(0.2, 0.4, 16);
+          const rippleMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+          const ripple = new THREE.Mesh(rippleGeo, rippleMat);
+          ripple.rotation.x = -Math.PI / 2;
+          ripple.position.set(x, 0.05, z);
+          this.scene.add(ripple);
+          setTimeout(() => { this.scene.remove(ripple); }, 600);
         }
 
         updateCollisions() {
@@ -1393,10 +1372,93 @@
             if (obj.type === 'npc' && obj.mesh.userData.dialogue) {
               const dx = this.player.x - obj.x;
               const dz = this.player.z - obj.z;
-              if (dx*dx + dz*dz < 9) { // radius 3
+              if (dx*dx + dz*dz < 9) { // radius ~3
                 this.showGuardPopup(obj.mesh.userData.dialogue);
               }
             }
+          }
+        }
+
+        updateMovement() {
+          // Keyboard input
+          let keyboardForward = 0, keyboardTurn = 0;
+          if (this.keysPressed['ArrowUp']) keyboardForward += 1;
+          if (this.keysPressed['ArrowDown']) keyboardForward -= 1;
+          if (this.keysPressed['ArrowLeft']) keyboardTurn += 1;
+          if (this.keysPressed['ArrowRight']) keyboardTurn -= 1;
+
+          // Mobile D-Pad input
+          let touchForward = 0, touchStrafe = 0;
+          if (controllerState.dpadUp) touchForward += 1;
+          if (controllerState.dpadDown) touchForward -= 1;
+          if (controllerState.dpadLeft) touchStrafe += 1;
+          if (controllerState.dpadRight) touchStrafe -= 1;
+
+          // Use keyboard if present; otherwise use touch
+          let finalForward = (keyboardForward !== 0 ? keyboardForward : touchForward);
+          let finalStrafe = touchStrafe;
+
+          // Turn input
+          let finalTurn = keyboardTurn;
+          if (controllerState.turnLeft) finalTurn += 1;
+          if (controllerState.turnRight) finalTurn -= 1;
+
+          // Movement vectors
+          const forwardVec = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
+          const rightVec = new THREE.Vector3(Math.cos(this.player.yaw), 0, -Math.sin(this.player.yaw));
+          const movement = forwardVec.clone().multiplyScalar(finalForward)
+                          .add(rightVec.clone().multiplyScalar(finalStrafe));
+          if (movement.length() > 1) movement.normalize();
+          // Multiply by 2.5 for extra speed
+          movement.multiplyScalar(this.player.speedKeyboard * 2.5);
+
+          // Predict new position
+          const newX = this.player.x + movement.x;
+          const newZ = this.player.z + movement.z;
+          let canMove = true;
+
+          // Collision with buildings, boundaries, etc.
+          for (const obj of this.objects) {
+            if (['building', 'boundary', 'decoration', 'npc', 'guard','mermaid'].includes(obj.type)) {
+              const dx = newX - obj.x;
+              const dz = newZ - obj.z;
+              const minDist = (obj.boundingRadius || 5) + 1; 
+              if ((dx*dx + dz*dz) < (minDist*minDist)) {
+                canMove = false;
+                break;
+              }
+            }
+          }
+
+          if (canMove) {
+            this.player.x = newX;
+            this.player.z = newZ;
+          }
+
+          // Turn the player
+          this.player.yaw += finalTurn * 0.02;
+
+          // Jump physics
+          if (this.player.jumpVelocity !== 0 || this.player.y > 0.5) {
+            this.player.jumpVelocity -= 0.02;
+            this.player.y += this.player.jumpVelocity;
+            if (this.player.y < 0.5) {
+              this.player.y = 0.5;
+              this.player.jumpVelocity = 0;
+            }
+          }
+
+          // Update player object
+          if (this.player.object) {
+            this.player.object.position.set(this.player.x, this.player.y, this.player.z);
+            this.player.object.rotation.y = this.player.yaw;
+          }
+
+          // Animate arms if moving
+          if (finalForward !== 0 || finalStrafe !== 0) {
+            this.animateArms(this.player.object, true);
+          } else {
+            this.animateArms(this.player.object, false);
           }
         }
 
@@ -1435,18 +1497,7 @@
           });
         }
 
-        spawnRipple(x, z) {
-          const rippleGeo = new THREE.RingGeometry(0.2, 0.4, 16);
-          const rippleMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
-          const ripple = new THREE.Mesh(rippleGeo, rippleMat);
-          ripple.rotation.x = -Math.PI / 2;
-          ripple.position.set(x, 0.05, z);
-          this.scene.add(ripple);
-          setTimeout(() => { this.scene.remove(ripple); }, 600);
-        }
-
         throwBall() {
-          console.log("A button => throwBall()");
           const direction = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
           const ballGeo = new THREE.SphereGeometry(0.3, 16, 16);
           const ballMat = new THREE.MeshStandardMaterial({ color: 0xff4500 });
@@ -1466,7 +1517,6 @@
         }
 
         jump() {
-          console.log("B button => jump()");
           if (this.player.y <= 0.5) {
             this.player.jumpVelocity = 0.3;
             this.showDialogue("Jump!");
