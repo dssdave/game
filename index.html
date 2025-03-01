@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1,user-scalable=no">
-    <title>Princess Donia’s Town – Enhanced 3D RPG</title>
+    <title>Princess Donia’s Town - Collision & Corrected Controls</title>
     <style>
       html, body {
         margin: 0; padding: 0;
@@ -271,6 +271,48 @@
             this.initKeyboardMouse();
             this.startAnimation();
           }
+          // --- Castle Door Threshold: increased to 4 ---
+          isNearCastleDoor() {
+            const dx = this.player.x - 40;
+            const dz = this.player.z - 50;
+            return Math.sqrt(dx*dx+dz*dz) < 4;
+          }
+          isNearExitDoor() {
+            const dx = this.player.x - 0;
+            const dz = this.player.z - (-4);
+            return Math.sqrt(dx*dx+dz*dz) < 2;
+          }
+          transitionToInterior() {
+            // Remove current scene objects
+            while(this.scene.children.length > 0){ this.scene.remove(this.scene.children[0]); }
+            // Create a simple interior room
+            const interiorGeo = new THREE.BoxGeometry(50, 20, 50);
+            const interiorMat = new THREE.MeshStandardMaterial({ color: 0x777777 });
+            const room = new THREE.Mesh(interiorGeo, interiorMat);
+            room.position.y = 10;
+            this.scene.add(room);
+            // Exit door on the back wall
+            const exitDoor = new THREE.Mesh(new THREE.PlaneGeometry(4, 6),
+              new THREE.MeshStandardMaterial({ color: 0x553300, side: THREE.DoubleSide }));
+            exitDoor.position.set(0, 5, -24.9);
+            this.scene.add(exitDoor);
+            const exitLight = new THREE.PointLight(0xffeeaa, 0.8, 10);
+            exitLight.position.set(0, 5, -22);
+            this.scene.add(exitLight);
+            // Update player position inside
+            this.player.x = 0; this.player.y = 2; this.player.z = 0;
+            if (this.player.object) {
+              this.player.object.position.set(this.player.x, this.player.y, this.player.z);
+            }
+            this.interior = true;
+          }
+          transitionToExterior() {
+            while(this.scene.children.length > 0){ this.scene.remove(this.scene.children[0]); }
+            this.interior = false;
+            this.initScene();
+            this.player.x = 40; this.player.y = 0.5; this.player.z = 50;
+            if (this.player.object) { this.player.object.position.set(this.player.x, this.player.y, this.player.z); }
+          }
           initScene() {
             // Ground (grass)
             const groundGeo = new THREE.PlaneGeometry(300, 300);
@@ -306,13 +348,13 @@
             const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
             dirLight.position.set(10, 20, 10);
             this.scene.add(dirLight);
-            // Sun, Moon, and Stars
+            // Sun, Moon, Stars
             this.createSun();
             this.createMoon();
             this.createStars();
             // Player model
             this.createPlayerModel();
-            // Buildings with front door lights (added a point light near door)
+            // Buildings
             this.createCastle();
             this.createHouse();
             this.createCafe();
@@ -333,12 +375,12 @@
             this.createPotions(3);
             this.createKeys(2);
             this.createArtifacts(2);
-            // Piazza – use a canvas–generated cobblestone texture
+            // Piazza with cobblestone texture
             this.createPiazza();
             this.createPiazzaNPCs();
             // Lamp posts
             this.createLampPosts();
-            // Camera starts behind player
+            // Camera
             this.camera.position.set(this.player.x + 15, this.player.y + 15, this.player.z + 15);
             this.camera.lookAt(this.player.x, this.player.y + 1, this.player.z);
           }
@@ -466,17 +508,15 @@
               new THREE.MeshStandardMaterial({ color: 0x553300, side: THREE.DoubleSide }));
             door.position.set(0, 3, 10.01);
             group.add(door);
-            // Add a light in front of the door
+            // Repositioned light: outside and not blocking door.
             const doorLight = new THREE.PointLight(0xffeeaa, 0.8, 15);
-            doorLight.position.set(0, 3, 12);
+            doorLight.position.set(0, 3, 14);
             group.add(doorLight);
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 128;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, 512, 128);
-            ctx.fillStyle = 'white';
-            ctx.font = '60px Arial';
+            ctx.fillStyle = 'black'; ctx.fillRect(0, 0, 512, 128);
+            ctx.fillStyle = 'white'; ctx.font = '60px Arial';
             ctx.fillText("Daddy's Castle", 50, 80);
             const tex = new THREE.Texture(canvas);
             tex.needsUpdate = true;
@@ -504,17 +544,15 @@
               new THREE.MeshStandardMaterial({ color: 0x553300, side: THREE.DoubleSide }));
             door.position.set(0, 2, 5.01);
             group.add(door);
-            // Light in front of house door
+            // Repositioned light for house door
             const doorLight = new THREE.PointLight(0xffeeaa, 0.8, 10);
-            doorLight.position.set(0, 2.5, 6);
+            doorLight.position.set(0, 2.5, 7);
             group.add(doorLight);
             const canvas = document.createElement('canvas');
             canvas.width = 128; canvas.height = 32;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, 128, 32);
-            ctx.fillStyle = 'white';
-            ctx.font = '16px Arial';
+            ctx.fillStyle = 'black'; ctx.fillRect(0, 0, 128, 32);
+            ctx.fillStyle = 'white'; ctx.font = '16px Arial';
             ctx.fillText("Donia's House", 5, 22);
             const tex = new THREE.Texture(canvas);
             tex.needsUpdate = true;
@@ -537,18 +575,15 @@
               new THREE.MeshStandardMaterial({ color: 0x553300, side: THREE.DoubleSide }));
             door.position.set(0, 1.5, 5.01);
             group.add(door);
-            // Light at cafe door
+            // Repositioned light for cafe door
             const doorLight = new THREE.PointLight(0xffeeaa, 0.8, 10);
-            doorLight.position.set(0, 2, 6);
+            doorLight.position.set(0, 2, 7);
             group.add(doorLight);
             const canvas = document.createElement('canvas');
             canvas.width = 256; canvas.height = 64;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, 256, 64);
-            ctx.fillStyle = 'white';
-            ctx.font = '30px Arial';
-            ctx.textAlign = 'center';
+            ctx.fillStyle = 'black'; ctx.fillRect(0, 0, 256, 64);
+            ctx.fillStyle = 'white'; ctx.font = '30px Arial'; ctx.textAlign = 'center';
             ctx.fillText("Donia's Cafe", 128, 40);
             const tex = new THREE.Texture(canvas);
             tex.needsUpdate = true;
@@ -662,7 +697,7 @@
             rightArm.position.set(0.5, 1.0, 0);
             rightArm.userData = { isArm: true, side: 'right' };
             group.add(rightArm);
-            group.position.set(45, 0.5, 55.5); // Slightly further out
+            group.position.set(45, 0.5, 55.5);
             this.scene.add(group);
             this.objects.push({ mesh: group, type: 'guard', x: 45, z: 55.5, boundingRadius: 3 });
             this.guardData.object = group;
@@ -813,13 +848,12 @@
               this.objects.push({ mesh: group, type: 'artifact', x: ax, z: az, boundingRadius: 0.5 });
             }
           }
-          // Create a piazza with a randomized cobblestone texture
+          // Piazza with cobblestone texture
           createPiazza() {
             const size = 15;
             const canvas = document.createElement('canvas');
             canvas.width = 256; canvas.height = 256;
             const ctx = canvas.getContext('2d');
-            // Fill with random grey shades
             for (let y = 0; y < canvas.height; y += 16) {
               for (let x = 0; x < canvas.width; x += 16) {
                 const shade = 150 + Math.floor(Math.random() * 50);
@@ -839,7 +873,7 @@
             this.scene.add(piazza);
             this.objects.push({ mesh: piazza, type: 'piazza', x: 0, z: 0, boundingRadius: 8 });
           }
-          // Create two NPCs that stand in the piazza and speak
+          // Create two NPCs in the piazza (with arms added)
           createPiazzaNPCs() {
             // NPC 1
             const npc1 = new THREE.Group();
@@ -855,6 +889,17 @@
               new THREE.MeshStandardMaterial({ color: 0x4b2e05 }));
             hair1.position.set(0, 1.75, 0);
             npc1.add(hair1);
+            // Add arms to npc1
+            const armGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0xffddc1 });
+            const leftArm1 = new THREE.Mesh(armGeo, skinMat);
+            leftArm1.position.set(-0.5, 1.0, 0);
+            leftArm1.userData = { isArm: true, side: 'left' };
+            npc1.add(leftArm1);
+            const rightArm1 = new THREE.Mesh(armGeo, skinMat);
+            rightArm1.position.set(0.5, 1.0, 0);
+            rightArm1.userData = { isArm: true, side: 'right' };
+            npc1.add(rightArm1);
             npc1.position.set(-3, 0.5, -3);
             npc1.userData.dialogue = "Hello Princess Donia, where are you going?";
             this.scene.add(npc1);
@@ -873,6 +918,15 @@
               new THREE.MeshStandardMaterial({ color: 0x4b2e05 }));
             hair2.position.set(0, 1.75, 0);
             npc2.add(hair2);
+            // Add arms to npc2
+            const leftArm2 = new THREE.Mesh(armGeo, skinMat);
+            leftArm2.position.set(-0.5, 1.0, 0);
+            leftArm2.userData = { isArm: true, side: 'left' };
+            npc2.add(leftArm2);
+            const rightArm2 = new THREE.Mesh(armGeo, skinMat);
+            rightArm2.position.set(0.5, 1.0, 0);
+            rightArm2.userData = { isArm: true, side: 'right' };
+            npc2.add(rightArm2);
             npc2.position.set(3, 0.5, 3);
             npc2.userData.dialogue = "Hello Princess Donia, where have you been?";
             this.scene.add(npc2);
@@ -898,6 +952,14 @@
               this.scene.add(post, lamp, light);
             }
           }
+          // (Empty stubs for items already created above)
+          createFlowers(count) { /* see above */ }
+          createCoins(count) { /* see above */ }
+          createGems(count) { /* see above */ }
+          createPotions(count) { /* see above */ }
+          createKeys(count) { /* see above */ }
+          createArtifacts(count) { /* see above */ }
+          // Start animation loop
           startAnimation() {
             const animate = () => {
               requestAnimationFrame(animate);
@@ -929,8 +991,8 @@
             let touchForward = 0, touchStrafe = 0;
             if (controllerState.dpadUp) touchForward += 1;
             if (controllerState.dpadDown) touchForward -= 1;
-            if (controllerState.dpadLeft) touchStrafe += 1;  // left gives +1 (strafe left)
-            if (controllerState.dpadRight) touchStrafe -= 1; // right gives -1
+            if (controllerState.dpadLeft) touchStrafe += 1;
+            if (controllerState.dpadRight) touchStrafe -= 1;
             let finalForward = (keyboardForward !== 0 ? keyboardForward : touchForward);
             let finalStrafe = touchStrafe;
             // Turn input
@@ -943,7 +1005,7 @@
             const movement = forwardVec.clone().multiplyScalar(finalForward)
                               .add(rightVec.clone().multiplyScalar(finalStrafe));
             if (movement.length() > 1) movement.normalize();
-            // Increase speed to 2.5× on desktop
+            // Increase speed 2.5× (for desktop)
             movement.multiplyScalar(this.player.speedKeyboard * 2.5);
             const newX = this.player.x + movement.x;
             const newZ = this.player.z + movement.z;
@@ -956,6 +1018,8 @@
                 if ((dx*dx + dz*dz) < (minDist * minDist)) { canMove = false; break; }
               }
             }
+            // If near castle door, allow movement despite collisions.
+            if (this.isNearCastleDoor()) { canMove = true; }
             if (canMove) {
               this.player.x = newX;
               this.player.z = newZ;
@@ -972,7 +1036,7 @@
               this.player.object.position.set(this.player.x, this.player.y, this.player.z);
               this.player.object.rotation.y = this.player.yaw;
             }
-            // Spawn water splash if near water
+            // Spawn water splash if player is in water
             const waterObj = this.objects.find(o => o.type === 'water');
             if (waterObj) {
               const dxW = this.player.x - waterObj.x;
@@ -981,13 +1045,13 @@
                 this.spawnRipple(this.player.x, this.player.z);
               }
             }
-            // Animate arms
+            // Animate arms for the player
             if (finalForward !== 0 || finalStrafe !== 0) {
               this.animateArms(this.player.object, true);
             } else {
               this.animateArms(this.player.object, false);
             }
-            // Castle interior transition (if not already inside)
+            // Castle interior transition
             if (!this.interior && this.isNearCastleDoor()) {
               this.transitionToInterior();
             } else if (this.interior && this.isNearExitDoor()) {
@@ -1128,6 +1192,15 @@
             const step = this.mermaidData.speed;
             mermaid.position.x += Math.sin(angle) * step;
             mermaid.position.z += Math.cos(angle) * step;
+            // Spawn splash if mermaid is over water
+            const waterObj = this.objects.find(o => o.type === 'water');
+            if (waterObj) {
+              const dxW = mermaid.position.x - waterObj.x;
+              const dzW = mermaid.position.z - waterObj.z;
+              if (Math.abs(dxW) < 150 && Math.abs(dzW) < 15) {
+                this.spawnRipple(mermaid.position.x, mermaid.position.z);
+              }
+            }
           }
           updateBird() {
             if (!this.birdData.object) return;
@@ -1241,59 +1314,6 @@
             popup.style.display = 'block';
             popup.textContent = text;
             setTimeout(() => { popup.style.display = 'none'; popup.textContent = ''; }, 2000);
-          }
-          // Castle interior transition:
-          isNearCastleDoor() {
-            // For castle: door global position ~ (40,3,50)
-            const dx = this.player.x - 40;
-            const dz = this.player.z - 50;
-            return Math.sqrt(dx*dx+dz*dz) < 2;
-          }
-          isNearExitDoor() {
-            // In interior, assume exit door is at (0,?,-4)
-            const dx = this.player.x - 0;
-            const dz = this.player.z - (-4);
-            return Math.sqrt(dx*dx+dz*dz) < 2;
-          }
-          transitionToInterior() {
-            // Remove current scene objects
-            while(this.scene.children.length > 0){ this.scene.remove(this.scene.children[0]); }
-            // Create simple interior: a box room with an exit door
-            const interiorGeo = new THREE.BoxGeometry(50, 20, 50);
-            const interiorMat = new THREE.MeshStandardMaterial({ color: 0x777777 });
-            const room = new THREE.Mesh(interiorGeo, interiorMat);
-            room.position.y = 10;
-            this.scene.add(room);
-            // Exit door on the back wall
-            const exitDoor = new THREE.Mesh(new THREE.PlaneGeometry(4, 6),
-              new THREE.MeshStandardMaterial({ color: 0x553300, side: THREE.DoubleSide }));
-            exitDoor.position.set(0, 5, -24.9);
-            this.scene.add(exitDoor);
-            // Add a light near the exit door
-            const exitLight = new THREE.PointLight(0xffeeaa, 0.8, 10);
-            exitLight.position.set(0, 5, -22);
-            this.scene.add(exitLight);
-            // Update player position inside the castle near the door
-            this.player.x = 0; this.player.y = 2; this.player.z = 0;
-            if (this.player.object) {
-              this.player.object.position.set(this.player.x, this.player.y, this.player.z);
-            }
-            // Set interior flag
-            this.interior = true;
-          }
-          transitionToExterior() {
-            // Reinitialize exterior scene
-            while(this.scene.children.length > 0){ this.scene.remove(this.scene.children[0]); }
-            // Re-run initScene to rebuild exterior
-            this.interior = false;
-            this.initScene();
-            // Place player near castle door (just outside)
-            this.player.x = 40;
-            this.player.y = 0.5;
-            this.player.z = 50;
-            if (this.player.object) {
-              this.player.object.position.set(this.player.x, this.player.y, this.player.z);
-            }
           }
           initKeyboardMouse() {
             document.addEventListener('keydown', e => {
