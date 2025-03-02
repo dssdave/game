@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1,user-scalable=no">
-  <title>Princess Donia’s Town – Restored & Fixed</title>
+  <title>Princess Donia’s Town – Fully Restored</title>
   <style>
     html, body {
       margin: 0; padding: 0;
@@ -252,10 +252,10 @@
       }
 
       initOutsideScene() {
-        outsideScene.background = new THREE.Color(0x87CEEB);
+        outsideScene.background = new THREE.Color(0x87CEEB); // Clear blue sky
         const ground = new THREE.Mesh(
           new THREE.PlaneGeometry(300, 300),
-          new THREE.MeshStandardMaterial({ color: 0x6bb26b, side: THREE.DoubleSide })
+          new THREE.MeshStandardMaterial({ color: 0x6bb26b, side: THREE.DoubleSide }) // Bright green grass
         );
         ground.rotation.x = Math.PI / 2;
         outsideScene.add(ground);
@@ -267,9 +267,15 @@
         dirLight.position.set(10, 20, 10);
         outsideScene.add(dirLight);
 
+        // Add player
         this.createPlayerModel();
         outsideScene.add(this.player.object);
+
+        // Add central platform (piazza)
         this.createPiazza(outsideScene);
+
+        // Add NPCs (purple and blue avatars)
+        this.createNPCs(outsideScene);
 
         camera.position.set(15, 15, 15);
         camera.lookAt(0, 1, 0);
@@ -279,7 +285,7 @@
         this.player.object = new THREE.Group();
         const body = new THREE.Mesh(
           new THREE.BoxGeometry(1, 1.5, 1),
-          new THREE.MeshStandardMaterial({ color: 0x00ff00 })
+          new THREE.MeshStandardMaterial({ color: 0x00ff00 }) // Green player
         );
         body.position.y = 0.75;
         this.player.object.add(body);
@@ -289,11 +295,59 @@
       createPiazza(sceneRef) {
         const platform = new THREE.Mesh(
           new THREE.BoxGeometry(20, 0.5, 20),
-          new THREE.MeshStandardMaterial({ color: 0x808080 })
+          new THREE.MeshStandardMaterial({ color: 0x808080 }) // Gray platform
         );
         platform.position.set(0, 0.25, 0);
         sceneRef.add(platform);
         this.outsideObjects.push({ mesh: platform, type: 'decoration', x: 0, z: 0, boundingRadius: 10 });
+
+        // Add poles with lights
+        for (let i = 0; i < 4; i++) {
+          const angle = (i / 4) * Math.PI * 2;
+          const pole = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.2, 0.2, 3, 16),
+            new THREE.MeshStandardMaterial({ color: 0x000000 }) // Black poles
+          );
+          pole.position.set(Math.cos(angle) * 8, 1.5, Math.sin(angle) * 8);
+          sceneRef.add(pole);
+          this.outsideObjects.push({ mesh: pole, type: 'decoration', x: pole.position.x, z: pole.position.z, boundingRadius: 0.5 });
+
+          const light = new THREE.Mesh(
+            new THREE.SphereGeometry(0.5, 16, 16),
+            new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0xffff00 }) // Yellow lights
+          );
+          light.position.set(Math.cos(angle) * 8, 3.5, Math.sin(angle) * 8);
+          sceneRef.add(light);
+        }
+
+        // Add brown spherical object (collectible)
+        const collectible = new THREE.Mesh(
+          new THREE.SphereGeometry(0.5, 16, 16),
+          new THREE.MeshStandardMaterial({ color: 0x8b4513 }) // Brown
+        );
+        collectible.position.set(0, 0.75, 0);
+        sceneRef.add(collectible);
+        this.outsideObjects.push({ mesh: collectible, type: 'collectible', x: 0, z: 0, boundingRadius: 0.5 });
+      }
+
+      createNPCs(sceneRef) {
+        // Purple NPC
+        const purpleNPC = new THREE.Mesh(
+          new THREE.BoxGeometry(1, 1.5, 1),
+          new THREE.MeshStandardMaterial({ color: 0x800080 })
+        );
+        purpleNPC.position.set(5, 0.75, 5);
+        sceneRef.add(purpleNPC);
+        this.outsideObjects.push({ mesh: purpleNPC, type: 'npc', x: 5, z: 5, boundingRadius: 1 });
+
+        // Blue NPC
+        const blueNPC = new THREE.Mesh(
+          new THREE.BoxGeometry(1, 1.5, 1),
+          new THREE.MeshStandardMaterial({ color: 0x0000ff })
+        );
+        blueNPC.position.set(-5, 0.75, 5);
+        sceneRef.add(blueNPC);
+        this.outsideObjects.push({ mesh: blueNPC, type: 'npc', x: -5, z: 5, boundingRadius: 1 });
       }
 
       updateMovement() {
@@ -326,10 +380,17 @@
           if (obj.type !== 'ground') {
             const dx = newX - obj.x;
             const dz = newZ - obj.z;
-            const minDist = (obj.boundingRadius || 1) + 1.0; // Relaxed collision tolerance
+            const minDist = (obj.boundingRadius || 1) + 1.0; // Relaxed collision
             if (dx * dx + dz * dz < minDist * minDist) {
-              canMove = false;
-              console.log(`Blocked by ${obj.type} at (${obj.x}, ${obj.z})`);
+              if (obj.type === 'collectible') {
+                this.collectItem(obj);
+                canMove = true;
+              } else if (obj.type === 'npc') {
+                this.interactWithNPC(obj);
+                canMove = false;
+              } else {
+                canMove = false;
+              }
               break;
             }
           }
@@ -350,6 +411,19 @@
         }
         this.player.object.position.set(this.player.x, this.player.y, this.player.z);
         this.player.object.rotation.y = this.player.yaw;
+      }
+
+      collectItem(obj) {
+        activeScene.remove(obj.mesh);
+        this.outsideObjects = this.outsideObjects.filter(o => o !== obj);
+        document.getElementById('coins').textContent = parseInt(document.getElementById('coins').textContent) + 1;
+        this.showDialogue("Collected a coin!");
+      }
+
+      interactWithNPC(obj) {
+        this.showDialogue(obj.mesh.material.color.getHex() === 0x800080 ?
+          "Purple Avatar: Welcome, Princess Donia!" :
+          "Blue Avatar: Explore the town!");
       }
 
       updateBalls() {
@@ -386,7 +460,7 @@
         const direction = new THREE.Vector3(Math.sin(this.player.yaw), 0, Math.cos(this.player.yaw));
         const ball = new THREE.Mesh(
           new THREE.SphereGeometry(0.3, 16, 16),
-          new THREE.MeshStandardMaterial({ color: 0xff4500 })
+          new THREE.MeshStandardMaterial({ color: 0xff4500 }) // Orange ball
         );
         ball.position.set(this.player.x, this.player.y + 1, this.player.z);
         ball.userData = { velocity: direction.multiplyScalar(0.5).add(new THREE.Vector3(0, 0.3, 0)), timer: 0 };
