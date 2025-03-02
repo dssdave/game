@@ -310,7 +310,6 @@
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = Math.PI / 2;
         outsideScene.add(ground);
-        this.outsideObjects.push({ mesh: ground, type: 'ground', x: 0, z: 0, boundingRadius: 150 });
 
         // Lighting
         const ambient = new THREE.AmbientLight(0x404040, 0.6);
@@ -391,7 +390,7 @@
       // Inside Scene Initialization
       initInsideScene() {
         insideScene.background = new THREE.Color(0x333333);
-        // Floor (stone textured)
+        // Floor
         const floorSize = 60;
         const floorGeo = new THREE.PlaneGeometry(floorSize, floorSize);
         const floorTex = this.generateStoneTexture();
@@ -399,9 +398,8 @@
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         insideScene.add(floor);
-        this.insideObjects.push({ mesh: floor, type: 'ground', x: 0, z: 0, boundingRadius: floorSize / 2 });
 
-        // Walls (four sides) and Ceiling
+        // Walls and Ceiling
         const wallHeight = 20, thickness = 1;
         const wallMat = new THREE.MeshStandardMaterial({ map: floorTex });
         const frontWall = new THREE.Mesh(new THREE.BoxGeometry(floorSize, wallHeight, thickness), wallMat.clone());
@@ -421,7 +419,7 @@
         ceiling.position.y = wallHeight;
         insideScene.add(ceiling);
 
-        // Ambient inside
+        // Lighting
         const amb = new THREE.AmbientLight(0xffffff, 0.4);
         insideScene.add(amb);
         const dir = new THREE.DirectionalLight(0xffffff, 0.6);
@@ -432,12 +430,12 @@
         const doorGeo = new THREE.PlaneGeometry(4, 6);
         const doorMat = new THREE.MeshStandardMaterial({ color: 0x553300, side: THREE.DoubleSide });
         const exitDoor = new THREE.Mesh(doorGeo, doorMat);
-        exitDoor.position.set(0, 3, -floorSize / 2 - 0.01);
+        exitDoor.position.set(0, 3, -floorSize / 2 + 1);
         insideScene.add(exitDoor);
         this.castleExit = { x: 0, z: -28, boundingRadius: 2 };
       }
 
-      // Castle entry/exit functions
+      // Castle entry/exit logic
       enterCastle() {
         isInsideCastle = true;
         document.getElementById('location').textContent = "Castle Interior";
@@ -469,8 +467,7 @@
         }
       }
       checkCastleExitDoor() {
-        if (!isInsideCastle) return;
-        if (!this.castleExit) return;
+        if (!isInsideCastle || !this.castleExit) return;
         const dx = this.player.x - this.castleExit.x;
         const dz = this.player.z - this.castleExit.z;
         if (dx * dx + dz * dz < this.castleExit.boundingRadius * this.castleExit.boundingRadius) {
@@ -575,11 +572,10 @@
         }
         if (isInsideCastle) {
           const floorSize = 60;
-          const margin = 2;
-          const minX = -floorSize / 2 + margin;
-          const maxX = floorSize / 2 - margin;
-          const minZ = -floorSize / 2 + margin;
-          const maxZ = floorSize / 2 - margin;
+          const minX = -floorSize / 2 + 2;
+          const maxX = floorSize / 2 - 2;
+          const minZ = -floorSize / 2 + 2;
+          const maxZ = floorSize / 2 - 2;
           this.player.x = Math.max(minX, Math.min(maxX, this.player.x));
           this.player.z = Math.max(minZ, Math.min(maxZ, this.player.z));
         }
@@ -613,11 +609,9 @@
         camera.lookAt(this.player.x, this.player.y + 1, this.player.z);
       }
 
-      updateCollisions() {
-        // Add additional collision responses if needed
-      }
+      updateCollisions() {}
 
-      // --- Player Model and Animation ---
+      // Player Model and Animation
       createPlayerModel() {
         if (!this.player.object) {
           const group = new THREE.Group();
@@ -682,7 +676,7 @@
         });
       }
 
-      // --- Environment Helpers ---
+      // Environment Helpers
       generateStoneTexture() {
         const canvas = document.createElement('canvas');
         canvas.width = 256; canvas.height = 256;
@@ -771,7 +765,7 @@
         this.outsideObjects.push({ mesh: water, type: 'water', x: 0, z: -70, boundingRadius: 2 });
       }
 
-      // --- Building Creation ---
+      // Building Creation
       createCastle(sceneRef) {
         const group = new THREE.Group();
         const stoneTex = this.generateStoneTexture();
@@ -878,7 +872,7 @@
         this.outsideObjects.push({ mesh: group, type: 'decoration', x: 0, z: 20, boundingRadius: 3 });
       }
 
-      // --- NPCs and Items ---
+      // NPCs and Items
       createBlueNPC(sceneRef) {
         const group = new THREE.Group();
         const body = new THREE.Mesh(
@@ -1067,7 +1061,6 @@
         piazza.rotation.x = -Math.PI / 2;
         piazza.position.set(0, 0.02, 0);
         sceneRef.add(piazza);
-        this.outsideObjects.push({ mesh: piazza, type: 'decoration', x: 0, z: 0, boundingRadius: 8 });
         const corners = [ { x: 7, z: 7 }, { x: 7, z: -7 }, { x: -7, z: 7 }, { x: -7, z: -7 } ];
         corners.forEach(c => {
           const pl = new THREE.PointLight(0xffeeaa, 0.6, 10);
@@ -1120,7 +1113,7 @@
         ];
       }
 
-      // --- Items / Pickups ---
+      // Items / Pickups
       createFlowers(sceneRef, count) {
         for (let i = 0; i < count; i++) {
           const fx = Math.random() * 160 - 80;
@@ -1211,7 +1204,7 @@
         }
       }
 
-      // --- NPC and Other Updates ---
+      // NPC and Other Updates
       updateBlueNPC() {
         if (!this.npcBlueData || !this.npcBlueData.object) return;
         this.npcBlueData.angle += this.npcBlueData.speed;
@@ -1241,9 +1234,7 @@
           npc.position.z += Math.cos(angle) * step;
         }
       }
-      updateMermaid() {
-        // Add water-splash dialogue here if needed
-      }
+      updateMermaid() {}
       updateBird() {
         if (!this.birdData || !this.birdData.object) return;
         this.birdData.angle += this.birdData.speed;
@@ -1377,6 +1368,7 @@
           dlg.textContent = '';
         }, 1500);
       }
+
       updateCollisions() {
         if (this.npcBlueData && this.npcBlueData.object) {
           const dx = this.player.x - this.npcBlueData.object.position.x;
