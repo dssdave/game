@@ -494,14 +494,13 @@
         animate();
       }
 
-      // Update functions
       update() {
         this.updateDayNight();
         this.updateBalls();
         this.updateMovement();
         this.updateCollisions();
         if (!isInsideCastle) {
-          this.updateGuard();
+          // this.updateGuard();  // Commented out to prevent "not a function" error
           this.updateBlueNPC();
           this.updateYellowNPC();
           this.updateMermaid();
