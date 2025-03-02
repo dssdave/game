@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1,user-scalable=no">
-  <title>Princess Donia’s Town – Fully Restored Game</title>
+  <title>Princess Donia’s Town – Movement Fix</title>
   <style>
     html, body {
       margin: 0; padding: 0;
@@ -919,22 +919,6 @@
           new THREE.MeshStandardMaterial({ color: 0x553300, side: THREE.DoubleSide }));
         door.position.set(0, 2, 5.01);
         group.add(door);
-        const doorLight = new THREE.PointLight(0xffeeaa, 0.8, 10);
-        doorLight.position.set(3, 3, 6);
-        group.add(doorLight);
-        const canvas = document.createElement('canvas');
-        canvas.width = 128; canvas.height = 32;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'black'; ctx.fillRect(0, 0, 128, 32);
-        ctx.fillStyle = 'white'; ctx.font = '16px Arial';
-        ctx.fillText("Donia's House", 5, 22);
-        const tex = new THREE.Texture(canvas);
-        tex.needsUpdate = true;
-        const signMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
-        const signGeo = new THREE.PlaneGeometry(4, 1);
-        const signMesh = new THREE.Mesh(signGeo, signMat);
-        signMesh.position.set(0, 5, 4.05);
-        group.add(signMesh);
         group.position.set(-40, 0, -40);
         sceneRef.add(group);
         this.outsideObjects.push({ mesh: group, type: 'building', x: -40, z: -40, boundingRadius: 10 });
@@ -949,22 +933,6 @@
           new THREE.MeshStandardMaterial({ color: 0x553300, side: THREE.DoubleSide }));
         door.position.set(0, 1.5, 5.01);
         group.add(door);
-        const doorLight = new THREE.PointLight(0xffeeaa, 0.8, 10);
-        doorLight.position.set(-3, 2.5, 6.5);
-        group.add(doorLight);
-        const canvas = document.createElement('canvas');
-        canvas.width = 256; canvas.height = 64;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'black'; ctx.fillRect(0, 0, 256, 64);
-        ctx.fillStyle = 'white'; ctx.font = '30px Arial'; ctx.textAlign = 'center';
-        ctx.fillText("Donia's Cafe", 128, 40);
-        const tex = new THREE.Texture(canvas);
-        tex.needsUpdate = true;
-        const signMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
-        const signGeo = new THREE.PlaneGeometry(8, 2);
-        const signMesh = new THREE.Mesh(signGeo, signMat);
-        signMesh.position.set(0, 3.5, 4.05);
-        group.add(signMesh);
         group.position.set(70, 0, -30);
         sceneRef.add(group);
         this.outsideObjects.push({ mesh: group, type: 'building', x: 70, z: -30, boundingRadius: 10 });
@@ -1021,7 +989,6 @@
         rightArm.userData = { isArm: true, side: 'right' };
         group.add(rightArm);
         group.position.set(120, 0.5, 0);
-        group.userData = { dialogue: "Greetings from the outskirts!" };
         sceneRef.add(group);
         this.outsideObjects.push({ mesh: group, type: 'npc', x: 120, z: 0, boundingRadius: 1 });
         this.npcBlueData = { angle: 0, speed: 0.001, radius: 120, object: group };
@@ -1057,7 +1024,6 @@
         rightArm.userData = { isArm: true, side: 'right' };
         group.add(rightArm);
         group.position.set(-30, 0.3, 30);
-        group.userData = { dialogue: "Have you seen the castle today?" };
         sceneRef.add(group);
         this.outsideObjects.push({ mesh: group, type: 'npc', x: -30, z: 30, boundingRadius: 1 });
         this.npcYellowData = { object: group, speed: 0.03, target: null };
@@ -1093,7 +1059,6 @@
         rightArm.userData = { isArm: true, side: 'right' };
         group.add(rightArm);
         group.position.set(45, 0.5, 55.5);
-        group.userData = { dialogue: "State your business at the castle!" };
         sceneRef.add(group);
         this.outsideObjects.push({ mesh: group, type: 'guard', x: 45, z: 55.5, boundingRadius: 2 });
       }
@@ -1128,7 +1093,6 @@
         rightArm.userData = { isArm: true, side: 'right' };
         group.add(rightArm);
         group.position.set(20, -0.5, -70);
-        group.userData = { dialogue: "The sea whispers secrets!" };
         sceneRef.add(group);
         this.outsideObjects.push({ mesh: group, type: 'mermaid', x: 20, z: -70, boundingRadius: 2 });
       }
@@ -1164,12 +1128,6 @@
         piazza.position.set(0, 0.02, 0);
         sceneRef.add(piazza);
         this.outsideObjects.push({ mesh: piazza, type: 'decoration', x: 0, z: 0, boundingRadius: 8 });
-        const corners = [ { x: 7, z: 7 }, { x: 7, z: -7 }, { x: -7, z: 7 }, { x: -7, z: -7 } ];
-        corners.forEach(c => {
-          const pl = new THREE.PointLight(0xffeeaa, 0.6, 10);
-          pl.position.set(c.x, 3, c.z);
-          sceneRef.add(pl);
-        });
       }
       createPiazzaNPCs(sceneRef) {
         const makeNPC = (color, x, z, dialogue) => {
