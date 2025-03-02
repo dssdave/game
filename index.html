@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1,user-scalable=no">
-  <title>Princess Donia’s Town – Fixed Movement & Physics</title>
+  <title>Princess Donia’s Town – Restored & Fixed</title>
   <style>
     html, body {
       margin: 0; padding: 0;
@@ -229,7 +229,6 @@
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        document.getElementById('gameCanvas').style.display = 'block';
 
         // Player
         this.player = { x: 5, y: 0.5, z: 5, speedKeyboard: 0.25, yaw: 0, jumpVelocity: 0, object: null };
