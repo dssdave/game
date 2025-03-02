@@ -2,10 +2,10 @@
 <html lang="en">
   <head>
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1,user-scalable=no">
-    <title>Princess Donia’s Town - Updated</title>
+    <title>Princess Donia’s Town - Full Prototype</title>
     <style>
       html, body {
-        margin: 0;
+        margin: 0; 
         padding: 0;
         background: #000;
         font-family: Arial, sans-serif;
@@ -19,7 +19,6 @@
         height: 100vh;
       }
       canvas { display: block; }
-
       /* UI boxes */
       #ui, #ballCount, #dialogue, #controls, #errorMessage, #guardPopup {
         background: rgba(0,0,0,0.7);
@@ -36,35 +35,31 @@
       #dialogue   { bottom: 10px; left: 10px; max-width: 600px; display: none; }
       #controls   { bottom: 10px; right: 10px; }
       #errorMessage {
-        top: 50%;
-        left: 50%;
+        top: 50%; left: 50%;
         transform: translate(-50%,-50%);
         display: none;
       }
       #guardPopup {
-        bottom: 50%;
-        left: 50%;
+        bottom: 50%; left: 50%;
         transform: translate(-50%,50%);
         display: none;
         text-align: center;
       }
-
       /* Toggle UI button */
       #toggleUIBtn {
-        position: absolute;
-        top: 10px;
+        position: absolute; 
+        top: 10px; 
         left: 50%;
         transform: translateX(-50%);
         z-index: 11;
         font-size: 24px;
         padding: 10px 20px;
-        background: #333;
+        background: #333; 
         color: #fff;
-        border: 2px solid #fff;
+        border: 2px solid #fff; 
         border-radius: 5px;
         cursor: pointer;
       }
-
       /* On-screen Controller Panels */
       #dpadContainer, #turnContainer, #actionContainer {
         position: absolute;
@@ -72,7 +67,7 @@
       }
       /* D-Pad as a grid with a small gap */
       #dpadContainer {
-        bottom: 16vh;
+        bottom: 16vh; 
         left: 5vw;
         display: grid;
         grid-template-columns: 60px 60px 60px;
@@ -83,46 +78,44 @@
       #btnDown  { grid-column: 2; grid-row: 3; }
       #btnLeft  { grid-column: 1; grid-row: 2; }
       #btnRight { grid-column: 3; grid-row: 2; }
-
       #dpadContainer button {
-        width: 60px;
+        width: 60px; 
         height: 60px;
         background: rgba(255,255,255,0.3);
         border: 2px solid #fff;
         border-radius: 5px;
-        font-size: 20px;
+        font-size: 20px; 
         color: #fff;
         cursor: pointer;
       }
       #turnContainer {
-        bottom: 16vh;
+        bottom: 16vh; 
         left: calc(5vw + 200px);
-        display: flex;
-        flex-direction: column;
+        display: flex; 
+        flex-direction: column; 
         gap: 10px;
       }
       #turnContainer button, #actionContainer button {
-        width: 60px;
+        width: 60px; 
         height: 60px;
         background: rgba(255,255,255,0.3);
         border: 2px solid #fff;
         border-radius: 50%;
-        font-size: 16px;
+        font-size: 16px; 
         color: #fff;
         cursor: pointer;
       }
       #actionContainer {
-        bottom: 16vh;
+        bottom: 16vh; 
         left: calc(5vw + 200px + 70px);
-        display: flex;
-        flex-direction: column;
+        display: flex; 
+        flex-direction: column; 
         gap: 10px;
       }
-
       /* Smaller UI on narrower screens */
       @media (max-width: 768px) {
         #ui, #ballCount, #dialogue, #controls, #guardPopup, #errorMessage {
-          font-size: 16px;
+          font-size: 16px; 
           padding: 20px 30px;
         }
         #toggleUIBtn { font-size: 16px; }
@@ -131,13 +124,13 @@
           grid-template-rows: 50px 50px 50px;
         }
         #dpadContainer button {
-          width: 50px;
-          height: 50px;
+          width: 50px; 
+          height: 50px; 
           font-size: 14px;
         }
         #turnContainer button, #actionContainer button {
-          width: 50px;
-          height: 50px;
+          width: 50px; 
+          height: 50px; 
           font-size: 14px;
         }
       }
@@ -204,7 +197,8 @@
           btn.addEventListener(evt, e => { e.preventDefault(); }, { passive: false });
         });
       }
-      ["btnUp","btnDown","btnLeft","btnRight","btnTurnLeft","btnTurnRight","btnThrow","btnBigThrow"].forEach(disableHighlight);
+      ["btnUp","btnDown","btnLeft","btnRight","btnTurnLeft","btnTurnRight","btnThrow","btnBigThrow"]
+        .forEach(disableHighlight);
 
       // On-screen controller state
       const controllerState = {
@@ -246,7 +240,6 @@
       });
 
       let game = null;
-
       try {
         const errorMsg = document.getElementById('errorMessage');
         const gameCanvas = document.getElementById('gameCanvas');
@@ -261,12 +254,10 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         const isMobile = window.innerWidth < 768;
         renderer.setPixelRatio(isMobile ? 1 : window.devicePixelRatio);
-        if (isMobile) {
-          renderer.shadowMap.enabled = false;
-        } else {
+        if (!isMobile) {
           renderer.shadowMap.enabled = true;
+          renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         }
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         gameCanvas.style.display = 'block';
 
         const keysPressed = {};
@@ -278,24 +269,16 @@
             this.renderer = renderer;
             this.time = 'Day';
             this.dayNightCycle = 0;
-            // Player – movement speed multiplier of 2.5 applied later
+            // Player (movement speed multiplier of 2.5 is applied later)
             this.player = {
-              x: 0,
-              y: 0.5,
-              z: 0,
+              x: 0, y: 0.5, z: 0,
               speedKeyboard: 0.1,
-              yaw: 0,
-              pitch: 0,
+              yaw: 0, pitch: 0,
               jumpVelocity: 0,
               object: null
             };
             // Stats
-            this.flowers = 0;
-            this.coins = 0;
-            this.gems = 0;
-            this.potions = 0;
-            this.keys = 0;
-            this.artifacts = 0;
+            this.flowers = 0; this.coins = 0; this.gems = 0; this.potions = 0; this.keys = 0; this.artifacts = 0;
             this.health = 100;
             this.objects = []; // buildings, boundaries, decorations, NPCs, etc.
             this.buildingPositions = [];
@@ -304,9 +287,7 @@
             this.keysPressed = keysPressed;
             this.itemRange = 80;
             // Day/Night elements
-            this.sunMesh = null;
-            this.moonMesh = null;
-            this.starsMesh = null;
+            this.sunMesh = null; this.moonMesh = null; this.starsMesh = null;
             // NPC data
             this.npcBlueData = { angle: 0, speed: 0.001, radius: 120, object: null };
             this.npcYellowData = { object: null, speed: 0.03, target: null };
@@ -320,19 +301,16 @@
             };
             this.mermaidData = { object: null, route: [ { x: -15, z: -70 }, { x: 15, z: -70 } ], routeIndex: 0, speed: 0.02 };
             this.birdData = { angle: 0, speed: 0.002, radius: 140, object: null };
-            this.guardObject = null;
-            this.guardMessageShown = false;
-            this.npcBlueMessageShown = false;
-            this.mermaidMessageShown = false;
-            this.npcYellowMessageShown = false;
-            // Piazza NPC data
+            this.guardObject = null; this.guardMessageShown = false; this.npcBlueMessageShown = false; this.mermaidMessageShown = false; this.npcYellowMessageShown = false;
+            // Piazza NPC data array
             this.piazzaNPCData = [];
 
-            // Bind methods to avoid context issues
+            // Bind methods to this instance
             this.updateMovement = this.updateMovement.bind(this);
             this.animateArms = this.animateArms.bind(this);
             this.updateDayNight = this.updateDayNight.bind(this);
             this.updatePickups = this.updatePickups.bind(this);
+            this.updatePiazzaNPCs = this.updatePiazzaNPCs.bind(this);
 
             this.initScene();
             this.initKeyboardMouse();
@@ -340,7 +318,7 @@
           }
 
           initScene() {
-            // Ensure daytime background
+            // Set scene background (daytime)
             this.scene.background = new THREE.Color(0x87CEEB);
             // Ground
             const groundGeo = new THREE.PlaneGeometry(300, 300);
@@ -397,7 +375,7 @@
             this.createGuardAtCastle();
             this.createMermaid();
             this.createBird();
-            // Items
+            // Items (pickups)
             this.createFlowers(10);
             this.createCoins(8);
             this.createGems(4);
@@ -407,7 +385,7 @@
             // Piazza and its NPCs
             this.createPiazza();
             this.createPiazzaNPCs();
-            // Lamp posts near buildings (positioned to not block doors)
+            // Lamp posts near buildings (positioned so as not to block doors)
             const castleLamp = new THREE.PointLight(0xffeeaa, 0.8, 15);
             castleLamp.position.set(32, 5, 40);
             this.scene.add(castleLamp);
@@ -417,7 +395,7 @@
             const cafeLamp = new THREE.PointLight(0xffeeaa, 0.8, 10);
             cafeLamp.position.set(68, 4, -30);
             this.scene.add(cafeLamp);
-            // Start camera behind player
+            // Set initial camera position behind player
             this.camera.position.set(this.player.x+15, this.player.y+15, this.player.z+15);
             this.camera.lookAt(this.player.x, this.player.y+1, this.player.z);
           }
@@ -545,8 +523,7 @@
 
           generateStoneTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 256;
+            canvas.width = 256; canvas.height = 256;
             const ctx = canvas.getContext('2d');
             for (let y = 0; y < canvas.height; y += 16) {
               for (let x = 0; x < canvas.width; x += 16) {
@@ -592,16 +569,12 @@
             doorLight.position.set(-3, 5, 12);
             group.add(doorLight);
             const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 128;
+            canvas.width = 512; canvas.height = 128;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, 512, 128);
-            ctx.fillStyle = 'white';
-            ctx.font = '60px Arial';
+            ctx.fillStyle = 'black'; ctx.fillRect(0, 0, 512, 128);
+            ctx.fillStyle = 'white'; ctx.font = '60px Arial';
             ctx.fillText("Daddy's Castle", 50, 80);
-            const tex = new THREE.Texture(canvas);
-            tex.needsUpdate = true;
+            const tex = new THREE.Texture(canvas); tex.needsUpdate = true;
             const signMat = new THREE.MeshBasicMaterial({ map: tex });
             const signGeo = new THREE.PlaneGeometry(12, 3);
             const signMesh = new THREE.Mesh(signGeo, signMat);
@@ -637,16 +610,12 @@
             doorLight.position.set(3, 3, 6);
             group.add(doorLight);
             const canvas = document.createElement('canvas');
-            canvas.width = 128;
-            canvas.height = 32;
+            canvas.width = 128; canvas.height = 32;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, 128, 32);
-            ctx.fillStyle = 'white';
-            ctx.font = '16px Arial';
+            ctx.fillStyle = 'black'; ctx.fillRect(0, 0, 128, 32);
+            ctx.fillStyle = 'white'; ctx.font = '16px Arial';
             ctx.fillText("Donia's House", 5, 22);
-            const tex = new THREE.Texture(canvas);
-            tex.needsUpdate = true;
+            const tex = new THREE.Texture(canvas); tex.needsUpdate = true;
             const signMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
             const signGeo = new THREE.PlaneGeometry(4, 1);
             const signMesh = new THREE.Mesh(signGeo, signMat);
@@ -675,17 +644,12 @@
             doorLight.position.set(-3, 2.5, 6.5);
             group.add(doorLight);
             const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 64;
+            canvas.width = 256; canvas.height = 64;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, 256, 64);
-            ctx.fillStyle = 'white';
-            ctx.font = '30px Arial';
-            ctx.textAlign = 'center';
+            ctx.fillStyle = 'black'; ctx.fillRect(0, 0, 256, 64);
+            ctx.fillStyle = 'white'; ctx.font = '30px Arial'; ctx.textAlign = 'center';
             ctx.fillText("Donia's Cafe", 128, 40);
-            const tex = new THREE.Texture(canvas);
-            tex.needsUpdate = true;
+            const tex = new THREE.Texture(canvas); tex.needsUpdate = true;
             const signMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
             const signGeo = new THREE.PlaneGeometry(8, 2);
             const signMesh = new THREE.Mesh(signGeo, signMat);
@@ -879,10 +843,10 @@
 
           createLampPosts() {
             for (let i = 0; i < 20; i++) {
-              const angle = (i / 20) * Math.PI * 2;
+              const angle = (i/20)*Math.PI*2;
               const radius = 130;
-              const x = Math.cos(angle) * radius;
-              const z = Math.sin(angle) * radius;
+              const x = Math.cos(angle)*radius;
+              const z = Math.sin(angle)*radius;
               const postGeo = new THREE.CylinderGeometry(0.2, 0.2, 4, 8);
               const postMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
               const post = new THREE.Mesh(postGeo, postMat);
@@ -900,8 +864,7 @@
           createPiazza() {
             const size = 15;
             const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 256;
+            canvas.width = 256; canvas.height = 256;
             const ctx = canvas.getContext('2d');
             for (let y = 0; y < canvas.height; y += 16) {
               for (let x = 0; x < canvas.width; x += 16) {
@@ -920,17 +883,12 @@
             piazza.rotation.x = -Math.PI/2;
             piazza.position.set(0, 0.02, 0);
             this.scene.add(piazza);
-            // Four small lamp posts at the corners of the piazza
-            const corners = [
-              { x: 7, z: 7 },
-              { x: 7, z: -7 },
-              { x: -7, z: 7 },
-              { x: -7, z: -7 }
-            ];
+            // Four lamp posts at the corners of the piazza
+            const corners = [ { x: 7, z: 7 }, { x: 7, z: -7 }, { x: -7, z: 7 }, { x: -7, z: -7 } ];
             corners.forEach(c => {
-              const pl = new THREE.PointLight(0xffeeaa, 0.6, 10);
-              pl.position.set(c.x, 3, c.z);
-              this.scene.add(pl);
+              const lp = new THREE.PointLight(0xffeeaa, 0.6, 10);
+              lp.position.set(c.x, 3, c.z);
+              this.scene.add(lp);
             });
             this.objects.push({ mesh: piazza, type: 'piazza', x: 0, z: 0, boundingRadius: 8 });
           }
@@ -978,6 +936,7 @@
             this.piazzaNPCData.push({ object: npc2, speed: 0.02 });
           }
 
+          // Pickup methods
           createFlowers(count) {
             for (let i = 0; i < count; i++) {
               const fx = Math.random()*this.itemRange*2 - this.itemRange;
@@ -1000,7 +959,7 @@
             for (let i = 0; i < count; i++) {
               const cx = Math.random()*this.itemRange*2 - this.itemRange;
               const cz = Math.random()*this.itemRange*2 - this.itemRange;
-              const coin = new THREE.Mesh(new THREE.CircleGeometry(0.3, 16),
+              const coin = new THREE.Mesh(new THREE.CircleGeometry(0.3,16),
                 new THREE.MeshStandardMaterial({ color: 0xffff00 }));
               coin.rotation.x = -Math.PI/2;
               coin.position.set(cx, 0.01, cz);
@@ -1013,7 +972,7 @@
             for (let i = 0; i < count; i++) {
               const gx = Math.random()*this.itemRange*2 - this.itemRange;
               const gz = Math.random()*this.itemRange*2 - this.itemRange;
-              const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.5, 0),
+              const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.5,0),
                 new THREE.MeshStandardMaterial({ color: 0x00ffff }));
               gem.position.set(gx, 0.5, gz);
               this.scene.add(gem);
@@ -1025,15 +984,15 @@
             for (let i = 0; i < count; i++) {
               const px = Math.random()*this.itemRange*2 - this.itemRange;
               const pz = Math.random()*this.itemRange*2 - this.itemRange;
-              const base = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.8, 16),
+              const base = new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,0.8,16),
                 new THREE.MeshStandardMaterial({ color: 0xffffff }));
               base.position.y = 0.4;
-              const liquid = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.6, 16),
+              const liquid = new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.25,0.6,16),
                 new THREE.MeshStandardMaterial({ color: 0xff4500 }));
               liquid.position.y = 0.4;
               const potion = new THREE.Group();
               potion.add(base, liquid);
-              potion.position.set(px, 0, pz);
+              potion.position.set(px,0,pz);
               this.scene.add(potion);
               this.objects.push({ mesh: potion, type: 'potion', x: px, z: pz, boundingRadius: 0.5 });
             }
@@ -1043,14 +1002,14 @@
             for (let i = 0; i < count; i++) {
               const kx = Math.random()*this.itemRange*2 - this.itemRange;
               const kz = Math.random()*this.itemRange*2 - this.itemRange;
-              const handle = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16),
+              const handle = new THREE.Mesh(new THREE.SphereGeometry(0.2,16,16),
                 new THREE.MeshStandardMaterial({ color: 0xffd700 }));
-              const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8),
+              const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,0.8,8),
                 new THREE.MeshStandardMaterial({ color: 0xffd700 }));
               shaft.position.y = -0.4;
               const key = new THREE.Group();
               key.add(handle, shaft);
-              key.position.set(kx, 0.5, kz);
+              key.position.set(kx,0.5,kz);
               key.rotation.x = Math.PI/2;
               this.scene.add(key);
               this.objects.push({ mesh: key, type: 'key', x: kx, z: kz, boundingRadius: 0.5 });
@@ -1061,13 +1020,13 @@
             for (let i = 0; i < count; i++) {
               const ax = Math.random()*this.itemRange*2 - this.itemRange;
               const az = Math.random()*this.itemRange*2 - this.itemRange;
-              const artifact = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16),
+              const artifact = new THREE.Mesh(new THREE.SphereGeometry(0.5,16,16),
                 new THREE.MeshStandardMaterial({ color: 0x9400d3 }));
-              const glow = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 16),
+              const glow = new THREE.Mesh(new THREE.SphereGeometry(0.6,16,16),
                 new THREE.MeshBasicMaterial({ color: 0xffeb3b, transparent: true, opacity: 0.5, side: THREE.BackSide }));
               const group = new THREE.Group();
               group.add(artifact, glow);
-              group.position.set(ax, 0.5, az);
+              group.position.set(ax,0.5,az);
               this.scene.add(group);
               this.objects.push({ mesh: group, type: 'artifact', x: ax, z: az, boundingRadius: 0.5 });
             }
@@ -1098,7 +1057,7 @@
           }
 
           updateDayNight() {
-            // Slow day/night cycle (change every ~5 minutes at 60fps => 18000 frames)
+            // Approximately 5 minutes for a full cycle (18000 frames at 60fps)
             this.dayNightCycle = (this.dayNightCycle + 1) % 18000;
             this.time = (this.dayNightCycle < 9000) ? 'Day' : 'Night';
             document.getElementById('time').textContent = this.time;
@@ -1231,7 +1190,7 @@
             const dx = target.x - mermaid.position.x;
             const dz = target.z - mermaid.position.z;
             if (dx*dx + dz*dz < 1) {
-              this.mermaidData.routeIndex = (this.mermaidData.routeIndex+1)%route.length;
+              this.mermaidData.routeIndex = (this.mermaidData.routeIndex+1) % route.length;
               target = route[this.mermaidData.routeIndex];
             }
             const angle = Math.atan2(dx, dz);
@@ -1240,7 +1199,7 @@
             const step = this.mermaidData.speed;
             mermaid.position.x += Math.sin(angle) * step;
             mermaid.position.z += Math.cos(angle) * step;
-            // Spawn water ripple when mermaid is in water region
+            // Spawn water ripple when in water region
             const waterObj = this.objects.find(o => o.type === 'water');
             if (waterObj) {
               const dxW = mermaid.position.x - waterObj.x;
@@ -1300,7 +1259,31 @@
             }
           }
 
+          updatePiazzaNPCs() {
+            for (let i = 0; i < this.piazzaNPCData.length; i++) {
+              const data = this.piazzaNPCData[i];
+              const npc = data.object;
+              let d = npc.userData;
+              if (!d.target) {
+                d.target = { x: Math.random()*10 - 5, z: Math.random()*10 - 5 };
+              }
+              const dx = d.target.x - npc.position.x;
+              const dz = d.target.z - npc.position.z;
+              if (dx*dx + dz*dz < 1) {
+                d.target = { x: Math.random()*10 - 5, z: Math.random()*10 - 5 };
+              } else {
+                this.animateArms(npc, true);
+                const angle = Math.atan2(dx, dz);
+                npc.rotation.y = angle;
+                const step = data.speed;
+                npc.position.x += Math.sin(angle) * step;
+                npc.position.z += Math.cos(angle) * step;
+              }
+            }
+          }
+
           updateCollisions() {
+            // Guard dialogue trigger
             if (this.guardObject && !this.guardMessageShown) {
               const dx = this.player.x - this.guardObject.position.x;
               const dz = this.player.z - this.guardObject.position.z;
@@ -1310,6 +1293,7 @@
                 setTimeout(() => { this.guardMessageShown = false; }, 2500);
               }
             }
+            // Blue NPC dialogue trigger
             if (this.npcBlueData.object && !this.npcBlueMessageShown) {
               const dx = this.player.x - this.npcBlueData.object.position.x;
               const dz = this.player.z - this.npcBlueData.object.position.z;
@@ -1319,6 +1303,7 @@
                 setTimeout(() => { this.npcBlueMessageShown = false; }, 2500);
               }
             }
+            // Piazza NPC dialogue trigger
             for (let obj of this.objects) {
               if (obj.type === 'npc' && obj.mesh.userData.dialogue) {
                 const dx = this.player.x - obj.x;
@@ -1396,7 +1381,7 @@
             const offsetZ = -Math.cos(this.player.yaw) * camDist;
             const offsetY = 10;
             this.camera.position.set(this.player.x + offsetX, this.player.y + offsetY, this.player.z + offsetZ);
-            this.camera.lookAt(this.player.x, this.player.y + 1, this.player.z);
+            this.camera.lookAt(this.player.x, this.player.y+1, this.player.z);
           }
 
           animateArms(obj, isMoving) {
