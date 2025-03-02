@@ -310,7 +310,8 @@
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = Math.PI / 2;
         outsideScene.add(ground);
-        this.outsideObjects.push({ mesh: ground, type: 'boundary', x: 0, z: 0, boundingRadius: 150 });
+        // Removed from collision objects to allow movement
+        // this.outsideObjects.push({ mesh: ground, type: 'boundary', x: 0, z: 0, boundingRadius: 150 });
 
         // Lighting
         const ambient = new THREE.AmbientLight(0x404040, 0.6);
@@ -399,7 +400,8 @@
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         insideScene.add(floor);
-        this.insideObjects.push({ mesh: floor, type: 'boundary', x: 0, z: 0, boundingRadius: floorSize / 2 });
+        // Removed from collision objects to allow movement
+        // this.insideObjects.push({ mesh: floor, type: 'boundary', x: 0, z: 0, boundingRadius: floorSize / 2 });
 
         // Walls (four sides) and Ceiling
         const wallHeight = 20, thickness = 1;
@@ -1073,7 +1075,8 @@
         piazza.rotation.x = -Math.PI / 2;
         piazza.position.set(0, 0.02, 0);
         sceneRef.add(piazza);
-        this.outsideObjects.push({ mesh: piazza, type: 'decoration', x: 0, z: 0, boundingRadius: 8 });
+        // Removed from collision objects to allow movement
+        // this.outsideObjects.push({ mesh: piazza, type: 'decoration', x: 0, z: 0, boundingRadius: 8 });
         // Four corner lights
         const corners = [ { x: 7, z: 7 }, { x: 7, z: -7 }, { x: -7, z: 7 }, { x: -7, z: -7 } ];
         corners.forEach(c => {
