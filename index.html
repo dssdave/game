@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1,user-scalable=no">
-  <title>Princess Donia’s Town – Restored Game</title>
+  <title>Princess Donia’s Town – Fully Restored Game</title>
   <style>
     html, body {
       margin: 0; padding: 0;
@@ -258,9 +258,9 @@
       }
 
       initOutsideScene() {
-        outsideScene.background = new THREE.Color(0x87CEEB);
+        outsideScene.background = new THREE.Color(0x87CEEB); // Sky blue
         const groundGeo = new THREE.PlaneGeometry(300, 300);
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0x6bb26b, side: THREE.DoubleSide });
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x6bb26b, side: THREE.DoubleSide }); // Grassy green
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = Math.PI / 2;
         outsideScene.add(ground);
@@ -289,7 +289,7 @@
         outsideScene.add(platformTop);
         this.outsideObjects.push({ mesh: platformBase, type: 'decoration', x: 0, z: 0, boundingRadius: 2 });
 
-        // Light poles
+        // Light poles around platform
         for (let i = 0; i < 4; i++) {
           const angle = (i / 4) * Math.PI * 2;
           const px = 3 * Math.cos(angle);
@@ -319,16 +319,16 @@
         this.createCoins(outsideScene, 5);
         this.createGems(outsideScene, 5);
 
-        // Castle
+        // Castle and relocated light post
         this.createCastle(outsideScene);
-        this.createLightPost(outsideScene, 35, 50); // Moved left, opposite guard
+        this.createLightPost(outsideScene, 35, 50); // Moved to (35, 50) as requested
 
         camera.position.set(15, 15, 15);
         camera.lookAt(0, 1, 0);
       }
 
       initInsideScene() {
-        insideScene.background = new THREE.Color(0x333333);
+        insideScene.background = new THREE.Color(0x333333); // Dark interior
         const floorSize = 60;
         const floorGeo = new THREE.PlaneGeometry(floorSize, floorSize);
         const floorMat = new THREE.MeshStandardMaterial({ color: 0x808080, side: THREE.DoubleSide });
@@ -339,15 +339,15 @@
         const wallHeight = 20, thickness = 1;
         const wallMat = new THREE.MeshStandardMaterial({ color: 0x808080 });
         const walls = [
-          new THREE.Mesh(new THREE.BoxGeometry(floorSize, wallHeight, thickness), wallMat.clone()),
-          new THREE.Mesh(new THREE.BoxGeometry(floorSize, wallHeight, thickness), wallMat.clone()),
-          new THREE.Mesh(new THREE.BoxGeometry(thickness, wallHeight, floorSize), wallMat.clone()),
-          new THREE.Mesh(new THREE.BoxGeometry(thickness, wallHeight, floorSize), wallMat.clone())
+          new THREE.Mesh(new THREE.BoxGeometry(floorSize, wallHeight, thickness), wallMat.clone()), // Front
+          new THREE.Mesh(new THREE.BoxGeometry(floorSize, wallHeight, thickness), wallMat.clone()), // Back
+          new THREE.Mesh(new THREE.BoxGeometry(thickness, wallHeight, floorSize), wallMat.clone()), // Left
+          new THREE.Mesh(new THREE.BoxGeometry(thickness, wallHeight, floorSize), wallMat.clone())  // Right
         ];
-        walls[0].position.set(0, wallHeight / 2, floorSize / 2);  // Front
-        walls[1].position.set(0, wallHeight / 2, -floorSize / 2); // Back
-        walls[2].position.set(-floorSize / 2, wallHeight / 2, 0); // Left
-        walls[3].position.set(floorSize / 2, wallHeight / 2, 0);  // Right
+        walls[0].position.set(0, wallHeight / 2, floorSize / 2);
+        walls[1].position.set(0, wallHeight / 2, -floorSize / 2);
+        walls[2].position.set(-floorSize / 2, wallHeight / 2, 0);
+        walls[3].position.set(floorSize / 2, wallHeight / 2, 0);
         walls.forEach(wall => insideScene.add(wall));
         const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(floorSize, floorSize), wallMat);
         ceiling.rotation.x = Math.PI / 2;
@@ -368,8 +368,8 @@
         this.castleExit = { x: 0, z: -28, boundingRadius: 2 };
 
         // Add King and Queen NPCs
-        const king = this.makeNPC(insideScene, 0xffd700, -5, 0, "Welcome to the castle!");
-        const queen = this.makeNPC(insideScene, 0xc0c0c0, 5, 0, "Greetings, Princess!");
+        const king = this.makeNPC(insideScene, 0xffd700, -5, 0, "Welcome to the castle!"); // Gold-colored King
+        const queen = this.makeNPC(insideScene, 0xc0c0c0, 5, 0, "Greetings, Princess!"); // Silver-colored Queen
         this.castleNPCData = [
           { object: king, speed: 0.02 },
           { object: queen, speed: 0.02 }
@@ -380,13 +380,13 @@
         const group = new THREE.Group();
         const body = new THREE.Mesh(
           new THREE.CylinderGeometry(0.4, 0.5, 1.2, 16),
-          new THREE.MeshStandardMaterial({ color: 0xff69b4 })
+          new THREE.MeshStandardMaterial({ color: 0xff69b4 }) // Pink body
         );
         body.position.y = 0.6;
         group.add(body);
         const head = new THREE.Mesh(
           new THREE.SphereGeometry(0.3, 16, 16),
-          new THREE.MeshStandardMaterial({ color: 0xffddc1 })
+          new THREE.MeshStandardMaterial({ color: 0xffddc1 }) // Skin-tone head
         );
         head.position.y = 1.4;
         group.add(head);
